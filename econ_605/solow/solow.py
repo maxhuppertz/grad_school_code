@@ -1,8 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import os
-print(os.path.dirname(os.path.abspath(__file__)))
-exit()
+
 
 # Define a function that calculates time paths for the Solow model, using a Cobb-Douglas production function
 def solow_cobb_douglas(alpha, n, s, d, g_A, K_0, L_0, A_0, T):
@@ -96,5 +94,4 @@ ax.set_xlabel('Period')
 
 # Include a legend and display the plot
 ax.legend()
-
 plt.show()
