@@ -18,7 +18,7 @@ CRLB = 1/n
 # Define theta_hat (which uses all bootstrap samples as an input and calculates B theta_hats)
 def theta_hats(X): return np.median(X, axis=0)
 
-# Calculate theta_hats
+# Calculate variance of theta_hat across bootstrap samples
 var_theta_hats = theta_hats(f_Xi.rvs(size=(n, B))).var()
 
 # Print the CRLB, variance of the theta_hats, and percentage deviance
