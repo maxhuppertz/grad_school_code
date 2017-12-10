@@ -144,19 +144,21 @@ r_h = 5
 r = (r_h + r_l) / 2
 
 # Create a space of incomes
-n = 11
-y_1 = .1
-y_n = 1
+n = 15  # Number of different values of income
+y_1 = .1  # Lowest possible income
+y_n = 1  # Highest possible income
 Y = np.array(np.linspace(y_1, y_n, num=n), ndmin=2).transpose()
 
 # Create a space of asset holdings
-m = 201
-phi = y_1 / (1 - b)
-a_m = 4
+m = 250  # Number of asset choices
+phi = y_1 / (1 - b)  # Borrowing limit; y_1 / (1 - b) is a 'natural' limit in the Ljungqvist & Sargent sense
+a_m = 4  # Highest possible asset value
 A = np.array(np.linspace(-phi, a_m, num=m).transpose(), ndmin=2).transpose()
 
-# Create a transition matrix with strictly positive transition propabilites
+# Set seed for random variables
 np.random.seed(seed=8675309)
+
+# Create a transition matrix with strictly positive transition propabilites
 P = uniform().rvs(size=(n, n))
 
 # This is how the transition probabilites are always positive
