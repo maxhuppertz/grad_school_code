@@ -31,6 +31,7 @@ def v_iter(r, b, u, P, A, Y, v_0, tol=.001, i_max_v=1000, get_g=True):
     U = u((1 + r) * B + S - B_prime)
 
     # Set first input value function to v_0
+    # Note that everything is set up so the (i, j) element of v refers to income i and asset choice j, so v is n x m
     v_in = v_0
 
     # Calculate next-period continuation values, also as an m*n x m vector
@@ -58,7 +59,7 @@ def v_iter(r, b, u, P, A, Y, v_0, tol=.001, i_max_v=1000, get_g=True):
 
         # Restack it
         # This does all three in one step
-        # As discussed when iterating over excess demand, increased precision can be helpful here
+        # When iterating over excess demand later, increased precision might be helpful here
         v_out = np.reshape(np.array(np.amax(U + b*np.repeat(P @ v_in, A.shape[0], axis=0),
                            axis=1), ndmin=2).transpose(), v_0.shape).astype(np.longdouble)
 
@@ -90,24 +91,25 @@ def v_iter(r, b, u, P, A, Y, v_0, tol=.001, i_max_v=1000, get_g=True):
 @jit
 def find_L(v, g, A, Y, P, X):
     # Set up the transition matrix across (a, s) (note that Scipy's eigenvector algorithm doesn't accept high precision
-    # arrays, so there isn't much that can be done here with precision)
+    # arrays (float64 / np.longdouble), so there isn't much that can be done here with precision, I think)
     P_X = np.zeros(shape=(X.shape[0], X.shape[0]))
 
     # Go through all elements of that transition matrix (obviously this is the major bottleneck of the whole script)
     for ij in np.ndindex(P_X.shape):
-        # Fill in each element by checking whether the asset value its mapping to a' given (a, s), and multiplying that
-        # by the probability of ending up in s'
+        # Fill in each element by checking whether the asset value it's mapping to is a' given (a, s), and multiplying
+        # that by the probability of ending up in s'
         P_X[ij] = (g[X[ij[0]][0], X[ij[0]][1]] == A[X[ij[1]][1], 0]) * P[X[ij[0]][0], X[ij[1]][0]]
 
     # Calculate ergodic distribution of transition matrix
     # First get the eigenvectors, then check which one is associated with the unit eigenvalue
-    # Then divide by the sum of the eigenvalues, since this is a probability distribution
-    # The absolute value check is funky because of floating point issues when assessing whether an eigenvalue is one
+    # Checking which eigenvalue is 1 is funky because of floating point issues
     L = sp.linalg.eig(P_X.transpose())[1][:, np.abs(np.linalg.eig(P_X.transpose())[0] - 1) <= 10**(-10)]
+
+    # Divide by the sum of the eigenvalues, since this is a probability distribution
     L /= L.sum(axis=0)
 
     # Print a warning if the stationary distribution is not unique (usually that means m is too small, I believe)
-    # Also stop the program, because this'll be really messy once we start looking at excess demand and all that
+    # Also stop the program, because this'll really mess things up once we start looking at excess demand and all that
     if L.shape[1] > 1:
         print('Warning: There is more than one stationary distribution across the (a, s) space', '\n',
               'Stopping program')
@@ -121,7 +123,7 @@ def find_L(v, g, A, Y, P, X):
 
 # Define CRRA utility
 def crra(c, g=4, u_inada=-10**10):
-    # Set up utility matrix (as noted when iterating over excess demand, higher precision can be helpful here)
+    # Set up utility matrix (when iterating over excess demand later, higher precision might be helpful here)
     u = np.zeros_like(c, dtype=np.longdouble)
 
     # Calculate utlity for positive consumption values
@@ -144,21 +146,22 @@ r_h = 5
 r = (r_h + r_l) / 2
 
 # Create a space of incomes
-n = 15  # Number of different values of income
+n = 10  # Number of different values of income
 y_1 = .1  # Lowest possible income
 y_n = 1  # Highest possible income
-Y = np.array(np.linspace(y_1, y_n, num=n), ndmin=2).transpose()
+Y = np.array(np.linspace(y_1, y_n, num=n), ndmin=2).transpose()  # Column vector of incomes
 
 # Create a space of asset holdings
-m = 250  # Number of asset choices
+m = 80  # Number of asset choices
 phi = y_1 / (1 - b)  # Borrowing limit; y_1 / (1 - b) is a 'natural' limit in the Ljungqvist & Sargent sense
 a_m = 4  # Highest possible asset value
-A = np.array(np.linspace(-phi, a_m, num=m).transpose(), ndmin=2).transpose()
+A = np.array(np.linspace(-phi, a_m, num=m).transpose(), ndmin=2).transpose()  # Column vector of asset choices
 
 # Set seed for random variables
 np.random.seed(seed=8675309)
 
 # Create a transition matrix with strictly positive transition propabilites
+# This is totally random; a more structured setup would probably generate more interesting results?
 P = uniform().rvs(size=(n, n))
 
 # This is how the transition probabilites are always positive
