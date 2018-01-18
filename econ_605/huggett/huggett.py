@@ -146,13 +146,13 @@ r_h = 5
 r = (r_h + r_l) / 2
 
 # Create a space of incomes
-n = 10  # Number of different values of income
+n = 100  # Number of different values of income
 y_1 = .1  # Lowest possible income
 y_n = 1  # Highest possible income
 Y = np.array(np.linspace(y_1, y_n, num=n), ndmin=2).transpose()  # Column vector of incomes
 
 # Create a space of asset holdings
-m = 80  # Number of asset choices
+m = 200  # Number of asset choices
 phi = y_1 / (1 - b)  # Borrowing limit; y_1 / (1 - b) is a 'natural' limit in the Ljungqvist & Sargent sense
 a_m = 4  # Highest possible asset value
 A = np.array(np.linspace(-phi, a_m, num=m).transpose(), ndmin=2).transpose()  # Column vector of asset choices
