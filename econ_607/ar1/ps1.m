@@ -36,22 +36,32 @@ for i = 1:length(R)
 
     % Calculate mean and standard deviation
     disp(['Sample mean: ', num2str(mean(y)), ', SD: ', num2str(std(y))])
-
-    % Scatter plot of y_t and y_t+1
-    subplot(length(R), 2, 2*i-1);
-    scatter(y(1:end-1, 1), y(2:end, 1));
+    
+    % Plot time series
+    subplot(length(R), 3, 3*i-2);
+    plot(y);
     
     % Add a title and labels
-    title(['\textbf{Scatter plot}: $$\rho = ' num2str(r), ...
+    title({'\textbf{Time series}'; ['($$\rho = ' num2str(r), ...
         ', \: \bar{y} = ', num2str(ybar), ', \: \sigma = ', ...
         num2str(sqrt(sigma2)), ', \: \bar{y}_n = ', num2str(mean(y)), ...
-        ', \: S_n = ', num2str(std(y)), '$$'], ...
+        ', \: S_n = ', num2str(std(y)), ...
+        '\vphantom{\frac{\Sigma_i^i}{\Sigma_i^i}}$$)']}, ...
         'Interpreter', 'latex');
     xlabel('$$y_{t-1}$$', 'Interpreter', 'latex');
     ylabel('$$y_t \qquad$$', 'Interpreter', 'latex', 'rotation', 0);
     
+    % Scatter plot of y_t and y_t+1
+    subplot(length(R), 3, 3*i-1);
+    scatter(y(1:end-1, 1), y(2:end, 1));
+    
+    % Add a title and labels
+    title('\textbf{Scatter plot}', 'Interpreter', 'latex');
+    xlabel('$$t$$', 'Interpreter', 'latex');
+    ylabel('$$y \qquad$$', 'Interpreter', 'latex', 'rotation', 0);
+    
     % Plot impulse response function
-    subplot(length(R), 2, 2*i);
+    subplot(length(R), 3, 3*i);
     plot(y_imp);
     title('\textbf{Impulse response}', 'Interpreter', 'latex');
     xlabel('$$t$$', 'Interpreter', 'latex');
@@ -60,7 +70,7 @@ end
 
 % Adjust figure dimensions and save
 set(gcf, 'Units', 'inches')
-set(gcf, 'Position', [0 0 16 9])
+set(gcf, 'Position', [0 0 8*length(R) 4.5*3])
 saveas(gcf, 'ar1.svg')
 
 % Reset interpreter to factory settings
