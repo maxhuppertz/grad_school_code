@@ -48,7 +48,7 @@ for i = 1:length(R)
         ', \: S_n = ', num2str(std(y)), ...
         '\vphantom{\frac{\Sigma_i^i}{\Sigma_i^i}}$$)']}, ...
         'Interpreter', 'latex');
-    xlabel('$$y_{t-1}$$', 'Interpreter', 'latex');
+    xlabel('$$t$$', 'Interpreter', 'latex');
     ylabel('$$y_t \qquad$$', 'Interpreter', 'latex', 'rotation', 0);
     
     % Scatter plot of y_t and y_t+1
@@ -57,8 +57,8 @@ for i = 1:length(R)
     
     % Add a title and labels
     title('\textbf{Scatter plot}', 'Interpreter', 'latex');
-    xlabel('$$t$$', 'Interpreter', 'latex');
-    ylabel('$$y \qquad$$', 'Interpreter', 'latex', 'rotation', 0);
+    xlabel('$$y_{t-1}$$', 'Interpreter', 'latex');
+    ylabel('$$y_t \qquad$$', 'Interpreter', 'latex', 'rotation', 0);
     
     % Plot impulse response function
     subplot(length(R), 3, 3*i);
