@@ -1,11 +1,11 @@
 % This is the code for problem set 1 of econ 607
 % Set random number generator's seed
-rng(607)
+rng(12291922)
 
 % Specify model parameters
 a = 0;  % alpha
 R = [.9, .5];  % Vector of different values for rho
-s2 = .1^2;  % Shock process variance
+s2 = .19*(.1^2);  % Innovation variance
 T = 100;  % Length of time series
 
 % Specify parameters for impulse response function (i.e implicit shock
@@ -13,7 +13,7 @@ T = 100;  % Length of time series
 y0_imp = .01;
 
 % Use LaTeX for axis labels
-set(groot, 'defaultAxesTickLabelInterpreter','latex');
+set(groot, 'defaultAxesTickLabelInterpreter','latex');  % I am Groot
 
 % Go through all values of rho
 for i = 1:length(R)
