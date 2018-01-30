@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from itertools import cycle
 from numpy.linalg import inv
 from os import chdir, mkdir, path
 from scipy.stats import uniform, norm
@@ -68,6 +69,10 @@ x_grid = np.array(np.linspace(start=-5, stop=5, num=2000), ndmin=2).transpose()
 # though!)
 bandwidths = [.1, .6, .4]
 
+# Line styles for plot, so they alternate (unnecessary to use a cycle, since there are only four lines, but I just came
+# across this tool and wanted to play around with it)
+ls = cycle([":","-.","--","-"])
+
 # Plot estimate of f(Z_n) for each n
 for j, (n, bw) in enumerate(zip(N, bandwidths)):
     # Fit kernen density estimator
@@ -77,10 +82,10 @@ for j, (n, bw) in enumerate(zip(N, bandwidths)):
     kde_plot = np.exp(kde.score_samples(x_grid))
 
     # Plot the estimate
-    ax.plot(x_grid, kde_plot, linestyle='-', alpha=0.9, lw=0.9, label='$n = '+str(n)+'$')
+    ax.plot(x_grid, kde_plot, linestyle=next(ls), alpha=0.9, lw=0.9, label='$n = '+str(n)+'$', )
 
 # Plot an N(0, 1) variable for comparison
-ax.plot(x_grid, norm.pdf(x_grid), linestyle='-', alpha=0.9, lw=0.9, label='$\mathcal{N}(0,1)$')
+ax.plot(x_grid, norm.pdf(x_grid), linestyle=next(ls), alpha=0.9, lw=0.9, label='$\mathcal{N}(0,1)$')
 
 # Insert a title, set axis limits, and display a legend
 fig.suptitle('Kernel density estimates of $Z_n$')
