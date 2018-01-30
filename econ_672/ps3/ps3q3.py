@@ -18,10 +18,10 @@ if not path.isdir(mdir+fdir):
     mkdir(mdir+fdir)
 
 # Change to figures directory
-chdir(mdir + fdir)
+chdir(mdir+fdir)
 
 # Set random generator seed
-np.random.seed(seed=672)
+np.random.seed(seed=8675309)
 
 # Set model parameters
 beta = np.array([.4, .9], ndmin=2).transpose()  # True betas
@@ -89,7 +89,9 @@ ax.set_ylabel('$f(Z_n)$', labelpad=25).set_rotation(0)
 ax.set_xlim(-3, 3)
 ax.set_ylim(-.01, 1)
 ax.legend()
-plt.show()
 
 # Save the plot
 plt.savefig('Z_density.pdf', bbox_inches='tight')
+
+# Display the plot (why not?)
+plt.show()
