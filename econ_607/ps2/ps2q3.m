@@ -56,7 +56,7 @@ disp(['K = ', num2str(K_st), '; I = ', num2str(I_st), ...
 % parameters before you've set up the model, and it makes sense to use the
 % first instance of the model to get some impulse responses instead of
 % estimating it for no reason)
-rhos = [.25, .5, .75, .9, 1];
+rhos = [rho, .5, .75, .9, 1];
 
 % Loop over the values of rho
 for i = 1:length(rhos)
