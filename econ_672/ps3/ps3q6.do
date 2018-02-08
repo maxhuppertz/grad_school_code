@@ -3,17 +3,18 @@ qui{
 clear *
 
 // PS3Q6: Empirical application
-// Specify directory containing Wooldridge data (this has to exist!)
-// I'm pretty sure this almost always works if you open the file directly from
-// any file management system; otherwise you'll have to hard-code the path, and
-// that's annoying
-loc dir_d = "./data"
 
-// Specify name of the data set
-loc dset = "ATTEND.dta"
+// Check whether bcuse is installed, which is super useful for downloading
+// Wooldridge's data sets
+cap which bcuse
+
+// If it's not, get it from SSC
+if _rc{
+	ssc install bcuse
+	}
 
 // Load the data
-u "`dir_d'/`dset'"
+bcuse attend
 
 // 4.14a) Regress standardized final exam score on on attendance rate and two
 // dummies for freshman (which is NOT called fresh? Why?!) and sophomore status
