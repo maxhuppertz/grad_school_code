@@ -75,7 +75,7 @@ ls = cycle([":","-.","--","-"])
 
 # Plot estimate of f(Z_n) for each n
 for j, (n, bw) in enumerate(zip(N, bandwidths)):
-    # Fit kernen density estimator
+    # Fit kernel density estimator
     kde = KernelDensity(kernel='gaussian', bandwidth=bw).fit(np.array(Z[:, j], ndmin=2).transpose())
 
     # Retrieve kernel density estimate for the plot

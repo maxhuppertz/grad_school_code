@@ -19,6 +19,9 @@ gform = '.eps';
 % Specify folder containing Dynare file
 dir_dyn = './dynare';
 
+% Change to Dynare directory
+cd(dir_dyn)
+
 % Set parameters
 tau_K = 0;
 theta = 1;
@@ -28,18 +31,25 @@ delta = .25*.1;
 A = 1;
 ITC = 0;
 
+% Set parameters only used in Dynare file
+rho = .25;
+ITC_bar = 0;
+sig = 1;
+
 % Calculate steady state values
 P_st = ((delta / A)^(1 - alpha) * alpha * (1 - tau_K) / ...
     ((delta + r)*(1 - ITC)))^(1 / (1 + theta - theta*alpha));
 I_st = A*P_st^theta;
 K_st = I_st / delta;
 
+% Save parameter values as .mat file, so Dynare can access them
+% This includes the steady state values, which Dynare uses as initial
+% values when solving the model
+save(strcat(dyn, '_init_params.mat'))
+
 % Display steady state values
 disp(['K = ', num2str(K_st), '; I = ', num2str(I_st), ...
     '; P = ', num2str(P_st)])
-
-% Change to Dynare directory
-cd(dir_dyn)
 
 % Set up a vector of values for rho (the initial one should be the default
 % choice for rho implemented in the Dynare file, since you can't change
@@ -56,6 +66,7 @@ for i = 1:length(rhos)
        % taken as a literal; what a terrible design choice (but maybe I'm
        % just not getting it))
        dynare ps2q3 noclearall;
+       info = stoch_simul(var_list_);
    else
        % For all other iterations, only change the parameter value and call
        % the stochastic simulation, otherwise Dynare resets to default

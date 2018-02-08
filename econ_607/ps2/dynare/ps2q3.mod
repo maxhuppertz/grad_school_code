@@ -3,16 +3,24 @@ var ITC K I P;
 varexo eps;
 
 // Set up parameters
-parameters rho tau_K theta alpha r delta A ITC_bar sig;
-rho = .25;
-tau_K = 0;
-theta = 1;
-alpha = .5;
-r = .25*.04;
-delta = .25*.1;
-A = 1;
-ITC_bar = 0;
-sig = 1;
+parameters rho tau_K theta alpha r delta A ITC_bar sig
+	K_st I_st P_st;
+
+// Load parameter values from .mat file Matlab created
+load ps2q3_init_params.mat;
+
+// Go through all parameter names and set them to those values
+// For deep parameters, doing this rather than just using load may matter
+// The index is not i, because this is called on in a Matlab loop, and if
+// indices overlap between this and the loop it runs in, things get really
+// funky
+for pnum=1:length(M_.params);
+	// Find the parameter name matching the current value
+    param_name = M_.param_names(pnum, :);
+    
+	// Set the parameter to that value
+	eval(['M_.params(pnum)  = ' param_name ' ;'])
+end;
 
 // Set up model
 model;
@@ -25,10 +33,10 @@ end;
 
 // Specify initial state
 initval;
-K = log(69);
-I = log(1.7);
-P = log(1.7);
-ITC = 0;
+K = log(K_st);
+I = log(I_st);
+P = log(P_st);
+ITC = ITC_bar;
 end;
 
 // Specify shock process
