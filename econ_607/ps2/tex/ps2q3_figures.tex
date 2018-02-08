@@ -1,0 +1,76 @@
+% Set basic document class
+\documentclass[11pt, letterpaper]{scrartcl}
+
+% Set margins
+\usepackage[left=1in, right=1in]{geometry}
+
+% Set up input and output encoding, use nicer looking font
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+
+% Load graphicx package
+\usepackage{graphicx}
+\graphicspath{{../dynare/}}
+
+\begin{document}
+
+\begin{figure}[!ht]
+\centering
+\caption{\textbf{$\rho = .25$}}
+\includegraphics[width=.67\columnwidth, keepaspectratio]{ps2q3_IRF_rho_1.eps}
+
+\centering
+\caption{\textbf{$\rho = .50$}}
+\includegraphics[width=.665\columnwidth, keepaspectratio]{ps2q3_IRF_rho_2.eps}
+\end{figure}
+
+\pagebreak
+
+\begin{figure}[!ht]
+\centering
+\caption{\textbf{$\rho = .75$}}
+\includegraphics[width=.665\columnwidth, keepaspectratio]{ps2q3_IRF_rho_3.eps}
+
+\centering
+\caption{\textbf{$\rho = .90$}}
+\includegraphics[width=.665\columnwidth, keepaspectratio]{ps2q3_IRF_rho_4.eps}
+\end{figure}
+
+\pagebreak
+
+\begin{figure}[!ht]
+\centering
+\caption{\textbf{$\rho = 1.00$}}
+\includegraphics[width=.665\columnwidth, keepaspectratio]{ps2q3_IRF_rho_5.eps}
+
+\centering
+\caption{\textbf{$\delta = .20$}}
+\includegraphics[width=.665\columnwidth, keepaspectratio]{ps2q3_IRF_del_1.eps}
+\end{figure}
+
+\pagebreak
+
+\begin{figure}[!ht]
+\centering
+\caption{\textbf{$\delta = .10$}}
+\includegraphics[width=.665\columnwidth, keepaspectratio]{ps2q3_IRF_del_2.eps}
+
+\centering
+\caption{\textbf{$\delta = .05$}}
+\includegraphics[width=.665\columnwidth, keepaspectratio]{ps2q3_IRF_del_3.eps}
+\end{figure}
+
+\pagebreak
+
+\begin{figure}[!ht]
+\centering
+\caption{\textbf{$\delta = .02$}}
+\includegraphics[width=.665\columnwidth, keepaspectratio]{ps2q3_IRF_del_4.eps}
+
+\centering
+\caption{\textbf{$\delta = .01$}}
+\includegraphics[width=.665\columnwidth, keepaspectratio]{ps2q3_IRF_del_5.eps}
+\end{figure}
+
+\end{document}
