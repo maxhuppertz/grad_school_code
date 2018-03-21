@@ -1,46 +1,54 @@
-% This file calculates steady state values for a simple investment model
-% featuring an investment tax credit (ITC) from problem set 2, and then
-% calls Dynare to solve the model and calculate impulse response functions
-
 % How to clean everything
 clear
 
 % Save current working directory, which should be the parent directory of
-% the Dynare file this code calls - ps2q3.mod
+% the Dynare file this code calls - ps3q2.mod
 dir_orig = pwd;
 
 % Specify name of Dynare file
-dyn = 'ps2q3';
+dyn = 'ps3q2';
 
 % Specify graph format (has to match the format specified in the Dynare
 % file!)
 gform = '.eps';
 
 % Specify folder containing Dynare file
-dir_dyn = './dynare_ps2q3';
+dir_dyn = './dynare_ps3q2';
 
 % Change to Dynare directory
 cd(dir_dyn)
 
-% Set parameters
-tau_K = 0;
-theta = 1;
-alpha = .5;
-r = .25*.04;
-delta = .25*.1;
-A = 1;
-ITC = 0;
+% Set up parameters
+beta = .99;
+rho = .95;
+alpha = .35;
+eta = .5;
+phi = .2886;
+delta_bar = .025;
 
 % Set parameters only used in Dynare file
-rho = .25;
-ITC_bar = 0;
-sig = 1;
+sig = .01;
 
 % Calculate steady state values
-P_st = ((delta / A)^(1 - alpha) * alpha * (1 - tau_K) / ...
-    ((delta + r)*(1 - ITC)))^(1 / (1 + theta - theta*alpha));
-I_st = A*P_st^theta;
-K_st = I_st / delta;
+% Specify whether you're forcing N = 1 in steady state
+restricted = 0;
+
+% This remains the same
+delta_st = delta_bar;
+
+% This really only makes a difference for N_st
+if restricted == 1
+    N_st = 1;
+else
+    N_st = (((1 - alpha) * (1 + beta*(delta_bar-1))) / ...
+        (phi * (1 + beta * (delta_bar*(1-alpha)-1))))^(eta/(1+eta));
+end
+
+% These remain the same
+K_st = ((1/alpha) * ((1/beta) + delta_st - 1))^(1/(alpha-1)) * ...
+    N_st^(alpha - 1);
+I_st = delta_st * K_st;
+C_st = K_st^alpha * N_st^(1-alpha) - I_st;
 
 % Save parameter values as .mat file, so Dynare can access them
 % This includes the steady state values, which Dynare uses as initial
@@ -49,14 +57,9 @@ save(strcat(dyn, '_init_params.mat'))
 
 % Display steady state values
 disp(['K = ', num2str(K_st), '; I = ', num2str(I_st), ...
-    '; P = ', num2str(P_st)])
+    '; N = ', num2str(N_st), '; C = ', num2str(C_st)])
 
-% Set up a vector of values for rho (the initial one should be the default
-% choice for rho implemented in the Dynare file, since you can't change
-% parameters before you've set up the model, and it makes sense to use the
-% first instance of the model to get some impulse responses instead of
-% estimating it for no reason)
-rhos = [rho, .5, .75, .9, 1];
+rhos = [rho, .2];
 
 % Loop over the values of rho
 for i = 1:length(rhos)
@@ -65,7 +68,7 @@ for i = 1:length(rhos)
        % to hard code the name of the Dynare file here, because it's always
        % taken as a literal; what a terrible design choice (but maybe I'm
        % just not getting it))
-       dynare ps2q3 noclearall;
+       dynare ps3q2 noclearall;
        info = stoch_simul(var_list_);
    else
        % For all other iterations, only change the parameter value and call
@@ -78,24 +81,6 @@ for i = 1:length(rhos)
    % iteration
    movefile(strcat(dyn, '_IRF_', gform(2:end), gform), ...
        strcat(dyn, '_IRF_rho_', num2str(i), gform));
-end
-
-% Set up a vector of deltas
-deltas = [.2, .1, .05, .02, .01];
-
-% Same thing as for rho, but for different deltas (note that this also
-% changes the value of rho one last time)
-for i = 1:length(deltas)
-   if i == 1
-       % Fix rho at desired value
-       set_param_value('rho', rhos(4));
-   end
-   
-   set_param_value('delta', .25*deltas(i));
-   info = stoch_simul(var_list_);
-   
-   movefile(strcat(dyn, '_IRF_', gform(2:end), gform), ...
-       strcat(dyn, '_IRF_del_', num2str(i), gform));
 end
 
 % Change back to the parent directory
