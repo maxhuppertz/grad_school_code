@@ -27,11 +27,12 @@ A - log(A_st) = rho * (A(-1) - log(A_st)) + eps;
 k - log(k_st) = (1 - delta) * (k(-1) - log(k_st)) + delta * (I - log(I_st));
 c_st * (1 + c - log(c_st)) + I_st * (1 + I - log(I_st)) = A_st * k_st^alpha * n_st^(1-alpha) *
 	(1 + (A - log(A_st)) + alpha * (k - log(k_st)) + (1-alpha) * (n - log(n_st)));
-n_st^(1/v + alpha - 1) * (1 + (1/v + alpha - 1)*(n - log(n_st))) = 
-	(k_st^alpha / (chi*c_st)) * (1 + (A - log(A_st)) + alpha*(k - log(k_st)) - (c - log(c_st)));
-1/c_st - (1/c_st)*(c - log(c_st)) = (1/c_st) * (beta * alpha * k_st^(alpha-1) * n_st^(1-alpha) *
-	(1 + (alpha-1)*(k - log(k_st)) + (1-alpha)*(n - log(n_st)) + (A - log(A_st)) - (c(+1) - log(c_st)))
-	+ (1 - delta) * beta * (1 - (c(+1) - log(c_st))));
+n_st^(1/v + alpha) * (1 + (1/v + alpha)*(n - log(n_st))) = 
+	((1-alpha) * k_st^alpha / (chi*c_st)) * 
+	(1 + (A - log(A_st)) + alpha*(k - log(k_st)) - (c - log(c_st)));
+1/c_st - (1/c_st)*(c - log(c_st)) = (1/c_st) * beta * (alpha * k_st^(alpha-1) * n_st^(1-alpha) *
+	(1 + (alpha-1)*(k(+1) - log(k_st)) + (1-alpha)*(n(+1) - log(n_st)) + (A(+1) - log(A_st)) - (c(+1) - log(c_st)))
+	+ (1 - delta) * (1 - (c(+1) - log(c_st))));
 end;
 
 // Specify initial state

@@ -85,12 +85,12 @@ cd(dir_dyn)
 beta = .99;
 rho = floor(R(2)*100)/100;
 alpha = 1/3;
-v = .72;  % For iv), v = 1.055 works okay
+v = .72;  % For iv), I have no idea how to get close to SD(n) = .019
 A_bar = 1;
 delta = .025;
 
 % chi is set up so that people work a third of their time
-chi = (1/3)^(-1/v) * ((1 - beta * (1 - delta)) / ...
+chi = (1/3)^((1-v)/v) * (((1 - beta * (1 - delta)) * (1-alpha)) / ...
     (1 - beta * (1 - delta) - delta * alpha * beta));
 
 % Set parameters only used in Dynare file
@@ -98,8 +98,8 @@ sig = std(epsilon);
 
 % Calculate steady state values
 A_st = A_bar;
-n_st = ((1 - beta * (1 - delta)) / ...
-    ((1 - beta * (1 - delta) - delta * alpha * beta) * chi))^v;
+n_st = (((1 - beta * (1 - delta)) * (1 - alpha)) / ...
+    ((1 - beta * (1 - delta) - delta * alpha * beta) * chi))^(v / (1 - v));
 k_st = (n_st^(1 - alpha) * ((alpha*beta) / ...
     (1 - beta * (1 - delta))))^(1/(1 - alpha));
 I_st = delta * k_st;
