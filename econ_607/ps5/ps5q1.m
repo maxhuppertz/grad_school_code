@@ -7,8 +7,7 @@ set(groot, 'defaultAxesTickLabelInterpreter', 'latex');  % I am Groot
 % Specify graph format
 gform = '.svg';
 
-% Save current working directory, which should be the parent directory of
-% the Dynare file this code calls - ps3q2.mod
+% Save current working directory
 dir_orig = pwd;
 
 % Specify name of figures directory
@@ -82,11 +81,12 @@ t = datenum(t);
 tfpstrc.Data(:, 1) = t;
 tfpstrc.Data(:, 2) = tfp;
 tfpstrc.Title = 'Total Factor Productivity';
+tfpstrc.Units = '';
 
-% Time series to be retrieved from FRED (in order: real GDP per capita,
-% private fixed investment, real compensation per hour worked in the
-% non-farm business sector), index of total hours worked
-fredseries = {'A939RX0Q048SBEA', 'PNFI', 'COMPRNFB', 'HOANBS'};
+% Time series to be retrieved from FRED (in order: nominal GDP, private
+% fixed investment, real compensation per hour worked in the non-farm
+% business sector, index of total hours worked)
+fredseries = {'GDP', 'PNFI', 'COMPRNFB', 'HOANBS'};
 
 % Manually construct sum of services and non-durable consumption
 cp_svc = getFredData('PCESV', sdate, curdate, 'lin');
@@ -96,6 +96,7 @@ cp_ndr = getFredData('PCDG', sdate, curdate, 'lin');
 cpstrc.Data(:, 2) = cp_svc.Data(:, 2) + cp_ndr.Data(:, 2);
 cpstrc.Data(:, 1) = cp_svc.Data(:, 1);
 cpstrc.Title = 'Consumption: Durable Goods and Services';
+cpstrc.Units = 'Billions';
 
 % Get data on population and GDP deflator
 pop = getFredData('CNP16OV', sdate, curdate, 'lin');
@@ -104,9 +105,12 @@ ydef = getFredData('GDPDEF', sdate, curdate, 'lin');
 % Population needs to be converted to quarterly data
 pop.Data = pop.Data(1:3:end, :);
 
-% Select which series to convert to per-capita and/or real values
-toreal = {'PNFI', cpstrc};
-topc = {'HOANBS', cpstrc};
+% Select which series to convert to per-capita and/or real values (it's not
+% really per capita, obviously, it's per person above 16 years of age who's
+% not currently in the armed forces or "inmates of institutions", which btw
+% includes "homes for the aged")
+toreal = {'GDP', 'PNFI', cpstrc};
+topc = {'GDP', 'PNFI', 'HOANBS', cpstrc};
 
 % Set tuning parameter for Hodrick-Prescott filter
 mu = 1600;
@@ -115,8 +119,7 @@ mu = 1600;
 cd(dir_orig)
 
 % Specify which series to plot
-plotseries = {'A939RX0Q048SBEA', 'PNFI', 'HOANBS', 'COMPRNFB', cpstrc, ...
-    tfpstrc};
+plotseries = {'GDP', cpstrc, 'PNFI', 'HOANBS', 'COMPRNFB', tfpstrc};
 
 % Set number of lags/leads for cross correlations between real GDP and
 % other time series
@@ -133,6 +136,22 @@ for k = 1:length(plotseries)
         series = getFredData(plotseries{k}, sdate, curdate, 'lin');
     else
         series = plotseries{k};
+    end
+    
+    % Figure out units of the current series (FRED is pretty consistent
+    % with their units, so it's easy to just pick out the first word of the
+    % string based on breaking it up after the first space, but obviously
+    % you'd really want to use a super comprehensive library here)
+    units = strtok(series.Units, ' ');
+    if ~strcmp(units, '')
+        units = units(1);
+    end
+    
+    % Convert series based on units
+    if strcmp(units, 'Billions')
+        series.Data(:, 2) = series.Data(:, 2) * 10^9;
+    elseif strcmp(units, 'Index')
+        series.Data(:, 2) = series.Data(:, 2) / 100;
     end
     
     % Convert to real values if desired
