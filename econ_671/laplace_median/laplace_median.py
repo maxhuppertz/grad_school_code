@@ -8,7 +8,7 @@ theta = 5
 # Define the random variable based on that
 f_Xi = laplace(loc=theta, scale=1)
 
-# Set sample size (n) and number of bootstrap iteration (B)
+# Set sample size (n) and number of bootstrap iterations (B)
 n = 50
 B = 100000
 
