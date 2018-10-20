@@ -67,7 +67,11 @@ intermediate_c_range = []
 for x in range(35):
     intermediate_c_range.append('c'+str(x+1))
 
+intermediate_goods = data.loc[:, [x in intermediate_c_range for x in data.columns.get_level_values('c_num')]]
+
 final_goods = data.loc[:, [x not in intermediate_c_range for x in data.columns.get_level_values('c_num')]]
-final_goods = final_goods.sum(axis=0, level='country').sum(axis=1, level='country'))
+
+for x in [intermediate_goods, final_goods]:
+    x = x.sum(axis=0, level='country').sum(axis=1, level='country')
 
 #test = data.sum(axis=0, level='country')
