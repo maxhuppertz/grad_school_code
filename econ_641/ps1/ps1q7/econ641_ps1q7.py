@@ -62,11 +62,12 @@ else:
 for x in range(2):
     data = data.reorder_levels(data_index_reorder, axis = x)
 
+# Make a list of a c codes indicating intermediate goods (c1 - c35)
 intermediate_c_range = []
 for x in range(35):
     intermediate_c_range.append('c'+str(x+1))
 
-test = data.loc[:, [x not in intermediate_c_range for x in data.columns.get_level_values('c_num')]]
-print(test)
+final_goods = data.loc[:, [x not in intermediate_c_range for x in data.columns.get_level_values('c_num')]]
+final_goods = final_goods.sum(axis=0, level='country').sum(axis=1, level='country'))
 
 #test = data.sum(axis=0, level='country')
