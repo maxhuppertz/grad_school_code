@@ -17,6 +17,10 @@ if not path.isdir(mdir+ddir):
 data_file = 'wiot00_row_apr12'
 data_file_ext = '.xlsx'
 
+# Set up trade shares file
+trade_shares_file = 'wiot00_trade_shares'
+trade_shares_file_ext = '.xlsx'
+
 # Set download flag
 download_data = False
 
@@ -113,4 +117,5 @@ expenditure_columns = np.kron(np.array(total_expenditure, ndmin=2), np.ones((tot
 trade_shares = total_flows / expenditure_columns
 
 # Store this last data set as well
-print(trade_shares.index)
+trade_shares.to_pickle(trade_shares_file+'.pkl')
+trade_shares.to_excel(trade_shares_file+trade_shares_file_ext, sheet_name='trade_shares')
