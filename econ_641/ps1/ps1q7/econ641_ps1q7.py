@@ -15,7 +15,8 @@ data_file_ext = '.xlsx'
 # Set download flag
 download_data = False
 
-data_index_orig = []
+data_index_orig = ['industry_code', 'indutry_name_or_exp_type', 'country', 'c_num']
+data_index_reorder = ['country', 'c_num', 'indutry_name_or_exp_type', 'industry_code']
 
 # Change directory to data
 chdir(mdir+ddir)
