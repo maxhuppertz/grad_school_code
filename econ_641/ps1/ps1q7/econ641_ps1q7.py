@@ -8,14 +8,23 @@ mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
 # Set data directory
 ddir = '/data'
 
-data_file = ''
+# Set up main data file
+data_file = 'wiot00_row_apr12'
+data_file_ext = '.xlsx'
 
+# Set download flag
 download_data = False
 
+data_index_orig = []
+
+# Change directory to data
 chdir(mdir+ddir)
 
+# Check whether to download data
 if download_data:
     wtiod_url = 'http://www.wiod.org/protected3/data13/wiot_analytic/'
-    web_sheet = 'wiot00_row_apr12.xlsx'
+    web_file = 'wiot00_row_apr12.xlsx'
 else:
-    pd.read_pickle()
+    data = pd.read_pickle(data_file+'.pkl')
+
+print(data.index)
