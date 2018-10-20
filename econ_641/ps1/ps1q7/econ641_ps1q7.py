@@ -101,3 +101,6 @@ total_expenditure = total_imports + np.diag(total_flows)
 
 # Calculate the ratio of trade deficits to total expenditure
 trade_deficit_ratio = trade_deficit / total_expenditure
+
+np.kron( np.array(total_expenditure, ndmin=2), np.ones((41,1)), )
+print(np.array(total_expenditure, ndmin=2).shape)
