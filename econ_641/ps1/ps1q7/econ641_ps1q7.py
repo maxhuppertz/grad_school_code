@@ -62,4 +62,5 @@ else:
 for x in range(2):
     data = data.reorder_levels(data_index_reorder, axis = x)
 
-print(data.loc[('AUS', 'c3'), ('USA', 'c12')])
+test = data.sum(axis=0,level='country')
+print(test)
