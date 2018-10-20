@@ -49,3 +49,8 @@ if download_data:
     data.to_pickle(data_file+'.pkl')
 else:
     data = pd.read_pickle(data_file+'.pkl')
+
+for x in range(2):
+    data = data.reorder_levels(data_index_reorder, axis = x)
+
+print(data.loc[('AUS', 'c3'), ('USA', 'c12')])
