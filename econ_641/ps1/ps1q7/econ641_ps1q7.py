@@ -13,7 +13,7 @@ data_file = 'wiot00_row_apr12'
 data_file_ext = '.xlsx'
 
 # Set download flag
-download_data = True
+download_data = False
 
 data_index_orig = ['industry_code', 'industry_name_or_final_good', 'country', 'c_number']
 data_index_reorder = ['country', 'c_number', 'industry_name_or_final_good', 'industry_code']
@@ -31,11 +31,23 @@ if download_data:
         for chunk in web_file.iter_content(chunk_size=128):  # Go through contents on server
             local_file.write(chunk)  # Write to local file
 
-    data = pd.read_excel(data_file+data_file_ext, skiprows=[x for x in range(2)] header=[], skipfooter=8)
-else:
-    data = pd.read_pickle(data_file+'.pkl')
+    data = pd.read_excel(data_file+data_file_ext, skiprows=[x for x in range(2)], header=[x for x in range(4)], index_col=[x for x in range(4)], skipfooter=8)
 
-for x in [0,1]:
-    data = data.reorder_levels(data_index_reorder, axis=x)
+    data.columns.names = data_index_orig
+    data.index.names = data_index_orig
+else:
+    #data = pd.read_pickle(data_file+'.pkl')
+    pass
+
+data = pd.read_excel(data_file+data_file_ext, skiprows=[x for x in range(2)], header=[x for x in range(4)], index_col=[x for x in range(4)], skipfooter=8)
+
+data.columns.names = data_index_orig
+data.index.names = data_index_orig
+
+print(data.index)
+print(data.columns)
+
+#for x in [0,1]:
+#    data = data.reorder_levels(data_index_reorder, axis=x)
 
 #print(data.loc[('AUS', 'c1'), ('BEL', 'c1')])
