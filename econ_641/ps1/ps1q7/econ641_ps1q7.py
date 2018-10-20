@@ -1,11 +1,11 @@
 ########################################################################################################################
 ### ECON 641: PS1, Q7
 ### Calculates trade shares based on the World Input Output Database (WIOD)
-### Also provides some other international trade information
+### Also provides some other international trade information along the way
 ### Then uses a very basic EK model to compute some counterfactuals
 ########################################################################################################################
 
-# Imports
+# Import necessary packages
 import pandas as pd
 import numpy as np
 from requests import get
@@ -131,3 +131,7 @@ trade_shares = total_flows / expenditure_columns
 # Store this last data set as well
 trade_shares.to_pickle(trade_shares_file+'.pkl')
 trade_shares.to_excel(trade_shares_file+trade_shares_file_ext, sheet_name='trade_shares')
+
+########################################################################################################################
+### Q7.2: Use Dekle, Eaton and Kortum (2008) to run some counterfactuals
+########################################################################################################################
