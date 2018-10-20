@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from requests import get
 from os import chdir, mkdir, path, mkdir
 
@@ -79,11 +80,24 @@ intermediate_flows = intermediate_flows.sum(axis=0, level='country').sum(axis=1,
 final_flows = final_flows.sum(axis=0, level='country').sum(axis=1, level='country')
 
 # Create vectors of total intermediate goods and final goods imports by country
-intermediate_imports = intermediate_flows.sum(axis=0)
-final_imports = final_flows.sum(axis=0)
+intermediate_imports = intermediate_flows.sum(axis=0) - np.diag(intermediate_flows)
+final_imports = final_flows.sum(axis=0) - np.diag(final_flows)
 
 # Create a vector of the ratio of intermediate to total imports
 intermediate_import_ratio = intermediate_imports / (intermediate_imports + final_imports)
 
 # Create a matrix of trade flows, combining intermediate and final goods
 total_flows = intermediate_flows + final_flows
+
+# Create vectors of total imports and exports
+total_imports = total_flows.sum(axis=0) - np.diag(total_flows)
+total_exports = total_flows.sum(axis=1) - np.diag(total_flows)
+
+# Calculate trade deficits
+trade_deficit = total_exports - total_imports
+
+# Make a vector of total expenditure
+total_expenditure = total_imports + np.diag(total_flows)
+
+# Calculate the ratio of trade deficits to total expenditure
+trade_deficit_ratio = trade_deficit / total_expenditure
