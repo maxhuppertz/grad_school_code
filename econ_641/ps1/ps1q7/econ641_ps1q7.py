@@ -66,7 +66,7 @@ intermediate_c_range = []
 for x in range(35):
     intermediate_c_range.append('c'+str(x+1))
 
-test = data.loc[:, data.index.get_level_values('c_num') not in intermediate_c_range]
+test = data.loc[:, [x not in intermediate_c_range for x in data.columns.get_level_values('c_num')]]
 print(test)
 
 #test = data.sum(axis=0, level='country')
