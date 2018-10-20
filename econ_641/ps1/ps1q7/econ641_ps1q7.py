@@ -62,5 +62,11 @@ else:
 for x in range(2):
     data = data.reorder_levels(data_index_reorder, axis = x)
 
-test = data.sum(axis=0,level='country')
+intermediate_c_range = []
+for x in range(35):
+    intermediate_c_range.append('c'+str(x+1))
+
+test = data.loc[:, data.index.get_level_values('c_num') not in intermediate_c_range]
 print(test)
+
+#test = data.sum(axis=0, level='country')
