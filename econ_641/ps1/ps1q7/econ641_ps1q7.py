@@ -17,7 +17,7 @@ data_file = 'wiot00_row_apr12'
 data_file_ext = '.xlsx'
 
 # Set download flag
-download_data = True
+download_data = False
 
 # Specify names for index levels
 ind_icode = 'industry_code'
@@ -71,12 +71,11 @@ for x in range(35):
     intermediate_c_range.append('c'+str(x+1))
 
 # Make a DataFrame containing only intermediate goods, and one containing only final goods
-intermediate_goods = data.loc[:, [x in intermediate_c_range for x in data.columns.get_level_values('c_num')]]
-final_goods = data.loc[:, [x not in intermediate_c_range for x in data.columns.get_level_values('c_num')]]
+intermediate_goods = data.iloc[:, [x in intermediate_c_range for x in data.columns.get_level_values('c_num')]]
+final_goods = data.iloc[:, [x not in intermediate_c_range for x in data.columns.get_level_values('c_num')]]
 
 # Sum both across the country level, across both axes
-for x in [intermediate_goods, final_goods]:
-    x = x.sum(axis=0, level='country').sum(axis=1, level='country')
+intermediate_goods = intermediate_goods.sum(axis=0, level='country').sum(axis=1, level='country')
+final_goods = final_goods.sum(axis=0, level='country').sum(axis=1, level='country')
 
-print(intermediate_goods)
-print(final_goods)
+# Now,
