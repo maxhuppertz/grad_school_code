@@ -71,20 +71,19 @@ for x in range(35):
     intermediate_c_range.append('c'+str(x+1))
 
 # Make a DataFrame containing only intermediate goods, and one containing only final goods
-intermediate_goods = data.iloc[:, [x in intermediate_c_range for x in data.columns.get_level_values('c_num')]]
-final_goods = data.iloc[:, [x not in intermediate_c_range for x in data.columns.get_level_values('c_num')]]
+intermediate_flows = data.iloc[:, [x in intermediate_c_range for x in data.columns.get_level_values('c_num')]]
+final_flows = data.iloc[:, [x not in intermediate_c_range for x in data.columns.get_level_values('c_num')]]
 
 # Sum both across the country level, across both axes
-intermediate_goods = intermediate_goods.sum(axis=0, level='country').sum(axis=1, level='country')
-final_goods = final_goods.sum(axis=0, level='country').sum(axis=1, level='country')
+intermediate_flows = intermediate_flows.sum(axis=0, level='country').sum(axis=1, level='country')
+final_flows = final_flows.sum(axis=0, level='country').sum(axis=1, level='country')
 
 # Create vectors of total intermediate goods and final goods imports by country
-intermediate_imports = intermediate_goods.sum(axis=0)
-final_imports = final_goods.sum(axis=0)
+intermediate_imports = intermediate_flows.sum(axis=0)
+final_imports = final_flows.sum(axis=0)
 
 # Create a vector of the ratio of intermediate to total imports
-intermediate_ratio = intermediate_imports / (intermediate_imports + final_imports)
+intermediate_import_ratio = intermediate_imports / (intermediate_imports + final_imports)
 
 # Create a matrix of trade flows, combining intermediate and final goods
-all_goods = intermediate_goods + final_goods
-print(all_goods)
+total_flows = intermediate_flows + final_flows
