@@ -1,12 +1,16 @@
 import pandas as pd
 from requests import get
-from os import path, mkdir, chdir
+from os import chdir, mkdir, path, mkdir
 
 # Set main directory
 mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
 
 # Set data directory
 ddir = '/data'
+
+# Create the data directory if it doesn't exist
+if not path.isdir(mdir+ddir):
+    mkdir(mdir+ddir)
 
 # Set up main data file
 data_file = 'wiot00_row_apr12'
