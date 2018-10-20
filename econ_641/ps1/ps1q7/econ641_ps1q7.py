@@ -15,8 +15,8 @@ data_file_ext = '.xlsx'
 # Set download flag
 download_data = False
 
-data_index_orig = ['industry_code', 'indutry_name_or_exp_type', 'country', 'c_num']
-data_index_reorder = ['country', 'c_num', 'indutry_name_or_exp_type', 'industry_code']
+data_index_orig = ['industry_code', 'industry_name_or_final_good', 'country', 'c_number']
+data_index_reorder = ['country', 'c_number', 'industry_name_or_final_good', 'industry_code']
 
 # Change directory to data
 chdir(mdir+ddir)
@@ -30,3 +30,4 @@ else:
 
 for x in [0,1]:
     data = data.reorder_levels(data_index_reorder, axis=x)
+print(data.index)
