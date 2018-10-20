@@ -77,5 +77,3 @@ final_goods = data.iloc[:, [x not in intermediate_c_range for x in data.columns.
 # Sum both across the country level, across both axes
 intermediate_goods = intermediate_goods.sum(axis=0, level='country').sum(axis=1, level='country')
 final_goods = final_goods.sum(axis=0, level='country').sum(axis=1, level='country')
-
-# Now,
