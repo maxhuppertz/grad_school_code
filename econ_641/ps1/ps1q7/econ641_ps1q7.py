@@ -30,4 +30,5 @@ else:
 
 for x in [0,1]:
     data = data.reorder_levels(data_index_reorder, axis=x)
-print(data.index)
+
+#print(data.loc[('AUS', 'c1'), ('BEL', 'c1')])
