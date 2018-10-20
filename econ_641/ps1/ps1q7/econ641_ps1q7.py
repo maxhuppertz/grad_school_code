@@ -4,7 +4,7 @@ from os import chdir, mkdir, path, mkdir
 
 # Set main directory
 mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
-#still testing
+#still testing here
 # Set data directory
 ddir = '/data'
 
