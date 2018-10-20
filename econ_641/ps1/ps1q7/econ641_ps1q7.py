@@ -1,36 +1,48 @@
+########################################################################################################################
+### ECON 641: PS1, Q7
+### Calculates trade shares based on the World Input Output Database (WIOD)
+### Also provides some other international trade information
+### Then uses a very basic EK model to compute some counterfactuals
+########################################################################################################################
+
+# Imports
 import pandas as pd
 import numpy as np
 from requests import get
 from os import chdir, mkdir, path, mkdir
 
-# Set main directory
+########################################################################################################################
+### Q7.1: Process (and optionally download) WIOD data
+########################################################################################################################
+
+# Specify name for main directory (just uses the file's directory)
 mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
 
-# Set data directory
+# Set data directory (doesn't need to exist)
 ddir = '/data'
 
 # Create the data directory if it doesn't exist
 if not path.isdir(mdir+ddir):
     mkdir(mdir+ddir)
 
-# Set up main data file
+# Specify name of main data file, plus extension (doesn't need to exist, if you want to download it again)
 data_file = 'wiot00_row_apr12'
 data_file_ext = '.xlsx'
 
-# Set up trade shares file
+# Set up name of trade shares file, plus extension (the program creates this)
 trade_shares_file = 'wiot00_trade_shares'
 trade_shares_file_ext = '.xlsx'
 
-# Set download flag
+# Specify whether to re-download the data
 download_data = False
 
-# Specify names for index levels
+# Specify names for WIOD data index levels
 ind_icode = 'industry_code'
 ind_iname_fgood = 'industry_name_or_final_good'
 ind_country = 'country'
 ind_c = 'c_num'
 
-# Make a list of the original order, as well as a reordered index
+# Make a list of the original index order, as well as a reordered index
 data_index_orig = [ind_icode, ind_iname_fgood, ind_country, ind_c]
 data_index_reorder = [ind_country, ind_c, ind_iname_fgood, ind_icode]
 
@@ -39,12 +51,12 @@ chdir(mdir+ddir)
 
 # Check whether to download data
 if download_data:
-    # Specify WTIOD URL, as well as which spreadsheet to download
-    wtiod_url = 'http://www.wiod.org/protected3/data13/wiot_analytic/'
+    # Specify WIOD URL, as well as which spreadsheet to download
+    wiod_url = 'http://www.wiod.org/protected3/data13/wiot_analytic/'
     web_sheet = 'wiot00_row_apr12.xlsx'
 
     # Access that spreadshett and save it locally
-    web_file = get(wtiod_url+web_sheet, stream=True)  # Access file on server
+    web_file = get(wiod_url+web_sheet, stream=True)  # Access file on server
     with open(data_file+data_file_ext, 'wb') as local_file:  # Open local file
         for chunk in web_file.iter_content(chunk_size=128):  # Go through contents on server
             local_file.write(chunk)  # Write to local file
@@ -112,7 +124,7 @@ trade_deficit_ratio = trade_deficit / total_expenditure
 expenditure_columns = np.kron(np.array(total_expenditure, ndmin=2), np.ones((total_expenditure.shape[0],1)))
 
 # Now, pointwise divide the matrix of total trade flows by this expenditure column matrix. A note on reading that
-# matrix: I kept it in the from -> to style of the original WTIOD. That is, the [i,n] entry shows trade flows from
+# matrix: I kept it in the from -> to style of the original WIOD. That is, the [i,n] entry shows trade flows from
 # country i to country n, i.e. \pi_{ni}, in the EK notation.
 trade_shares = total_flows / expenditure_columns
 
