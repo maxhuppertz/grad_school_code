@@ -13,10 +13,15 @@ data_file = 'wiot00_row_apr12'
 data_file_ext = '.xlsx'
 
 # Set download flag
-download_data = False
+download_data = True
 
-data_index_orig = ['industry_code', 'industry_name_or_final_good', 'country', 'c_number']
-data_index_reorder = ['country', 'c_number', 'industry_name_or_final_good', 'industry_code']
+ind_icode = 'industry_code'
+ind_iname_fgood = 'industry_name_or_final_good'
+ind_country = 'country'
+ind_c = 'c_num'
+
+data_index_orig = [ind_icode, ind_iname_fgood, ind_country, ind_c]
+data_index_reorder = [ind_country, ind_c, ind_iname_fgood, ind_icode]
 
 # Change directory to data
 chdir(mdir+ddir)
@@ -35,14 +40,10 @@ if download_data:
 
     data.columns.names = data_index_orig
     data.index.names = data_index_orig
+
+    data.to_pickle(data_file+'pkl')
 else:
-    #data = pd.read_pickle(data_file+'.pkl')
-    pass
-
-data = pd.read_excel(data_file+data_file_ext, skiprows=[x for x in range(2)], header=[x for x in range(4)], index_col=[x for x in range(4)], skipfooter=8)
-
-data.columns.names = data_index_orig
-data.index.names = data_index_orig
+    data = pd.read_pickle(data_file+'.pkl')
 
 print(data.index)
 print(data.columns)
