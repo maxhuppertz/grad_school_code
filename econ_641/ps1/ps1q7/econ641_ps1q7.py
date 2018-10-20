@@ -102,5 +102,15 @@ total_expenditure = total_imports + np.diag(total_flows)
 # Calculate the ratio of trade deficits to total expenditure
 trade_deficit_ratio = trade_deficit / total_expenditure
 
-np.kron( np.array(total_expenditure, ndmin=2), np.ones((41,1)), )
-print(np.array(total_expenditure, ndmin=2).shape)
+# To get the trade shares, I'll first make a matrix in which each column corresponds to a given country's total
+# expenditure. It's easy to then pointwise divide the trade flows by that matrix. To get this, use the Kronecker
+# product between the 1x41 vector of total expenditures and a 41x1 vector of ones.
+expenditure_columns = np.kron(np.array(total_expenditure, ndmin=2), np.ones((total_expenditure.shape[0],1)))
+
+# Now, pointwise divide the matrix of total trade flows by this expenditure column matrix. A note on reading that
+# matrix: I kept it in the from -> to style of the original WTIOD. That is, the [i,n] entry shows trade flows from
+# country i to country n, i.e. \pi_{ni}, in the EK notation.
+trade_shares = total_flows / expenditure_columns
+
+# Store this last data set as well
+print(trade_shares.index)
