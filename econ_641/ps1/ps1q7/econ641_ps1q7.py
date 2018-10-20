@@ -28,4 +28,5 @@ if download_data:
 else:
     data = pd.read_pickle(data_file+'.pkl')
 
-print(data.index)
+for x in [0,1]:
+    data = data.reorder_levels(data_index_reorder, axis=x)
