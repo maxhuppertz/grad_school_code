@@ -51,36 +51,60 @@ if `download_data'{
 // Read in gravity data
 u "`data_file'"
 
+// Specify indicator variables for origin and destination countries
 loc i_orig = "iso_o"
 loc i_dest = "iso_d"
+
+// Put these into a macro to 'destring' them (this doesn't use the destring
+// command, but it does create a categorical version of each variable)
 loc destring_vars = "`i_orig' `i_dest'"
 loc suf_ds = "_ds"
 
+// 'Destring' them
 foreach var of loc destring_vars{
 	egen `var'`suf_ds' = group(`var')
 	}
 
-loc v_year = "year"
-
+// Specify trade flows and origin/destination GDP variables
 loc v_flow = "flow"
 loc v_Y_orig = "gdp_o"
 loc v_Y_dest = "gdp_d"
+
+// Generate a variable capturing the ratio of trade flows to the product of GDPs
 loc v_expratio = "exp_ratio"
 gen `v_expratio' = `v_flow' / (`v_Y_orig' * `v_Y_dest')
+
+// Generate the log of that
 loc v_log_expratio = "log_`v_expratio'"
 gen `v_log_expratio' = log(`v_expratio')
 
+// Specify distance variable
 loc v_dist = "distw"
+
+// Generate the log of that
 loc v_log_dist = "log_`v_dist'"
 gen `v_log_dist' = log(`v_dist')
 
+// Specify dummies for contiguity, common language, and colonial ties
 loc i_contig = "contig"
 loc i_lang = "comlang_off"
 loc i_colo = "col_hist"
 
+// Specify year variable
+loc v_year = "year"
+
+// Put all of the log iceberg trade cost variables into a macro
 loc log_iceberg = "`v_log_dist' `i_contig' `i_lang' `i_colo'"
 
-noi reg `v_expratio' `log_iceberg' `i_orig'`suf_ds'#`v_year' `i_dest'`suf_ds'#`v_year', vce(robust)
+// Specify a condition
+loc cond = "if `v_year' == 2000"
+
+// Regress log expenditure ratios on log trade costs and fixed effects
+reg `v_expratio' `log_iceberg' i.`i_orig'`suf_ds' i.`i_dest'`suf_ds' ///
+	`cond', vce(robust)
+
+// Display only the interesting estimates (i.e. not the fixed effects)
+noi est table, keep(`log_iceberg') b se t p
 
 // Change back to main directory
 cd "`mdir'"
