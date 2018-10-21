@@ -11,7 +11,7 @@ loc mdir: pwd
 loc ddir = "data"
 
 // Specify whether to download gravity data
-loc download_data = 1
+loc download_data = 0
 
 // Specify name of gravity data file (doesn't need to exist, if you specify that
 // you'd like to download it)
@@ -47,6 +47,19 @@ if `download_data'{
 
 // Read in gravity data
 u "`data_file'"
+
+loc i_origin = "iso_o"
+loc i_destin = "iso_d"
+loc destring_vars = "`i_origin' `i_destin'"
+
+foreach var of loc destring_vars{
+	egen `var'_ds = tag(`var')
+	loc `var'_ds = "`var'_ds"
+	}
+
+
+	
+loc X = ""
 
 // Change back to main directory
 cd "`mdir'"
