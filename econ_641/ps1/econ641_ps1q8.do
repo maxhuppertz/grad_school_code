@@ -51,6 +51,9 @@ if `download_data'{
 // Read in gravity data
 u "`data_file'"
 
+// Specify year variable
+loc v_year = "year"
+
 // Specify indicator variables for origin and destination countries
 loc i_orig = "iso_o"
 loc i_dest = "iso_d"
@@ -74,37 +77,50 @@ loc v_Y_dest = "gdp_d"
 loc v_expratio = "exp_ratio"
 gen `v_expratio' = `v_flow' / (`v_Y_orig' * `v_Y_dest')
 
-// Generate the log of that
-loc v_log_expratio = "log_`v_expratio'"
-gen `v_log_expratio' = log(`v_expratio')
-
 // Specify distance variable
 loc v_dist = "distw"
 
-// Generate the log of that
-loc v_log_dist = "log_`v_dist'"
-gen `v_log_dist' = log(`v_dist')
+// Specify which variables to take logs of, and a prefix for that
+loc logvars = "`v_dist' `v_flow' `v_Y_orig' `v_Y_dest' `v_expratio'"
+loc pref_log = "log_"
+
+// Take logs
+foreach var of loc logvars{
+	gen `pref_log'`var' = log(`var')
+	}
 
 // Specify dummies for contiguity, common language, and colonial ties
 loc i_contig = "contig"
 loc i_lang = "comlang_off"
 loc i_colo = "col_hist"
 
-// Specify year variable
-loc v_year = "year"
-
 // Put all of the log iceberg trade cost variables into a macro
-loc log_iceberg = "`v_log_dist' `i_contig' `i_lang' `i_colo'"
+loc log_iceberg = "`pref_log'`v_dist' `i_contig' `i_lang' `i_colo'"
+
+// Put all of the iceberg trade cost variables into a macro
+loc iceberg = "`v_dist' `i_contig' `i_lang' `i_colo'"
+
+// Put all of the GDP variables into a macro
+loc log_GDPs = "`pref_log'`v_Y_orig' `pref_log'`v_Y_dest'"
 
 // Specify a condition
 loc cond = "if `v_year' == 2000"
 
-// Regress log expenditure ratios on log trade costs and fixed effects
-reg `v_expratio' `log_iceberg' i.`i_orig'`suf_ds' i.`i_dest'`suf_ds' ///
+// Estimate the log model using OLS
+reg `pref_log'`v_expratio' `pref_log'`v_dist' `i_contig' `i_lang' `i_colo' ///
+	i.`i_orig'`suf_ds' i.`i_dest'`suf_ds' ///
 	`cond', vce(robust)
 
-// Display only the interesting estimates (i.e. not the fixed effects)
-noi est table, keep(`log_iceberg') b se t p
+// Display only coefficients of interest (i.e. not fixed effects)
+noi est table, keep(`pref_log'`v_dist' `i_contig' `i_lang' `i_colo') b se t p
+
+// Estimate the log PPML
+poisson `v_expratio' `v_dist' `i_contig' `i_lang' `i_colo' ///
+	i.`i_orig'`suf_ds' i.`i_dest'`suf_ds' ///
+	`cond', vce(robust)
+
+// Display only coefficients of interest (i.e. not fixed effects)
+noi est table, keep(`v_dist' `i_contig' `i_lang' `i_colo') b se t p
 
 // Change back to main directory
 cd "`mdir'"
