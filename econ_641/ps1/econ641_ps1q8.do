@@ -94,33 +94,25 @@ loc i_contig = "contig"
 loc i_lang = "comlang_off"
 loc i_colo = "col_hist"
 
-// Put all of the log iceberg trade cost variables into a macro
-loc log_iceberg = "`pref_log'`v_dist' `i_contig' `i_lang' `i_colo'"
-
-// Put all of the iceberg trade cost variables into a macro
-loc iceberg = "`v_dist' `i_contig' `i_lang' `i_colo'"
-
-// Put all of the GDP variables into a macro
-loc log_GDPs = "`pref_log'`v_Y_orig' `pref_log'`v_Y_dest'"
+// Put all of the RHS variables (other than fixed effects) into a macro
+loc RHS = "`pref_log'`v_dist' `i_contig' `i_lang' `i_colo' `pref_log'`v_Y_orig' `pref_log'`v_Y_dest'"
 
 // Specify a condition
 loc cond = "if `v_year' == 2000"
 
 // Estimate the log model using OLS
-reg `pref_log'`v_expratio' `pref_log'`v_dist' `i_contig' `i_lang' `i_colo' ///
-	i.`i_orig'`suf_ds' i.`i_dest'`suf_ds' ///
-	`cond', vce(robust)
+reg `pref_log'`v_flow' `RHS' i.`i_orig'`suf_ds' i.`i_dest'`suf_ds' `cond', ///
+	vce(robust)
 
 // Display only coefficients of interest (i.e. not fixed effects)
-noi est table, keep(`pref_log'`v_dist' `i_contig' `i_lang' `i_colo') b se t p
+noi est table, keep(`RHS') b se t p
 
-// Estimate the log PPML
-poisson `v_expratio' `v_dist' `i_contig' `i_lang' `i_colo' ///
-	i.`i_orig'`suf_ds' i.`i_dest'`suf_ds' ///
-	`cond', vce(robust)
+// Estimate the Poisson PML
+poisson `v_flow' `RHS' i.`i_orig'`suf_ds' i.`i_dest'`suf_ds' `cond', ///
+	vce(robust)
 
 // Display only coefficients of interest (i.e. not fixed effects)
-noi est table, keep(`v_dist' `i_contig' `i_lang' `i_colo') b se t p
+noi est table, keep(`RHS') b se t p
 
 // Change back to main directory
 cd "`mdir'"
