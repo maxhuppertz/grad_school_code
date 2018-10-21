@@ -39,10 +39,10 @@ if `download_data'{
 	copy "`cepii_url'" "`local_file'"
 	
 	// Unzip it
-	unzipfile `local_file'
+	unzipfile "`local_file'"
 	
 	// Delete the .zip archive
-	erase `local_file'
+	erase "`local_file'"
 	}
 
 // Read in gravity data
