@@ -4,6 +4,9 @@ qui{
 // How to clean everything
 clear*
 
+set maxvar 32767
+set matsize 11000
+
 // Get current working directory
 loc mdir: pwd
 
@@ -51,10 +54,10 @@ u "`data_file'"
 loc i_orig = "iso_o"
 loc i_dest = "iso_d"
 loc destring_vars = "`i_orig' `i_dest'"
+loc suf_ds = "_ds"
 
 foreach var of loc destring_vars{
-	egen `var'_ds = tag(`var')
-	loc `var'_ds = "`var'_ds"
+	egen `var'`suf_ds' = group(`var')
 	}
 
 loc v_year = "year"
@@ -76,9 +79,8 @@ loc i_lang = "comlang_off"
 loc i_colo = "col_hist"
 
 loc log_iceberg = "`v_log_dist' `i_contig' `i_lang' `i_colo'"
-noi di "reg `v_expratio' `log_iceberg' `i_orig_ds'#`v_year' `i_dest_ds'#`v_year', vce(robust)"
-//noi reg `v_expratio' `log_iceberg' ///
-//	`i_orig_ds'#`v_year' `i_dest_ds'#`v_year', vce(robust)
+
+noi reg `v_expratio' `log_iceberg' `i_orig'`suf_ds'#`v_year' `i_dest'`suf_ds'#`v_year', vce(robust)
 
 // Change back to main directory
 cd "`mdir'"
