@@ -94,25 +94,36 @@ loc i_contig = "contig"
 loc i_lang = "comlang_off"
 loc i_colo = "col_hist"
 
+// I want to use the opposite of these variables, though
+loc flipdummies = "`i_contig' `i_lang' `i_colo'"
+
+foreach var of loc flipdummies{
+	replace `var' = 1 - `var'
+	}
+
 // Put all of the RHS variables (other than fixed effects) into a macro
-loc RHS = "`pref_log'`v_dist' `i_contig' `i_lang' `i_colo' `pref_log'`v_Y_orig' `pref_log'`v_Y_dest'"
+// loc RHS = "`pref_log'`v_dist' `i_contig' `i_lang' `i_colo' `pref_log'`v_Y_orig' `pref_log'`v_Y_dest'"
+loc RHS = "`pref_log'`v_dist' `i_contig' `i_lang' `i_colo'"
+
+// Put the dependent variable (not its log!) into a macro
+loc depvar = "`v_expratio'"
 
 // Specify a condition
 loc cond = "if `v_year' == 2000"
 
 // Estimate the log model using OLS
-reg `pref_log'`v_flow' `RHS' i.`i_orig'`suf_ds' i.`i_dest'`suf_ds' `cond', ///
+reg `pref_log'`depvar' `RHS' i.`i_orig'`suf_ds' i.`i_dest'`suf_ds' `cond', ///
 	vce(robust)
 
 // Display only coefficients of interest (i.e. not fixed effects)
-noi est table, keep(`RHS') b se t p
+noi est table, keep(`RHS' _cons) b se t p
 
 // Estimate the Poisson PML
-poisson `v_flow' `RHS' i.`i_orig'`suf_ds' i.`i_dest'`suf_ds' `cond', ///
+poisson `depvar' `RHS' i.`i_orig'`suf_ds' i.`i_dest'`suf_ds' `cond', ///
 	vce(robust)
 
 // Display only coefficients of interest (i.e. not fixed effects)
-noi est table, keep(`RHS') b se t p
+noi est table, keep(`RHS' _cons) b se t p
 
 // Change back to main directory
 cd "`mdir'"
