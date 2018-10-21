@@ -48,18 +48,37 @@ if `download_data'{
 // Read in gravity data
 u "`data_file'"
 
-loc i_origin = "iso_o"
-loc i_destin = "iso_d"
-loc destring_vars = "`i_origin' `i_destin'"
+loc i_orig = "iso_o"
+loc i_dest = "iso_d"
+loc destring_vars = "`i_orig' `i_dest'"
 
 foreach var of loc destring_vars{
 	egen `var'_ds = tag(`var')
 	loc `var'_ds = "`var'_ds"
 	}
 
+loc v_year = "year"
 
-	
-loc X = ""
+loc v_flow = "flow"
+loc v_Y_orig = "gdp_o"
+loc v_Y_dest = "gdp_d"
+loc v_expratio = "exp_ratio"
+gen `v_expratio' = `v_flow' / (`v_Y_orig' * `v_Y_dest')
+loc v_log_expratio = "log_`v_expratio'"
+gen `v_log_expratio' = log(`v_expratio')
+
+loc v_dist = "distw"
+loc v_log_dist = "log_`v_dist'"
+gen `v_log_dist' = log(`v_dist')
+
+loc i_contig = "contig"
+loc i_lang = "comlang_off"
+loc i_colo = "col_hist"
+
+loc log_iceberg = "`v_log_dist' `i_contig' `i_lang' `i_colo'"
+noi di "reg `v_expratio' `log_iceberg' `i_orig_ds'#`v_year' `i_dest_ds'#`v_year', vce(robust)"
+//noi reg `v_expratio' `log_iceberg' ///
+//	`i_orig_ds'#`v_year' `i_dest_ds'#`v_year', vce(robust)
 
 // Change back to main directory
 cd "`mdir'"
