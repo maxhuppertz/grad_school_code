@@ -110,7 +110,7 @@ loc depvar = "`v_expratio'"
 
 // Specify a condition
 loc cond = "if `v_year' == 2000"
-/*
+
 // Estimate the log model using OLS
 reg `pref_log'`depvar' `RHS' i.`i_orig'`suf_ds' i.`i_dest'`suf_ds' `cond', ///
 	vce(robust)
@@ -124,7 +124,7 @@ poisson `depvar' `RHS' i.`i_orig'`suf_ds' i.`i_dest'`suf_ds' `cond', ///
 
 // Display only coefficients of interest (i.e. not fixed effects)
 noi est table, keep(`RHS' _cons) b se t p
-*/
+
 // Now, to test equality of the coefficient on log distance, STATA provides
 // suest, which is nice, but also needs to reestimate the models I just
 // estimated without robust standard errors, since it tags those on itself
@@ -141,9 +141,12 @@ poisson `depvar' `RHS' i.`i_orig'`suf_ds' i.`i_dest'`suf_ds' `cond'
 // Store the results
 est sto ppml_model
 
-// Use suest to compare the coefficients (using robust errors)
-noi suest ols_model ppml_model, vce(robust)
-noi test [ols_model]`pref_log'`v_dist' = [ppml_model]`pref_log'`v_dist'
+// Use suest to compare the coefficients (using robust errors); the names of the
+// two models are slightly altered by suest, in that it adds _mean to the OLS
+// and _exp_ratio to the Poisson model's name
+suest ols_model ppml_model, vce(robust)
+noi test [ols_model_mean]`pref_log'`v_dist' = ///
+	[ppml_model_exp_ratio]`pref_log'`v_dist'
 
 // Change back to main directory
 cd "`mdir'"
