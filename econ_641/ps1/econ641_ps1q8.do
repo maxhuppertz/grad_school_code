@@ -68,6 +68,15 @@ foreach var of loc destring_vars{
 	egen `var'`suf_ds' = group(`var')
 	}
 
+// Specify a reference country
+loc reference_country = "USA"
+
+// Set this to be the omitted level for regressions later on
+foreach var of loc destring_vars{
+	su `var'`suf_ds' if `var' == "`reference_country'"
+	loc omit_`var' = r(mean)
+	}
+
 // Specify trade flows and origin/destination GDP variables
 loc v_flow = "flow"
 loc v_Y_orig = "gdp_o"
@@ -112,9 +121,10 @@ loc depvar = "`v_expratio'"
 loc cond = "if `v_year' == 2000"
 
 // Estimate the log model using OLS
-reg `pref_log'`depvar' `RHS' i.`i_orig'`suf_ds' i.`i_dest'`suf_ds' `cond', ///
-	vce(robust)
-
+reg `pref_log'`depvar' `RHS' ///
+	io`omit_`i_orig''.`i_orig'`suf_ds' io`omit_`i_dest''.`i_dest'`suf_ds' ///
+	`cond', vce(robust)
+/*
 // Display only coefficients of interest (i.e. not fixed effects)
 noi est table, keep(`RHS' _cons) b se t p
 
@@ -147,7 +157,7 @@ est sto ppml_model
 suest ols_model ppml_model, vce(robust)
 noi test [ols_model_mean]`pref_log'`v_dist' = ///
 	[ppml_model_exp_ratio]`pref_log'`v_dist'
-
+*/
 // Change back to main directory
 cd "`mdir'"
 }
