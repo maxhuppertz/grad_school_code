@@ -65,7 +65,7 @@ loc suf_ds = "_ds"
 
 // 'Destring' them
 foreach var of loc destring_vars{
-	egen `var'`suf_ds' = group(`var')
+	encode `var', g(`var'`suf_ds')
 	}
 
 // Specify a reference country
@@ -103,15 +103,15 @@ loc i_contig = "contig"
 loc i_lang = "comlang_off"
 loc i_colo = "col_hist"
 
-// I want to use the opposite of these variables, though
+// I want to use the opposite of these variables, though; put them in a macro
 loc flipdummies = "`i_contig' `i_lang' `i_colo'"
 
+// Generate the flipped version
 foreach var of loc flipdummies{
 	replace `var' = 1 - `var'
 	}
 
 // Put all of the RHS variables (other than fixed effects) into a macro
-// loc RHS = "`pref_log'`v_dist' `i_contig' `i_lang' `i_colo' `pref_log'`v_Y_orig' `pref_log'`v_Y_dest'"
 loc RHS = "`pref_log'`v_dist' `i_contig' `i_lang' `i_colo'"
 
 // Put the dependent variable (not its log!) into a macro
@@ -124,13 +124,14 @@ loc cond = "if `v_year' == 2000"
 reg `pref_log'`depvar' `RHS' ///
 	io`omit_`i_orig''.`i_orig'`suf_ds' io`omit_`i_dest''.`i_dest'`suf_ds' ///
 	`cond', vce(robust)
-/*
+
 // Display only coefficients of interest (i.e. not fixed effects)
 noi est table, keep(`RHS' _cons) b se t p
 
 // Estimate the Poisson PML
-poisson `depvar' `RHS' i.`i_orig'`suf_ds' i.`i_dest'`suf_ds' `cond', ///
-	vce(robust)
+poisson `depvar' `RHS' ///
+	io`omit_`i_orig''.`i_orig'`suf_ds' io`omit_`i_dest''.`i_dest'`suf_ds' ///
+	`cond', vce(robust)
 
 // Display only coefficients of interest (i.e. not fixed effects)
 noi est table, keep(`RHS' _cons) b se t p
@@ -140,13 +141,15 @@ noi est table, keep(`RHS' _cons) b se t p
 // estimated without robust standard errors, since it tags those on itself
 
 // Reestimate the OLS model (without robust errors)
-reg `pref_log'`depvar' `RHS' i.`i_orig'`suf_ds' i.`i_dest'`suf_ds' `cond'
+reg `pref_log'`depvar' `RHS' ///
+	io`omit_`i_orig''.`i_orig'`suf_ds' io`omit_`i_dest''.`i_dest'`suf_ds' `cond'
 
 // Store the results
 est sto ols_model
 
 // Reestimate the Poisson model (without robust errors)
-poisson `depvar' `RHS' i.`i_orig'`suf_ds' i.`i_dest'`suf_ds' `cond'
+poisson `depvar' `RHS' ///
+	io`omit_`i_orig''.`i_orig'`suf_ds' io`omit_`i_dest''.`i_dest'`suf_ds' `cond'
 
 // Store the results
 est sto ppml_model
@@ -157,7 +160,7 @@ est sto ppml_model
 suest ols_model ppml_model, vce(robust)
 noi test [ols_model_mean]`pref_log'`v_dist' = ///
 	[ppml_model_exp_ratio]`pref_log'`v_dist'
-*/
+
 // Change back to main directory
 cd "`mdir'"
 }
