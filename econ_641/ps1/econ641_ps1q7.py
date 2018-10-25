@@ -11,6 +11,10 @@ import numpy as np
 from requests import get
 from os import chdir, mkdir, path, mkdir
 
+# Set graph options
+plt.rc('font', **{'family': 'serif', 'serif': ['lmodern']})
+plt.rc('text', usetex=True)
+
 # Specify name for main directory (just uses the file's directory)
 mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
 
@@ -131,7 +135,8 @@ trade_shares.to_excel(trade_shares_file+trade_shares_file_ext, sheet_name='trade
 fig, ax = plt.subplots(figsize=(15, 9))
 
 x = [x for x in range(intermediate_import_ratio.shape[0])]
-
-plt.bar(x, intermediate_import_ratio.sort())
-plt.xticks(x, intermediate_import_ratio.index.get_level_values('country'))
+print(intermediate_import_ratio)
+plt.bar(x, intermediate_import_ratio.sort_values(), align='center', width=0.65)
+plt.xticks(x, intermediate_import_ratio.sort_values().index.get_level_values('country'), rotation=70)
+plt.xlim([-1, len(x)])
 plt.show()
