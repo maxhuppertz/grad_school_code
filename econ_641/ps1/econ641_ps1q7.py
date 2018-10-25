@@ -126,3 +126,21 @@ trade_shares = total_flows / expenditure_columns
 # Store this last data set as well
 trade_shares.to_pickle(trade_shares_file+'.pkl')
 trade_shares.to_excel(trade_shares_file+trade_shares_file_ext, sheet_name='trade_shares')
+
+intermediate_import_ratio.to_latex('test.txt')
+
+# Make some Latex table rows
+latex_tables = [intermediate_import_ratio]
+
+for tab in latex_tables:
+    col1 = tab.index.get_level_values('country')
+    n_rows = tab.shape[0]
+
+    if len(tab.shape) > 1:
+        n_cols = tab.shape[1]
+    else:
+        n_cols = 1
+
+    #for row in range(n_rows):
+        #with open(tab+'.txt', 'wb') as file:
+        #    pass
