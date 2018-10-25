@@ -139,13 +139,15 @@ trade_shares.to_excel(trade_shares_file+trade_shares_file_ext, sheet_name='trade
 # Change directory to figures
 chdir(mdir+fdir)
 
+# Specify a list of series to plot (graph_dfs) and names (i.e. titles) for each series (graph_names)
 graph_dfs = [intermediate_import_ratio, trade_deficit_ratio]
-graph_names = ['Ratio of intermediate imports to total imports, by country',
-    'Ratio of trade deficit to total expenditure, by country']
+graph_names = ['Panel A: Share of intermediate imports in total imports, by country',
+    'Panel B: Trade deficit as a fraction of total expenditure, by country']
 
 # Make a graph of intermediate imports to total imports ratios
 fig, axes = plt.subplots(len(graph_dfs), 1, figsize=(15, 9))
 
+# Go through all graphs, keeping track of their name, as well as including a counter for the subplot
 for i, (df, name) in enumerate(zip(graph_dfs, graph_names)):
     # Make an x axis list of values (arbitrary)
     x = [x for x in range(df.shape[0])]
