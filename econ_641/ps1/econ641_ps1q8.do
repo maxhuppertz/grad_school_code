@@ -1,6 +1,11 @@
 qui{
 // I don't need to see how the sausage gets made, hence the quietly wrapper
 
+********************************************************************************
+*** ECON 641: PS1, Q8
+*** Estimates a gravity equation using OLS, as well as PPML
+********************************************************************************
+
 // How to clean everything
 clear*
 
