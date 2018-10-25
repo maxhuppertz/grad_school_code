@@ -139,14 +139,21 @@ trade_shares.to_excel(trade_shares_file+trade_shares_file_ext, sheet_name='trade
 # Change directory to figures
 chdir(mdir+fdir)
 
+# Make a graph of intermediate imports to total imports ratios
 fig, ax = plt.subplots(figsize=(15, 9))
 
+# Make an x axis list of values (arbitrary)
 x = [x for x in range(intermediate_import_ratio.shape[0])]
 
+# Plot the intermediate imports as a bar chart
 ax.bar(x, intermediate_import_ratio.sort_values(), align='center', width=0.65)
 
+# Set the country labels as bar labels
 plt.xticks(x, intermediate_import_ratio.sort_values().index.get_level_values('country'), rotation=70)
+
+# Set the x axis limits to save on whitespace
 plt.xlim([-1, len(x)])
 
+# Save and close the figure
 plt.savefig('intermediate_imports.pdf')
 plt.close()
