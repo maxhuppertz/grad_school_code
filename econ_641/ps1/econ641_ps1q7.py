@@ -21,9 +21,13 @@ mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
 # Set data directory (doesn't need to exist)
 ddir = '/data'
 
-# Create the data directory if it doesn't exist
-if not path.isdir(mdir+ddir):
-    mkdir(mdir+ddir)
+# Set figures directory (same deal)
+fdir = '/figures'
+
+# Create the data and figures directories if they don't exist
+for dir in [ddir, fdir]:
+    if not path.isdir(mdir+dir):
+        mkdir(mdir+dir)
 
 # Specify name of main data file, plus extension (doesn't need to exist, if you want to download it again)
 data_file = 'wiot00_row_apr12'
@@ -132,11 +136,21 @@ trade_shares = total_flows / expenditure_columns
 trade_shares.to_pickle(trade_shares_file+'.pkl')
 trade_shares.to_excel(trade_shares_file+trade_shares_file_ext, sheet_name='trade_shares')
 
+# Change directory to figures
+chdir(mdir+fdir)
+
 fig, ax = plt.subplots(figsize=(15, 9))
 
 x = [x for x in range(intermediate_import_ratio.shape[0])]
-print(intermediate_import_ratio)
-plt.bar(x, intermediate_import_ratio.sort_values(), align='center', width=0.65)
+
+ax.bar(x, intermediate_import_ratio.sort_values(), align='center', width=0.65)
+
+fig.suptitle('Share of intermediate imports in total imports')
+
 plt.xticks(x, intermediate_import_ratio.sort_values().index.get_level_values('country'), rotation=70)
 plt.xlim([-1, len(x)])
-plt.show()
+
+plt.savefig('intermediate_imports.pdf')
+plt.close()
+
+#plt.show()
