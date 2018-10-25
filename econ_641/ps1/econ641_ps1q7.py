@@ -170,7 +170,7 @@ for i, (df, name) in enumerate(zip(graph_dfs, graph_names)):
 # Trim unnecessary whitespace
 fig.tight_layout()
 
-# Add some more space between subplots, so title remain legible
+# Add some more space between subplots, so titles remain legible
 fig.subplots_adjust(hspace=0.3)
 
 # Save and close the figure
