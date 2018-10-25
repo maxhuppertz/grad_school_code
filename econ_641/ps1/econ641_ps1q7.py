@@ -156,13 +156,22 @@ for i, (df, name) in enumerate(zip(graph_dfs, graph_names)):
     axes[i].bar(x, df.sort_values(), align='center', width=0.65)
 
     # Include a graph name
-    axes[i].set_title(name)
+    axes[i].set_title(name, y=1)
 
-    # Set the country labels as bar labels
-    plt.xticks(x, df.sort_values().index.get_level_values('country'), rotation=70)
+    # Make sure there are ticks at every bar
+    axes[i].set_xticks(x)
+
+    # Set the country labels as bar (tick) labels
+    axes[i].set_xticklabels(df.sort_values().index.get_level_values('country'), rotation=45)
 
     # Set the x axis limits to save on whitespace
     axes[i].set_xlim([-1, len(x)])
+
+# Trim unnecessary whitespace
+fig.tight_layout()
+
+# Add some more space between subplots, so title remain legible
+fig.subplots_adjust(hspace=0.3)
 
 # Save and close the figure
 plt.savefig('trade_share_graphs.pdf')
