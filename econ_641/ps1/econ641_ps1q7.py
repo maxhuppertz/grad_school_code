@@ -139,21 +139,29 @@ trade_shares.to_excel(trade_shares_file+trade_shares_file_ext, sheet_name='trade
 # Change directory to figures
 chdir(mdir+fdir)
 
+graph_dfs = [intermediate_import_ratio, trade_deficit_ratio]
+graph_names = ['Ratio of intermediate imports to total imports, by country',
+    'Ratio of trade deficit to total expenditure, by country']
+
 # Make a graph of intermediate imports to total imports ratios
-fig, ax = plt.subplots(figsize=(15, 9))
+fig, axes = plt.subplots(len(graph_dfs), 1, figsize=(15, 9))
 
-# Make an x axis list of values (arbitrary)
-x = [x for x in range(intermediate_import_ratio.shape[0])]
+for i, (df, name) in enumerate(zip(graph_dfs, graph_names)):
+    # Make an x axis list of values (arbitrary)
+    x = [x for x in range(df.shape[0])]
 
-# Plot the intermediate imports as a bar chart
-ax.bar(x, intermediate_import_ratio.sort_values(), align='center', width=0.65)
+    # Plot the intermediate imports as a bar chart
+    axes[i].bar(x, df.sort_values(), align='center', width=0.65)
 
-# Set the country labels as bar labels
-plt.xticks(x, intermediate_import_ratio.sort_values().index.get_level_values('country'), rotation=70)
+    # Include a graph name
+    axes[i].set_title(name)
 
-# Set the x axis limits to save on whitespace
-plt.xlim([-1, len(x)])
+    # Set the country labels as bar labels
+    plt.xticks(x, df.sort_values().index.get_level_values('country'), rotation=70)
+
+    # Set the x axis limits to save on whitespace
+    axes[i].set_xlim([-1, len(x)])
 
 # Save and close the figure
-plt.savefig('intermediate_imports.pdf')
+plt.savefig('trade_share_graphs.pdf')
 plt.close()
