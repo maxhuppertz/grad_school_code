@@ -6,6 +6,7 @@
 
 # Import necessary packages
 import pandas as pd
+import matplotlib.pyplot as plt
 import numpy as np
 from requests import get
 from os import chdir, mkdir, path, mkdir
@@ -127,20 +128,10 @@ trade_shares = total_flows / expenditure_columns
 trade_shares.to_pickle(trade_shares_file+'.pkl')
 trade_shares.to_excel(trade_shares_file+trade_shares_file_ext, sheet_name='trade_shares')
 
-intermediate_import_ratio.to_latex('test.txt')
+fig, ax = plt.subplots(figsize=(15, 9))
 
-# Make some Latex table rows
-latex_tables = [intermediate_import_ratio]
+x = [x for x in range(intermediate_import_ratio.shape[0])]
 
-for tab in latex_tables:
-    col1 = tab.index.get_level_values('country')
-    n_rows = tab.shape[0]
-
-    if len(tab.shape) > 1:
-        n_cols = tab.shape[1]
-    else:
-        n_cols = 1
-
-    #for row in range(n_rows):
-        #with open(tab+'.txt', 'wb') as file:
-        #    pass
+plt.bar(x, intermediate_import_ratio.sort())
+plt.xticks(x, intermediate_import_ratio.index.get_level_values('country'))
+plt.show()
