@@ -145,12 +145,8 @@ x = [x for x in range(intermediate_import_ratio.shape[0])]
 
 ax.bar(x, intermediate_import_ratio.sort_values(), align='center', width=0.65)
 
-fig.suptitle('Share of intermediate imports in total imports')
-
 plt.xticks(x, intermediate_import_ratio.sort_values().index.get_level_values('country'), rotation=70)
 plt.xlim([-1, len(x)])
 
 plt.savefig('intermediate_imports.pdf')
 plt.close()
-
-plt.show()
