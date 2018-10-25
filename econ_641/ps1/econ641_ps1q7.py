@@ -153,4 +153,4 @@ plt.xlim([-1, len(x)])
 plt.savefig('intermediate_imports.pdf')
 plt.close()
 
-#plt.show()
+plt.show()
