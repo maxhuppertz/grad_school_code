@@ -202,6 +202,8 @@ tol = 10**(-8)
 # Note that expenditures and expenditures times trade shares don't add up in these data...
 Z_orig = total_expenditure - np.matmul(trade_shares.transpose(), total_expenditure)
 
+print(np.linalg.solve(trade_shares.transpose(), np.array(total_expenditure, ndmin=2).transpose()))
+print(Z_orig)
 # As long as convergence hasn't been achieved
 while not converged:
     # Calculate counterfactual trade shares,
@@ -216,8 +218,8 @@ while not converged:
     # rows indicate 'from', and the columns indicate 'to' countries.
     trade_shares_prime = trade_shares_prime / trade_shares_prime.sum(axis=0)
 
-    # Calculate wage changes based on the initial guess or last iteration's value
-    # Again, the sum is a column sum, because that's how the trade share matrix is set up
+    # Calculate wage changes based on the initial guess or last iteration's value. The transpose is necessary because
+    # of the organization of the trade shares matrix, as mentioned above.
     w_hat = (
         np.matmul(trade_shares_prime.transpose(), total_expenditure * w_hat * L_hat)
         / (total_expenditure * L_hat)
