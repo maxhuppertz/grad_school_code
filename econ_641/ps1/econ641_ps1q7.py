@@ -184,6 +184,7 @@ theta = .8
 d_hat = np.ones(trade_shares.shape) #* .9 + np.eye(trade_shares.shape[0]) * .1
 L_hat = np.ones(trade_shares.shape[0])
 T_hat = np.ones(trade_shares.shape[0])
+#T_hat = np.array([(x+1)/100 for x in range(41)])
 
 # Set up initial guess for wage changes
 w_hat = np.ones(trade_shares.shape[0])
@@ -209,17 +210,17 @@ while not converged:
         * d_hat**(-theta)
         * np.kron( np.ones((1,trade_shares.shape[0])), np.array(T_hat * w_hat**(-theta), ndmin=2).transpose() )
         )
-    print(np.array(T_hat * w_hat**(-theta), ndmin=2).transpose().shape)
+
     # Divide that matrix by its own column sum. This respects the organization of the trade shares matrix, where the
     # rows indicate 'from', and the columns indicate 'to' countries
-    trade_shares_prime = trade_shares_prime * ( 1 / trade_shares_prime.sum(axis=1) )
+    trade_shares_prime = trade_shares_prime / trade_shares_prime.sum(axis=0)
 
     # Calculate wage changes based on the initial guess or last iteration's value
     # Again, the sum is a column sum, because that's how the trade share matrix is set up
     w_hat = (
         ( 1 / (total_expenditure * L_hat) )
         * ( trade_shares_prime * np.kron( np.ones((1,trade_shares.shape[0])),
-                np.array(total_expenditure * w_hat * L_hat, ndmin=2).transpose() ) ).sum(axis=1)
+                np.array(total_expenditure * w_hat * L_hat, ndmin=2).transpose() ) ).sum(axis=0)
         )
 
     # Enforce the world GDP as numeraire normalization
@@ -229,7 +230,7 @@ while not converged:
     Z = (
         w_hat * L_hat * total_expenditure
         - ( trade_shares_prime * np.kron( np.ones((1,trade_shares.shape[0])),
-                np.array(total_expenditure * w_hat * L_hat, ndmin=2).transpose() ) ).sum(axis=1)
+                np.array(total_expenditure * w_hat * L_hat, ndmin=2).transpose() ) ).sum(axis=0)
         )
 
     # Check for convergence
