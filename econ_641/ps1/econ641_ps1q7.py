@@ -132,12 +132,6 @@ expenditure_columns = np.kron(np.array(total_expenditure, ndmin=2), np.ones((tot
 # country i to country n, i.e. \pi_{ni}, in the EK notation.
 trade_shares = total_flows / expenditure_columns
 
-final_expenditure = final_imports + np.diag(final_flows)
-expenditure_columns = np.kron(np.array(final_expenditure, ndmin=2), np.ones((final_expenditure.shape[0],1)))
-final_trade_shares = final_flows / expenditure_columns
-
-print(final_expenditure - np.matmul(final_expenditure, final_trade_shares.transpose()))
-
 # Store this last data set as well
 trade_shares.to_pickle(trade_shares_file+'.pkl')
 trade_shares.to_excel(trade_shares_file+trade_shares_file_ext, sheet_name='trade_shares')
@@ -184,7 +178,7 @@ plt.savefig('trade_share_graphs.pdf')
 plt.close()
 
 # Set theta parameter
-theta = .8
+theta = 8.25
 
 # Specify changes to fundamentals (currently, a ten percent drop in inter-country trade cost)
 d_hat = np.ones(trade_shares.shape) #* .9 + np.eye(trade_shares.shape[0]) * .1
@@ -199,13 +193,14 @@ converged = False
 
 # Set up an interation counter and specify the maximum number of iterations after which the program aborts
 iter = 0
-max_iter = 1
+max_iter = 1000
 
 # Set a tolerance level; if excess demand is below this level for all countries (in absolute value), the program counts
 # that as having achieved convergence
-tol = 10**(-1)
+tol = 10**(-8)
 
-Z_orig = total_expenditure - np.matmul(total_expenditure, trade_shares.transpose())
+# Note that expenditures and expenditures times trade shares don't add up in these data...
+Z_orig = total_expenditure - np.matmul(trade_shares.transpose(), total_expenditure)
 
 # As long as convergence hasn't been achieved
 while not converged:
@@ -225,7 +220,7 @@ while not converged:
     # Calculate wage changes based on the initial guess or last iteration's value
     # Again, the sum is a column sum, because that's how the trade share matrix is set up
     w_hat = (
-        np.matmul(total_expenditure * w_hat * L_hat, trade_shares_prime.transpose() )
+        np.matmul(trade_shares_prime.transpose(), total_expenditure * w_hat * L_hat)
         / (total_expenditure * L_hat)
         )
 
@@ -235,13 +230,11 @@ while not converged:
     # Calculate excess demand
     Z = (
         w_hat * L_hat * total_expenditure
-        - (1 / np.matmul(T_hat * w_hat**(-theta), d_hat.transpose() * trade_shares_prime.transpose()) )
-        * np.matmul(T_hat * w_hat**(-theta) * total_expenditure * w_hat * L_hat ,
-            d_hat.transpose() * trade_shares_prime.transpose())
+        - np.matmul(trade_shares_prime.transpose(), total_expenditure * w_hat * L_hat)
         )
 
     # Check for convergence
-    if all(np.abs(Z - Z_orig) < tol):
+    if all(np.abs(Z) < tol):
         # If it has been achieved, print a message and set the convergence flag to true to stop the loop
         print('Converged after ' + str(iter) + ' iterations')
         converged = True
@@ -254,3 +247,5 @@ while not converged:
         # If so, print a message and abort the loop
         print('Maximum iterations reached (' + str(max_iter) + ')! Aborting...')
         break
+
+print(w_hat)
