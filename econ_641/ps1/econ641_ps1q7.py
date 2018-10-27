@@ -200,7 +200,7 @@ max_iter = 3000
 tol = 10**(-8)
 
 # Note that expenditures and expenditures times trade shares don't add up in these data...
-missexp = total_expenditure / np.matmul(trade_shares.transpose(), total_expenditure)
+missexp = total_expenditure / np.matmul(trade_shares, total_expenditure)
 
 # As long as convergence hasn't been achieved
 while not converged:
@@ -219,7 +219,7 @@ while not converged:
     # Calculate wage changes based on the initial guess or last iteration's value. The transpose is necessary because
     # of the organization of the trade shares matrix, as mentioned above.
     w_hat = (
-        ( np.matmul(trade_shares_prime.transpose(), total_expenditure * w_hat * L_hat)
+        ( np.matmul(trade_shares_prime, total_expenditure * w_hat * L_hat)
         / (total_expenditure * L_hat) ) * missexp
         )
 
@@ -229,7 +229,7 @@ while not converged:
     # Calculate excess demand
     Z = (
         w_hat * L_hat * total_expenditure / missexp
-        - np.matmul(trade_shares_prime.transpose(), total_expenditure * w_hat * L_hat)
+        - np.matmul(trade_shares_prime, total_expenditure * w_hat * L_hat)
         )
 
     # Increase the iteration counter
@@ -246,5 +246,5 @@ while not converged:
         # If so, print a message and abort the loop
         print('Maximum iterations reached (' + str(max_iter) + ')! Aborting...')
         break
-print(Z)
+
 print(w_hat)
