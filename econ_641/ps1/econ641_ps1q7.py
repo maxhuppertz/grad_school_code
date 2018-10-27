@@ -178,10 +178,10 @@ plt.savefig('trade_share_graphs.pdf')
 plt.close()
 
 # Set theta parameter
-theta = 8.28
+theta = .8
 
 # Specify changes to fundamentals (currently, a ten percent drop in inter-country trade cost)
-d_hat = np.ones(trade_shares.shape) * .9 + np.eye(trade_shares.shape[0]) * .1
+d_hat = np.ones(trade_shares.shape) #* .9 + np.eye(trade_shares.shape[0]) * .1
 L_hat = np.ones(trade_shares.shape[0])
 T_hat = np.ones(trade_shares.shape[0])
 
@@ -193,7 +193,7 @@ converged = False
 
 # Set up an interation counter and specify the maximum number of iterations after which the program aborts
 iter = 0
-max_iter = 10000
+max_iter = 1
 
 # Set a tolerance level; if excess demand is below this level for all countries (in absolute value), the program counts
 # that as having achieved convergence
@@ -209,7 +209,7 @@ while not converged:
         * d_hat**(-theta)
         * np.kron( np.ones((1,trade_shares.shape[0])), np.array(T_hat * w_hat**(-theta), ndmin=2).transpose() )
         )
-
+    print(np.array(T_hat * w_hat**(-theta), ndmin=2).transpose().shape)
     # Divide that matrix by its own column sum. This respects the organization of the trade shares matrix, where the
     # rows indicate 'from', and the columns indicate 'to' countries
     trade_shares_prime = trade_shares_prime * ( 1 / trade_shares_prime.sum(axis=1) )
@@ -223,7 +223,7 @@ while not converged:
         )
 
     # Enforce the world GDP as numeraire normalization
-    w_hat = w_hat * ( 1 / (w_hat * L_hat * (total_expenditure/total_expenditure.sum()) ).sum() )
+    w_hat = w_hat / ( w_hat * L_hat * (total_expenditure/total_expenditure.sum()) ).sum()
 
     # Calculate excess demand
     Z = (
@@ -246,3 +246,5 @@ while not converged:
         # If so, print a message and abort the loop
         print('Maximum iterations reached (' + str(max_iter) + ')! Aborting...')
         break
+
+#print(w_hat)
