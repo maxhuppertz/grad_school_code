@@ -177,55 +177,72 @@ fig.subplots_adjust(hspace=0.3)
 plt.savefig('trade_share_graphs.pdf')
 plt.close()
 
-theta = .8
+# Set theta parameter
+theta = 8.28
 
+# Specify changes to fundamentals (currently, a ten percent drop in inter-country trade cost)
 d_hat = np.ones(trade_shares.shape) * .9 + np.eye(trade_shares.shape[0]) * .1
 L_hat = np.ones(trade_shares.shape[0])
 T_hat = np.ones(trade_shares.shape[0])
 
+# Set up initial guess for wage changes
 w_hat = np.ones(trade_shares.shape[0])
 
+# Set up a flag for convergence
 converged = False
 
+# Set up an interation counter and specify the maximum number of iterations after which the program aborts
 iter = 0
-max_iter = 3
+max_iter = 10000
 
-tol = 10**(-1)
+# Set a tolerance level; if excess demand is below this level for all countries (in absolute value), the program counts
+# that as having achieved convergence
+tol = 10**(-3)
 
+# As long as convergence hasn't been achieved
 while not converged:
-    # Calculate counterfactual trade shares, as the original trade share matrix times a matrix where the (i,j) element
-    # is pi(j,i) T_hat(i) * (d_hat(j,i) * w_hat(i))^(-theta), divided by the column sum of that matrix
-    # This respects the organization of the trade shares matrix, where the rows indicate 'from', and the columns
-    # indicate 'to' countries
+    # Calculate counterfactual trade shares,
+    # Start with the original trade share matrix and fundamental changes, and generate a matrix where the (i,j) element
+    # is pi(j,i) T_hat(i) * (d_hat(j,i) * w_hat(i))^(-theta)
     trade_shares_prime = (
         trade_shares
         * d_hat**(-theta)
         * np.kron( np.ones((1,trade_shares.shape[0])), np.array(T_hat * w_hat**(-theta), ndmin=2).transpose() )
         )
 
+    # Divide that matrix by its own column sum. This respects the organization of the trade shares matrix, where the
+    # rows indicate 'from', and the columns indicate 'to' countries
     trade_shares_prime = trade_shares_prime * ( 1 / trade_shares_prime.sum(axis=1) )
 
+    # Calculate wage changes based on the initial guess or last iteration's value
+    # Again, the sum is a column sum, because that's how the trade share matrix is set up
     w_hat = (
         ( 1 / (total_expenditure * L_hat) )
         * ( trade_shares_prime * np.kron( np.ones((1,trade_shares.shape[0])),
                 np.array(total_expenditure * w_hat * L_hat, ndmin=2).transpose() ) ).sum(axis=1)
         )
 
+    # Enforce the world GDP as numeraire normalization
     w_hat = w_hat * ( 1 / (w_hat * L_hat * (total_expenditure/total_expenditure.sum()) ).sum() )
 
+    # Calculate excess demand
     Z = (
         w_hat * L_hat * total_expenditure
         - ( trade_shares_prime * np.kron( np.ones((1,trade_shares.shape[0])),
                 np.array(total_expenditure * w_hat * L_hat, ndmin=2).transpose() ) ).sum(axis=1)
         )
 
-
+    # Check for convergence
     if all(np.abs(Z) < tol):
-        print('Converged after '+str(iter)+' iterations')
+        # If it has been achieved, print a message and set the convergence flag to true to stop the loop
+        print('Converged after ' + str(iter) + ' iterations')
         converged = True
 
+    # Increase the iteration counter
     iter += 1
 
-    if iter == max_iter:
-        print('Maximum iterations reached ('+str(max_iter)+')! Aborting...')
+    # Check whether the maximum iterations have been reached and the loop hasn't converged
+    if iter == max_iter and not converged:
+        # If so, print a message and abort the loop
+        print('Maximum iterations reached (' + str(max_iter) + ')! Aborting...')
         break
