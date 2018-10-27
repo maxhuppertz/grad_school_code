@@ -211,6 +211,18 @@ while not converged:
                 np.array(total_expenditure * w_hat * L_hat, ndmin=2).transpose() ) ).sum(axis=1)
         )
 
+    w_hat = w_hat * ( 1 / (w_hat * L_hat * (total_expenditure/total_expenditure.sum()) ).sum() )
+
+    trade_shares_prime = (
+        trade_shares
+        * d_hat**(-theta)
+        * np.kron( np.ones((1,trade_shares.shape[0])), np.array(T_hat * w_hat**(-theta), ndmin=2).transpose() )
+        )
+
+    Z = (
+        
+        )
+
     Z = np.ones(trade_shares.shape[0])
     if all(np.abs(Z) <= tol):
         converged = True
