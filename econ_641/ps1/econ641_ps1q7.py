@@ -204,7 +204,12 @@ while not converged:
         )
 
     trade_shares_prime = trade_shares_prime * ( 1 / trade_shares_prime.sum(axis=1) )
-    
+
+    w_hat = (
+        ( 1 / (total_expenditure * L_hat) )
+        * ( trade_shares_prime * np.kron( np.ones((1,trade_shares.shape[0])),
+                np.array(total_expenditure * w_hat * L_hat, ndmin=2).transpose() ) ).sum(axis=1)
+        )
 
     Z = np.ones(trade_shares.shape[0])
     if all(np.abs(Z) <= tol):
