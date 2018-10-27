@@ -179,7 +179,7 @@ plt.close()
 
 theta = .8
 
-d_hat = np.ones(trade_shares.shape[0])
+d_hat = np.ones(trade_shares.shape[0]) * .9
 L_hat = np.ones(trade_shares.shape[0])
 T_hat = np.ones(trade_shares.shape[0])
 
@@ -190,26 +190,25 @@ converged = False
 iter = 0
 max_iter = 1
 
+tol = 10^(-3)
+
 while not converged:
-    w_hat = (
-        ( 1 / (total_expenditure * L_hat) )
-        * ( 1 / (trade_shares * T_hat * np.power(d_hat * w_hat, -theta)).sum() )
-        * ( trade_shares * T_hat * np.power(d_hat * w_hat, -theta) * total_expenditure * w_hat * L_hat ).sum()
+    # Calculate counterfactual trade shares, as the original trade share matrix
+    trade_shares_prime = (
+        trade_shares
+        * np.kron( np.ones((1,trade_shares.shape[0])), np.array(T_hat
+            * np.power(d_hat * w_hat, -theta), ndmin=2).transpose() )
         )
 
-    w_hat = w_hat * ( 1 / ( w_hat * L_hat * (total_expenditure / total_expenditure.sum()) ).sum() )
+    trade_shares_prime = trade_shares_prime * ( 1 / trade_shares_prime.sum(axis=1) )
+    print(trade_shares_prime)
 
-    Z = (
-        w_hat * L_hat * total_expenditure
-        - ( 1 / ( trade_shares * T_hat * np.power(d_hat * w_hat, -theta) * total_expenditure * w_hat * L_hat ).sum() )
-        * ().sum()
-        )
-
-    if
-
-    print(w_hat)
+    Z = np.ones(trade_shares.shape[0])
+    if all(np.abs(Z) <= tol):
+        converged = True
 
     iter += 1
 
     if iter == max_iter:
+        print('Maximum iterations reached! Aborting...')
         break
