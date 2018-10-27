@@ -179,7 +179,7 @@ plt.close()
 
 theta = .8
 
-d_hat = np.ones(trade_shares.shape[0]) * .9
+d_hat = np.ones(trade_shares.shape) * .9
 L_hat = np.ones(trade_shares.shape[0])
 T_hat = np.ones(trade_shares.shape[0])
 
@@ -193,15 +193,18 @@ max_iter = 1
 tol = 10^(-3)
 
 while not converged:
-    # Calculate counterfactual trade shares, as the original trade share matrix
+    # Calculate counterfactual trade shares, as the original trade share matrix times a matrix where the (i,j) element
+    # is pi(j,i) T_hat(i) * (d_hat(j,i) * w_hat(i))^(-theta), divided by the column sum of that matrix
+    # This respects the organization of the trade shares matrix, where the rows indicate 'from', and the columns
+    # indicate 'to' countries
     trade_shares_prime = (
         trade_shares
-        * np.kron( np.ones((1,trade_shares.shape[0])), np.array(T_hat
-            * np.power(d_hat * w_hat, -theta), ndmin=2).transpose() )
+        * d_hat**(-theta)
+        * np.kron( np.ones((1,trade_shares.shape[0])), np.array(T_hat * w_hat**(-theta), ndmin=2).transpose() )
         )
 
     trade_shares_prime = trade_shares_prime * ( 1 / trade_shares_prime.sum(axis=1) )
-    print(trade_shares_prime)
+    
 
     Z = np.ones(trade_shares.shape[0])
     if all(np.abs(Z) <= tol):
