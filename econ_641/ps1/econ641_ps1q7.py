@@ -218,14 +218,13 @@ while not converged:
     # Calculate wage changes based on the initial guess or last iteration's value
     # Again, the sum is a column sum, because that's how the trade share matrix is set up
     w_hat = (
-        ( 1 / (total_expenditure * L_hat) )
-        * ( trade_shares_prime * np.kron( np.ones((1,trade_shares.shape[0])),
-                np.array(total_expenditure * w_hat * L_hat, ndmin=2).transpose() ) ).sum(axis=0)
+        np.matmul(np.array(total_expenditure * w_hat * L_hat), trade_shares_prime.transpose() )
+        / (total_expenditure * L_hat)
         )
-
+    print(w_hat)
     # Enforce the world GDP as numeraire normalization
     w_hat = w_hat / ( w_hat * L_hat * (total_expenditure/total_expenditure.sum()) ).sum()
-
+    print(w_hat)
     # Calculate excess demand
     Z = (
         w_hat * L_hat * total_expenditure
