@@ -179,18 +179,18 @@ plt.close()
 
 theta = .8
 
-d_hat = np.ones(trade_shares.shape) * .9
+d_hat = np.ones(trade_shares.shape) * .9 + np.eye(trade_shares.shape[0]) * .1
 L_hat = np.ones(trade_shares.shape[0])
 T_hat = np.ones(trade_shares.shape[0])
 
-w_hat = np.ones(trade_shares.shape[0]) * .5
+w_hat = np.ones(trade_shares.shape[0])
 
 converged = False
 
 iter = 0
-max_iter = 1
+max_iter = 3
 
-tol = 10^(-3)
+tol = 10**(-1)
 
 while not converged:
     # Calculate counterfactual trade shares, as the original trade share matrix times a matrix where the (i,j) element
@@ -213,22 +213,19 @@ while not converged:
 
     w_hat = w_hat * ( 1 / (w_hat * L_hat * (total_expenditure/total_expenditure.sum()) ).sum() )
 
-    trade_shares_prime = (
-        trade_shares
-        * d_hat**(-theta)
-        * np.kron( np.ones((1,trade_shares.shape[0])), np.array(T_hat * w_hat**(-theta), ndmin=2).transpose() )
-        )
-
     Z = (
-        
+        w_hat * L_hat * total_expenditure
+        - ( trade_shares_prime * np.kron( np.ones((1,trade_shares.shape[0])),
+                np.array(total_expenditure * w_hat * L_hat, ndmin=2).transpose() ) ).sum(axis=1)
         )
 
-    Z = np.ones(trade_shares.shape[0])
-    if all(np.abs(Z) <= tol):
+
+    if all(np.abs(Z) < tol):
+        print('Converged after '+str(iter)+' iterations')
         converged = True
 
     iter += 1
 
     if iter == max_iter:
-        print('Maximum iterations reached! Aborting...')
+        print('Maximum iterations reached ('+str(max_iter)+')! Aborting...')
         break
