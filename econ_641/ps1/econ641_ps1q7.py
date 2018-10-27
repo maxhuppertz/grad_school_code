@@ -177,14 +177,23 @@ fig.subplots_adjust(hspace=0.3)
 plt.savefig('trade_share_graphs.pdf')
 plt.close()
 
+theta = .8
+
+d_hat = np.ones(trade_shares.shape[0])
+L_hat = np.ones(trade_shares.shape[0])
+T_hat = np.ones(trade_shares.shape[0])
+
 w_hat = np.ones(trade_shares.shape[0])
 
 converged = False
 
 iter = 0
-max_iter = 100
+max_iter = 1
+
 while not converged:
-    if iter == max_iter:
-        break
+    w_hat = ( 1 / (total_expenditure * L_hat) ) * ( 1 / (trade_shares * T_hat * np.power(d_hat * w_hat, -theta) )
 
     iter += 1
+
+    if iter == max_iter:
+        break
