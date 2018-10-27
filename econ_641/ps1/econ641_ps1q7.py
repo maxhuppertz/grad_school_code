@@ -176,3 +176,15 @@ fig.subplots_adjust(hspace=0.3)
 # Save and close the figure
 plt.savefig('trade_share_graphs.pdf')
 plt.close()
+
+w_hat = np.ones(trade_shares.shape[0])
+
+converged = False
+
+iter = 0
+max_iter = 100
+while not converged:
+    if iter == max_iter:
+        break
+
+    iter += 1
