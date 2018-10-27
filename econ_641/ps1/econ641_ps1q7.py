@@ -183,7 +183,7 @@ d_hat = np.ones(trade_shares.shape[0])
 L_hat = np.ones(trade_shares.shape[0])
 T_hat = np.ones(trade_shares.shape[0])
 
-w_hat = np.ones(trade_shares.shape[0])
+w_hat = np.ones(trade_shares.shape[0]) * .5
 
 converged = False
 
@@ -191,7 +191,23 @@ iter = 0
 max_iter = 1
 
 while not converged:
-    w_hat = ( 1 / (total_expenditure * L_hat) ) * ( 1 / (trade_shares * T_hat * np.power(d_hat * w_hat, -theta) )
+    w_hat = (
+        ( 1 / (total_expenditure * L_hat) )
+        * ( 1 / (trade_shares * T_hat * np.power(d_hat * w_hat, -theta)).sum() )
+        * ( trade_shares * T_hat * np.power(d_hat * w_hat, -theta) * total_expenditure * w_hat * L_hat ).sum()
+        )
+
+    w_hat = w_hat * ( 1 / ( w_hat * L_hat * (total_expenditure / total_expenditure.sum()) ).sum() )
+
+    Z = (
+        w_hat * L_hat * total_expenditure
+        - ( 1 / ( trade_shares * T_hat * np.power(d_hat * w_hat, -theta) * total_expenditure * w_hat * L_hat ).sum() )
+        * ().sum()
+        )
+
+    if
+
+    print(w_hat)
 
     iter += 1
 
