@@ -200,6 +200,7 @@ max_iter = 100
 # that as having achieved convergence
 tol = 10**(-3)
 
+total_expenditure = np.matmul(total_expenditure, trade_shares.transpose())
 Z_orig = total_expenditure - np.matmul(total_expenditure, trade_shares.transpose())
 print(Z_orig)
 
@@ -226,11 +227,9 @@ while not converged:
         )
 
     # Enforce the world GDP as numeraire normalization
-    w_hat = w_hat / ( w_hat * L_hat * (total_expenditure/total_expenditure.sum()) ).sum()
+    w_hat = w_hat / ( w_hat * L_hat * total_expenditure ).sum()
 
     # Calculate excess demand
-
-
     Z = (
         w_hat * L_hat * total_expenditure
         - (1 / np.matmul(T_hat * w_hat**(-theta), d_hat.transpose() * trade_shares_prime.transpose()) )
@@ -243,7 +242,7 @@ while not converged:
         # If it has been achieved, print a message and set the convergence flag to true to stop the loop
         print('Converged after ' + str(iter) + ' iterations')
         converged = True
-    print(Z - Z_orig)
+
     # Increase the iteration counter
     iter += 1
 
@@ -252,5 +251,3 @@ while not converged:
         # If so, print a message and abort the loop
         print('Maximum iterations reached (' + str(max_iter) + ')! Aborting...')
         break
-
-#print(w_hat)
