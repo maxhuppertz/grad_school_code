@@ -194,11 +194,14 @@ converged = False
 
 # Set up an interation counter and specify the maximum number of iterations after which the program aborts
 iter = 0
-max_iter = 1
+max_iter = 100
 
 # Set a tolerance level; if excess demand is below this level for all countries (in absolute value), the program counts
 # that as having achieved convergence
 tol = 10**(-3)
+
+Z_orig = total_expenditure - np.matmul(total_expenditure, trade_shares.transpose())
+print(Z_orig)
 
 # As long as convergence hasn't been achieved
 while not converged:
@@ -218,26 +221,29 @@ while not converged:
     # Calculate wage changes based on the initial guess or last iteration's value
     # Again, the sum is a column sum, because that's how the trade share matrix is set up
     w_hat = (
-        np.matmul(np.array(total_expenditure * w_hat * L_hat), trade_shares_prime.transpose() )
+        np.matmul(total_expenditure * w_hat * L_hat, trade_shares_prime.transpose() )
         / (total_expenditure * L_hat)
         )
-    print(w_hat)
+
     # Enforce the world GDP as numeraire normalization
     w_hat = w_hat / ( w_hat * L_hat * (total_expenditure/total_expenditure.sum()) ).sum()
-    print(w_hat)
+
     # Calculate excess demand
+
+
     Z = (
         w_hat * L_hat * total_expenditure
-        - ( trade_shares_prime * np.kron( np.ones((1,trade_shares.shape[0])),
-                np.array(total_expenditure * w_hat * L_hat, ndmin=2).transpose() ) ).sum(axis=0)
+        - (1 / np.matmul(T_hat * w_hat**(-theta), d_hat.transpose() * trade_shares_prime.transpose()) )
+        * np.matmul(T_hat * w_hat**(-theta) * total_expenditure * w_hat * L_hat ,
+            d_hat.transpose() * trade_shares_prime.transpose())
         )
 
     # Check for convergence
-    if all(np.abs(Z) < tol):
+    if all(np.abs(Z - Z_orig) < tol):
         # If it has been achieved, print a message and set the convergence flag to true to stop the loop
         print('Converged after ' + str(iter) + ' iterations')
         converged = True
-
+    print(Z - Z_orig)
     # Increase the iteration counter
     iter += 1
 
