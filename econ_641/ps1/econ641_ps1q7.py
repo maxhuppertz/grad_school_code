@@ -208,13 +208,12 @@ while not converged:
     # Start with the original trade share matrix and fundamental changes, and generate a matrix where the (i,j) element
     # is pi(j,i) T_hat(i) * (d_hat(j,i) * w_hat(i))^(-theta)
     trade_shares_prime = (
-        trade_shares
-        * d_hat**(-theta)
+        trade_shares * d_hat**(-theta)
         * np.kron( np.ones((1,trade_shares.shape[0])), np.array(T_hat * w_hat**(-theta), ndmin=2).transpose() )
         )
 
-    # Divide that matrix by its own column sum. This respects the organization of the trade shares matrix, where the
-    # rows indicate 'from', and the columns indicate 'to' countries
+    # Divide that matrix by the sum across rows. This respects the organization of the trade shares matrix, where the
+    # rows indicate 'from', and the columns indicate 'to' countries.
     trade_shares_prime = trade_shares_prime / trade_shares_prime.sum(axis=0)
 
     # Calculate wage changes based on the initial guess or last iteration's value
