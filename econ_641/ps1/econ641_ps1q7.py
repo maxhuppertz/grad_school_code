@@ -207,7 +207,7 @@ theta = 8.25
 # Specify changes to fundamentals (currently, a ten percent drop in inter-country trade cost)
 d_hat = np.ones(trade_shares.shape) * .9 + np.eye(trade_shares.shape[0]) * .1
 L_hat = np.ones((trade_shares.shape[0], 1))
-T_hat = np.ones((trade_shares.shape[0], 1))
+T_hat = np.ones((trade_shares.shape[0], 1)) * .9
 
 # Set up initial guess for wage changes
 w_hat = np.ones((trade_shares.shape[0], 1))
@@ -277,7 +277,7 @@ w_hat_df = pd.DataFrame(data=w_hat, index=trade_shares.index, columns=['Real wag
 
 # Calculate welfare changes between the two scenarios
 welfare_change = (
-    T_hat**(-theta)
+    T_hat**(1/theta)
     * np.array((np.diag(trade_shares) / np.diag(trade_shares_prime))**(1/theta), ndmin=2).transpose()
     )
 
