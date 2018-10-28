@@ -204,7 +204,8 @@ print('Excess demand as a percentage of total expenditure in the data:',
 # Set theta parameter
 theta = 8.25
 
-# Specify changes to fundamentals (currently, a ten percent drop in inter-country trade cost)
+# Specify changes to fundamentals (currently, a ten percent drop in inter-country trade cost); note that d_hat is a
+# matrix, since changes there are country pair specific!
 d_hat = np.ones(trade_shares.shape) * .9 + np.eye(trade_shares.shape[0]) * .1
 L_hat = np.ones((trade_shares.shape[0], 1))
 T_hat = np.ones((trade_shares.shape[0], 1))
