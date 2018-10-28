@@ -281,7 +281,7 @@ welfare_change = (
 welfare_change_df = pd.DataFrame(data=welfare_change, index=trade_shares.index, columns=['Welfare change'])
 
 # Display the results
-print(w_hat_df, welfare_change_df)
+print(w_hat_df, '\n', welfare_change_df)
 
 # Make a DataFrame of some of the results for easy Latex integration
 # Is it worth it to have a tables directory specifically for this? No. No it's not.
