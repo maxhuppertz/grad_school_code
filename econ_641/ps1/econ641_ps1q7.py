@@ -38,7 +38,7 @@ for dir in [ddir, fdir]:
 # Specify whether to download the data
 download_data = False
 
-# Specify name of main data file, plus extension (doesn't need to exist, if you want to download it again)
+# Specify name of main data file, plus extension (doesn't need to exist, if you chose to download the data)
 data_file = 'wiot00_row_apr12'
 data_file_ext = '.xlsx'
 
