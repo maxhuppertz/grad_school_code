@@ -181,7 +181,7 @@ plt.close()
 theta = 8.25
 
 # Specify changes to fundamentals (currently, a ten percent drop in inter-country trade cost)
-d_hat = np.ones(trade_shares.shape) #* .9 + np.eye(trade_shares.shape[0]) * .1
+d_hat = np.ones(trade_shares.shape) * .9 + np.eye(trade_shares.shape[0]) * .1
 L_hat = np.ones(trade_shares.shape[0])
 T_hat = np.ones(trade_shares.shape[0])
 
@@ -202,10 +202,10 @@ tol = 10**(-8)
 # Set adjustment factor for the pricing function
 adj_factor = .2
 
-# Note that expenditures and expenditures times trade shares don't add up in these data...
-#missexp = np.divide(total_expenditure, np.matmul(total_expenditure, trade_shares))
-missexp = np.divide(total_expenditure, np.matmul(total_expenditure, trade_shares))
-#print(missexp)
+# Note that expenditures and expenditures times trade shares don't add up in these data, which I'll need to account for
+# when checking excess demand below
+Z_orig = np.matmul(total_expenditure, trade_shares) - total_expenditure
+
 # As long as convergence hasn't been achieved
 while not converged:
     # Calculate counterfactual trade shares,
@@ -222,21 +222,20 @@ while not converged:
 
     # Calculate wage changes based on the initial guess or last iteration's value. The transpose is necessary because
     # of the organization of the trade shares matrix, as mentioned above.
-    w_hat = (
-        ( np.matmul(total_expenditure * w_hat * L_hat, trade_shares_prime)
-        / (total_expenditure * L_hat) ) #* missexp
-        )
+    #w_hat = (
+    #    ( np.matmul(total_expenditure * w_hat * L_hat, trade_shares_prime)
+    #    / (total_expenditure * L_hat) )
+    #    )
 
     # Enforce the world GDP as numeraire normalization
-    w_hat = w_hat / ( w_hat * L_hat * ( total_expenditure/total_expenditure.sum() ) ).sum()
+    #w_hat = w_hat / ( w_hat * L_hat * ( total_expenditure/total_expenditure.sum() ) ).sum()
 
     # Calculate excess demand
     Z = (
-        w_hat * L_hat * total_expenditure #/ missexp
-        - np.matmul(total_expenditure * w_hat * L_hat, trade_shares_prime)
+        np.matmul(total_expenditure * w_hat * L_hat, trade_shares_prime) - w_hat * L_hat * total_expenditure - Z_orig
         )
 
-    w_hat = w_hat * (1 - (adj_factor * Z) / total_expenditure)
+    w_hat = w_hat * (1 + (adj_factor * Z) / total_expenditure)
 
     # Increase the iteration counter
     iter += 1
