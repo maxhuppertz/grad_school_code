@@ -249,7 +249,7 @@ while not converged:
         - w_hat * L_hat * np.array(total_expenditure, ndmin=2).transpose() - Z_orig
         )
 
-    # Adjust wages updward if excess demand is positive, and downward if it is negative
+    # Adjust wages upwards if excess demand is positive, and downwards if it is negative
     w_hat = w_hat * ( 1 + ( adj_factor * (Z / np.array(total_expenditure, ndmin=2).transpose()) ) )
 
     # Enforce the world GDP as numeraire normalization
