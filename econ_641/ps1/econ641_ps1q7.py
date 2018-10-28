@@ -128,6 +128,11 @@ total_expenditure = total_imports + np.diag(total_flows)
 # Calculate the ratio of trade deficits to total expenditure
 trade_deficit_ratio = trade_deficit / total_expenditure
 
+# A word of caution: Note a) that using DataFrames such as total_expenditure directly when doing linear algebra is a
+# huge mess, and will screw up the results, so they have to be converted in to two-dimensional Numpy arrays before doing
+# anything with them. Also note b) that np.array(<input>, ndmin=2) creates a row vector, rather than a column vector,
+# hence there will be many .transpose() operations later. (Because I like column vectors much more than row vectors.)
+
 # To get the trade shares, first make a matrix in which each column corresponds to a given country's total expenditure
 # (that is, each column just repeats total expenditure of that country)
 expenditure_columns = np.ones((total_expenditure.shape[0],1)) @ np.array(total_expenditure, ndmin=2)
@@ -185,11 +190,6 @@ plt.close()
 ########################################################################################################################
 ### Q7.2: Basic EK model
 ########################################################################################################################
-
-# A word of caution: Note a) that using DataFrames such as total_expenditure directly when doing linear algebra is a
-# huge mess, and will screw up the results, so they have to be converted in to two-dimensional Numpy arrays before doing
-# anything with them. Also note b) that np.array(<input>, ndmin=2) creates a row vector, rather than a column vector,
-# hence all of the .transpose() operations, because I like column vectors much more than row vectors.
 
 # Note that expenditures and expenditures times trade shares don't add up in these data, which I'll need to account for
 # when checking excess demand below
