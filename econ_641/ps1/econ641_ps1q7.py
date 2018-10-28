@@ -190,7 +190,7 @@ plt.close()
 theta = 8.25
 
 # Specify changes to fundamentals (currently, a ten percent drop in inter-country trade cost)
-d_hat = np.ones(trade_shares.shape) #* .9 + np.eye(trade_shares.shape[0]) * .1
+d_hat = np.ones(trade_shares.shape) * .9 + np.eye(trade_shares.shape[0]) * .1
 L_hat = np.ones((trade_shares.shape[0], 1))
 T_hat = np.ones((trade_shares.shape[0], 1))
 
@@ -244,7 +244,10 @@ while not converged:
     w_hat = w_hat * ( 1 + ( adj_factor * (Z / np.array(total_expenditure.values, ndmin=2).transpose()) ) )
 
     # Enforce the world GDP as numeraire normalization
-    #w_hat = w_hat / ( w_hat * L_hat * ( total_expenditure/total_expenditure.sum() ) ).sum()
+    w_hat = (
+        w_hat /
+        ( w_hat * L_hat * ( np.array(total_expenditure.values, ndmin=2).transpose() / total_expenditure.sum() ) ).sum()
+        )
 
     # Increase the iteration counter
     iter += 1
