@@ -1,7 +1,12 @@
 ########################################################################################################################
-### ECON 641: PS1, Q7.1
-### Calculates trade shares based on the World Input Output Database (WIOD)
-### Also provides some other international trade information along the way
+### ECON 641: PS1, Q7
+### Q7.1: Calculates trade shares based on the World Input Output Database (WIOD)
+###       Also provides some other international trade information along the way
+### Q7.2: Uses a basic EK model to simulate the effect of a trade cost reduction on real wages
+########################################################################################################################
+
+########################################################################################################################
+### Q7.1: WIOD data
 ########################################################################################################################
 
 # Import necessary packages
@@ -10,6 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from requests import get
 from os import chdir, mkdir, path, mkdir
+from scipy.linalg import lstsq as ols
 
 # Set graph options
 plt.rc('font', **{'family': 'serif', 'serif': ['lmodern']})
@@ -122,8 +128,8 @@ total_expenditure = total_imports + np.diag(total_flows)
 # Calculate the ratio of trade deficits to total expenditure
 trade_deficit_ratio = trade_deficit / total_expenditure
 
-# To get the trade shares, I'll first make a matrix in which each column corresponds to a given country's total
-# expenditure. It's easy to then pointwise divide the trade flows by that matrix.
+# To get the trade shares, first make a matrix in which each column corresponds to a given country's total expenditure
+# (that is, each column just repeats total expenditure of that country)
 expenditure_columns = np.ones((total_expenditure.shape[0],1)) @ np.array(total_expenditure, ndmin=2)
 
 # Now, pointwise divide the matrix of total trade flows by this expenditure column matrix. A note on reading that
@@ -176,6 +182,20 @@ fig.subplots_adjust(hspace=0.3)
 plt.savefig('trade_share_graphs.pdf')
 plt.close()
 
+########################################################################################################################
+### Q7.2: Basic EK model
+########################################################################################################################
+
+# Note that expenditures and expenditures times trade shares don't add up in these data, which I'll need to account for
+# when checking excess demand below
+Z_orig = (
+    trade_shares @ np.array(total_expenditure.values, ndmin=2).transpose()
+    - np.array(total_expenditure.values, ndmin=2).transpose()
+    )
+# Print the average divergence as a percentage of total expenditure
+print('Excess demand as a percentage of total expenditure in the data:',
+    (Z_orig / np.array(total_expenditure.values, ndmin=2).transpose()).mean()*100, 'percent\n')
+
 # Set theta parameter
 theta = 8.25
 
@@ -201,13 +221,6 @@ tol = 10**(-4)
 # Set adjustment factor for the pricing function
 adj_factor = .2
 
-# Note that expenditures and expenditures times trade shares don't add up in these data, which I'll need to account for
-# when checking excess demand below
-Z_orig = (
-    trade_shares @ np.array(total_expenditure.values, ndmin=2).transpose()
-    - np.array(total_expenditure.values, ndmin=2).transpose()
-    )
-
 # As long as convergence hasn't been achieved
 while not converged:
     # Calculate counterfactual trade shares
@@ -231,6 +244,7 @@ while not converged:
         - w_hat * L_hat * np.array(total_expenditure.values, ndmin=2).transpose() - Z_orig
         )
 
+    # Adjust wages updward if excess demand is positive, and downward if it is negative
     w_hat = w_hat * ( 1 + ( adj_factor * (Z / np.array(total_expenditure.values, ndmin=2).transpose()) ) )
 
     # Enforce the world GDP as numeraire normalization
@@ -245,15 +259,15 @@ while not converged:
     # Check for convergence
     if all(np.abs(Z) < tol):
         # If it has been achieved, print a message and set the convergence flag to true to stop the loop
-        print('Converged after ' + str(iter) + ' iterations')
+        print('\nConverged after', iter, 'iterations\n')
         converged = True
 
     # Check whether the maximum iterations have been reached and the loop hasn't converged
     if iter == max_iter and not converged:
         # If so, print a message and abort the loop
-        print('Maximum iterations reached (' + str(max_iter) + ')! Aborting...')
+        print('Maximum iterations reached (', max_iter, ')! Aborting...\n')
         break
 
 # Make a DataFrame containing wage changes with a country index, since that's easier to read
-w_hat_df = pd.DataFrame(data=w_hat, index=total_expenditure.index)
-print(w_hat_df)
+w_hat_df = pd.DataFrame(data=w_hat, index=total_expenditure.index, columns=['Real wage change'])
+print('Real wage changes:\n', w_hat_df)
