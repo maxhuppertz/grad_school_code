@@ -185,7 +185,7 @@ L_hat = np.ones((trade_shares.shape[0], 1))
 T_hat = np.ones((trade_shares.shape[0], 1))
 
 # Set up initial guess for wage changes
-w_hat = np.ones((trade_shares.shape[0], 1)) * .5
+w_hat = np.ones((trade_shares.shape[0], 1))
 
 # Set up a flag for convergence
 converged = False
@@ -210,16 +210,16 @@ Z_orig = (
 
 # As long as convergence hasn't been achieved
 while not converged:
-    # Calculate counterfactual trade shares,
+    # Calculate counterfactual trade shares
     # Start with the original trade share matrix and fundamental changes, and generate a matrix where the (i,j) element
-    # is pi(j,i) T_hat(i) * (d_hat(j,i) * w_hat(i))^(-theta)
+    # is pi(j,i) * T_hat(i) * (d_hat(j,i) * w_hat(i))^(-theta)
     trade_shares_prime = (
         trade_shares * d_hat**(-theta)
         * ( np.ones((trade_shares.shape[0], 1)) @ (T_hat * w_hat**(-theta)).transpose() )
         )
 
-    # Divide that matrix by the sum across rows. This respects the organization of the trade shares matrix, where the
-    # rows indicate 'from', and the columns indicate 'to' countries.
+    # Divide that matrix by the sum across rows, i.e. across origins. This respects the organization of the trade
+    # shares matrix, where the rows indicate 'from', and the columns indicate 'to' countries.
     trade_shares_prime = (
         trade_shares_prime /
         ( np.ones((trade_shares.shape[0], 1)) @ np.array(trade_shares_prime.sum(axis=0), ndmin=2) )
@@ -253,4 +253,7 @@ while not converged:
         # If so, print a message and abort the loop
         print('Maximum iterations reached (' + str(max_iter) + ')! Aborting...')
         break
-print(w_hat)
+
+# Make a DataFrame containing wage changes with a country index, since that's easier to read
+w_hat_df = pd.DataFrame(data=w_hat, index=total_expenditure.index)
+print(w_hat_df)
