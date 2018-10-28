@@ -95,12 +95,15 @@ for x in range(35):
 intermediate_flows = data.iloc[:, [x in intermediate_c_range for x in data.columns.get_level_values('c_num')]]
 final_flows = data.iloc[:, [x not in intermediate_c_range for x in data.columns.get_level_values('c_num')]]
 
+# Figure out value added adjustement etc.
+#adjustment_terms = ( data.sum(axis=1) - intermediate_flows.sum(axis=0) ) / intermediate_flows.shape[0]
 
-adjustment_terms = ( data.sum(axis=1) - intermediate_flows.sum(axis=0) ) / intermediate_flows.shape[0]
-intermediate_flows = (
-    intermediate_flows
-    + np.ones((intermediate_flows.shape[0], 1)) @ np.array(adjustment_terms, ndmin=2)
-    )
+# Add those back in, to get that countries' total expenditure equals the sum of other countries' trade shares times
+# their total expenditure
+#intermediate_flows = (
+#    intermediate_flows
+#    + np.ones((intermediate_flows.shape[0], 1)) @ np.array(adjustment_terms, ndmin=2)
+#    )
 
 # Sum both across the country level, across both axes
 intermediate_flows = intermediate_flows.sum(axis=0, level='country').sum(axis=1, level='country')
@@ -130,9 +133,8 @@ total_expenditure = total_imports + np.diag(total_flows)
 trade_deficit_ratio = trade_deficit / total_expenditure
 
 # To get the trade shares, I'll first make a matrix in which each column corresponds to a given country's total
-# expenditure. It's easy to then pointwise divide the trade flows by that matrix. To get this, use the Kronecker
-# product between the 1x41 vector of total expenditures and a 41x1 vector of ones.
-expenditure_columns = np.kron(np.array(total_expenditure, ndmin=2), np.ones((total_expenditure.shape[0],1)))
+# expenditure. It's easy to then pointwise divide the trade flows by that matrix.
+expenditure_columns = np.ones((total_expenditure.shape[0],1)) @ np.array(total_expenditure, ndmin=2)
 
 # Now, pointwise divide the matrix of total trade flows by this expenditure column matrix. A note on reading that
 # matrix: I kept it in the from -> to style of the original WIOD. That is, the [i,n] entry shows trade flows from
