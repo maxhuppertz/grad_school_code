@@ -270,4 +270,6 @@ while not converged:
 
 # Make a DataFrame containing wage changes with a country index, since that's easier to read
 w_hat_df = pd.DataFrame(data=w_hat, index=total_expenditure.index, columns=['Real wage change'])
+
+# Display the results
 print('Real wage changes:\n', w_hat_df)
