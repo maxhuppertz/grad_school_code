@@ -273,3 +273,8 @@ w_hat_df = pd.DataFrame(data=w_hat, index=total_expenditure.index, columns=['Rea
 
 # Display the results
 print('Real wage changes:\n', w_hat_df)
+
+# Make a DataFrame of some of the results for easy Latex integration
+texdf = pd.concat((intermediate_import_ratio, trade_deficit_ratio, w_hat_df), axis=1)
+texdf.columns = ['Intermediate import share', 'Trade deficit share', 'Real wage change']
+texdf.to_latex('table.tex')
