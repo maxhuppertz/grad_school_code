@@ -189,12 +189,12 @@ plt.close()
 # Note that expenditures and expenditures times trade shares don't add up in these data, which I'll need to account for
 # when checking excess demand below
 Z_orig = (
-    trade_shares @ np.array(total_expenditure.values, ndmin=2).transpose()
-    - np.array(total_expenditure.values, ndmin=2).transpose()
+    trade_shares @ np.array(total_expenditure, ndmin=2).transpose() - np.array(total_expenditure, ndmin=2).transpose()
     )
+
 # Print the average divergence as a percentage of total expenditure
 print('Excess demand as a percentage of total expenditure in the data:',
-    (Z_orig / np.array(total_expenditure.values, ndmin=2).transpose()).mean()*100, 'percent\n')
+    (Z_orig / np.array(total_expenditure, ndmin=2).transpose()).mean()*100, 'percent\n')
 
 # Set theta parameter
 theta = 8.25
@@ -240,17 +240,16 @@ while not converged:
 
     # Calculate excess demand
     Z = (
-        trade_shares_prime @ ( np.array(total_expenditure.values, ndmin=2).transpose() * w_hat * L_hat )
-        - w_hat * L_hat * np.array(total_expenditure.values, ndmin=2).transpose() - Z_orig
+        trade_shares_prime @ ( np.array(total_expenditure, ndmin=2).transpose() * w_hat * L_hat )
+        - w_hat * L_hat * np.array(total_expenditure, ndmin=2).transpose() - Z_orig
         )
 
     # Adjust wages updward if excess demand is positive, and downward if it is negative
-    w_hat = w_hat * ( 1 + ( adj_factor * (Z / np.array(total_expenditure.values, ndmin=2).transpose()) ) )
+    w_hat = w_hat * ( 1 + ( adj_factor * (Z / np.array(total_expenditure, ndmin=2).transpose()) ) )
 
     # Enforce the world GDP as numeraire normalization
     w_hat = (
-        w_hat /
-        ( w_hat * L_hat * ( np.array(total_expenditure.values, ndmin=2).transpose() / total_expenditure.sum() ) ).sum()
+        w_hat / ( w_hat * L_hat * ( np.array(total_expenditure, ndmin=2).transpose() / total_expenditure.sum() ) ).sum()
         )
 
     # Increase the iteration counter
