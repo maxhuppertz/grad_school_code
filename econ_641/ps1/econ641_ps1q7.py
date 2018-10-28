@@ -215,11 +215,15 @@ while not converged:
         trade_shares * d_hat**(-theta)
         * np.kron( np.ones((1,trade_shares.shape[0])), np.array(T_hat * w_hat**(-theta), ndmin=2).transpose() )
         )
-    
+    print(trade_shares_prime)
     # Divide that matrix by the sum across rows. This respects the organization of the trade shares matrix, where the
     # rows indicate 'from', and the columns indicate 'to' countries.
-    trade_shares_prime = trade_shares_prime / trade_shares_prime.sum(axis=0)
-
+    trade_shares_prime = (
+        trade_shares_prime /
+        np.kron(np.ones((trade_shares.shape[0],1)), np.array(trade_shares_prime.sum(axis=0), ndmin=2))
+        )
+    print(np.array(trade_shares_prime.sum(axis=0), ndmin=2))
+    nnn
     # Calculate wage changes based on the initial guess or last iteration's value. The transpose is necessary because
     # of the organization of the trade shares matrix, as mentioned above.
     #w_hat = (
