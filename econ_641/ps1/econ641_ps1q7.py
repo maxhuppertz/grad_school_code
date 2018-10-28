@@ -207,7 +207,7 @@ theta = 8.25
 # Specify changes to fundamentals (currently, a ten percent drop in inter-country trade cost)
 d_hat = np.ones(trade_shares.shape) * .9 + np.eye(trade_shares.shape[0]) * .1
 L_hat = np.ones((trade_shares.shape[0], 1))
-T_hat = np.ones((trade_shares.shape[0], 1)) * .9
+T_hat = np.ones((trade_shares.shape[0], 1))
 
 # Set up initial guess for wage changes
 w_hat = np.ones((trade_shares.shape[0], 1))
