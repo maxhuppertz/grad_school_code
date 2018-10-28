@@ -274,18 +274,17 @@ w_hat_df = pd.DataFrame(data=w_hat, index=trade_shares.index, columns=['Real wag
 # Calculate welfare changes between the two scenarios
 welfare_change = (
     T_hat**(-theta)
-    * np.array((np.diag(trade_shares_prime) / np.diag(trade_shares))**(-theta), ndmin=2).transpose()
+    * np.array((np.diag(trade_shares) / np.diag(trade_shares_prime))**(1/theta), ndmin=2).transpose()
     )
 
 # Put these into a DataFrame
 welfare_change_df = pd.DataFrame(data=welfare_change, index=trade_shares.index, columns=['Welfare change'])
 
 # Display the results
-print('Real wage changes:\n', w_hat_df)
-print('Welfare change:\n', welfare_change)
+print(w_hat_df, welfare_change_df)
 
 # Make a DataFrame of some of the results for easy Latex integration
 # Is it worth it to have a tables directory specifically for this? No. No it's not.
-texdf = pd.concat((intermediate_import_ratio, trade_deficit_ratio, w_hat_df, pi_ii_change), axis=1)
-texdf.columns = ['Intermediate import share', 'Trade deficit share', 'Real wage change', 'Own trade share change']
+texdf = pd.concat((intermediate_import_ratio, trade_deficit_ratio, w_hat_df, welfare_change_df), axis=1)
+texdf.columns = ['Intermediate import share', 'Trade deficit share', 'Real wage change', 'Welfare change']
 texdf.to_latex('table.tex')
