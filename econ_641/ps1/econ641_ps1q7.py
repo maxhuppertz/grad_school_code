@@ -95,16 +95,6 @@ for x in range(35):
 intermediate_flows = data.iloc[:, [x in intermediate_c_range for x in data.columns.get_level_values('c_num')]]
 final_flows = data.iloc[:, [x not in intermediate_c_range for x in data.columns.get_level_values('c_num')]]
 
-# Figure out value added adjustement etc.
-#adjustment_terms = ( data.sum(axis=1) - intermediate_flows.sum(axis=0) ) / intermediate_flows.shape[0]
-
-# Add those back in, to get that countries' total expenditure equals the sum of other countries' trade shares times
-# their total expenditure
-#intermediate_flows = (
-#    intermediate_flows
-#    + np.ones((intermediate_flows.shape[0], 1)) @ np.array(adjustment_terms, ndmin=2)
-#    )
-
 # Sum both across the country level, across both axes
 intermediate_flows = intermediate_flows.sum(axis=0, level='country').sum(axis=1, level='country')
 final_flows = final_flows.sum(axis=0, level='country').sum(axis=1, level='country')
@@ -202,7 +192,7 @@ converged = False
 
 # Set up an interation counter and specify the maximum number of iterations after which the program aborts
 iter = 0
-max_iter = 3000
+max_iter = 10000
 
 # Set a tolerance level; if excess demand is below this level for all countries (in absolute value), the program counts
 # that as having achieved convergence
