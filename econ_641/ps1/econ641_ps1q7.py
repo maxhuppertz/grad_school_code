@@ -218,7 +218,7 @@ max_iter = 10000
 # that as having achieved convergence
 tol = 10**(-4)
 
-# Set adjustment factor for the pricing function
+# Set adjustment factor for the pricing function (see below)
 adj_factor = .2
 
 # As long as convergence hasn't been achieved
