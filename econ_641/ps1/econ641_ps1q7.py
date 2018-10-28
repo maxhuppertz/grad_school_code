@@ -206,7 +206,7 @@ max_iter = 3000
 
 # Set a tolerance level; if excess demand is below this level for all countries (in absolute value), the program counts
 # that as having achieved convergence
-tol = 10**(-1)
+tol = 10**(-4)
 
 # Set adjustment factor for the pricing function
 adj_factor = .2
@@ -217,7 +217,7 @@ Z_orig = (
     trade_shares @ np.array(total_expenditure.values, ndmin=2).transpose()
     - np.array(total_expenditure.values, ndmin=2).transpose()
     )
-#print(Z_orig)
+
 # As long as convergence hasn't been achieved
 while not converged:
     # Calculate counterfactual trade shares,
