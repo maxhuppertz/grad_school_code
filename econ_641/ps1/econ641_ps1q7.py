@@ -200,7 +200,7 @@ max_iter = 3000
 tol = 10**(-8)
 
 # Set adjustment factor for the pricing function
-adj_factor = .2
+adj_factor = 1
 
 # Note that expenditures and expenditures times trade shares don't add up in these data, which I'll need to account for
 # when checking excess demand below
@@ -215,7 +215,7 @@ while not converged:
         trade_shares * d_hat**(-theta)
         * np.kron( np.ones((1,trade_shares.shape[0])), np.array(T_hat * w_hat**(-theta), ndmin=2).transpose() )
         )
-
+    
     # Divide that matrix by the sum across rows. This respects the organization of the trade shares matrix, where the
     # rows indicate 'from', and the columns indicate 'to' countries.
     trade_shares_prime = trade_shares_prime / trade_shares_prime.sum(axis=0)
@@ -227,15 +227,15 @@ while not converged:
     #    / (total_expenditure * L_hat) )
     #    )
 
-    # Enforce the world GDP as numeraire normalization
-    #w_hat = w_hat / ( w_hat * L_hat * ( total_expenditure/total_expenditure.sum() ) ).sum()
-
     # Calculate excess demand
     Z = (
-        np.matmul(total_expenditure * w_hat * L_hat, trade_shares_prime) - w_hat * L_hat * total_expenditure - Z_orig
+        np.array(total_expenditure * w_hat * L_hat) @ trade_shares_prime - w_hat * L_hat * total_expenditure #- Z_orig
         )
 
     w_hat = w_hat * (1 + (adj_factor * Z) / total_expenditure)
+
+    # Enforce the world GDP as numeraire normalization
+    w_hat = w_hat / ( w_hat * L_hat * ( total_expenditure/total_expenditure.sum() ) ).sum()
 
     # Increase the iteration counter
     iter += 1
