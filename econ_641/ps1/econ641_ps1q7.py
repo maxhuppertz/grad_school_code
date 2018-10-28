@@ -191,8 +191,8 @@ theta = 8.25
 
 # Specify changes to fundamentals (currently, a ten percent drop in inter-country trade cost)
 d_hat = np.ones(trade_shares.shape) #* .9 + np.eye(trade_shares.shape[0]) * .1
-L_hat = np.ones(trade_shares.shape[0])
-T_hat = np.ones(trade_shares.shape[0])
+L_hat = np.ones(trade_shares.shape[0],1)
+T_hat = np.ones(trade_shares.shape[0],1)
 
 # Set up initial guess for wage changes
 w_hat = np.ones(trade_shares.shape[0]) * .5
@@ -213,7 +213,7 @@ adj_factor = .2
 
 # Note that expenditures and expenditures times trade shares don't add up in these data, which I'll need to account for
 # when checking excess demand below
-Z_orig = np.matmul(total_expenditure, trade_shares) - total_expenditure
+Z_orig = total_expenditure.as_matrix() @ trade_shares - total_expenditure
 print(Z_orig)
 # As long as convergence hasn't been achieved
 while not converged:
@@ -222,14 +222,14 @@ while not converged:
     # is pi(j,i) T_hat(i) * (d_hat(j,i) * w_hat(i))^(-theta)
     trade_shares_prime = (
         trade_shares * d_hat**(-theta)
-        * np.kron( np.ones((1,trade_shares.shape[0])), np.array(T_hat * w_hat**(-theta), ndmin=2).transpose() )
+        * ( np.ones((trade_shares.shape[0], 1)) @ (T_hat * w_hat**(-theta)).transpose()
         )
 
     # Divide that matrix by the sum across rows. This respects the organization of the trade shares matrix, where the
     # rows indicate 'from', and the columns indicate 'to' countries.
     trade_shares_prime = (
         trade_shares_prime /
-        np.kron(np.ones((trade_shares.shape[0],1)), np.array(trade_shares_prime.sum(axis=0), ndmin=2))
+        ( np.ones((trade_shares.shape[0], 1)) @ np.array(trade_shares_prime.sum(axis=0), ndmin=2) )
         )
 
     # Calculate excess demand
