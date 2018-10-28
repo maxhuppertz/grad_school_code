@@ -38,7 +38,9 @@ for dir in [ddir, fdir]:
 # Specify whether to download the data
 download_data = False
 
-# Specify name of main data file, plus extension (doesn't need to exist, if you chose to download the data)
+# Specify name of main data file, plus extension. If you chose to download the data, the program will create this, as
+# well as a .pkl version, which is the preferred file format for pandas. If you chose not to download the data, the
+# data directory and that .pkl file need to exist.
 data_file = 'wiot00_row_apr12'
 data_file_ext = '.xlsx'
 
