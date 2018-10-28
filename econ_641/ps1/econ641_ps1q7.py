@@ -35,6 +35,9 @@ for dir in [ddir, fdir]:
     if not path.isdir(mdir+dir):
         mkdir(mdir+dir)
 
+# Specify whether to download the data
+download_data = False
+
 # Specify name of main data file, plus extension (doesn't need to exist, if you want to download it again)
 data_file = 'wiot00_row_apr12'
 data_file_ext = '.xlsx'
@@ -42,9 +45,6 @@ data_file_ext = '.xlsx'
 # Set up name of trade shares file, plus extension (the program creates this)
 trade_shares_file = 'wiot00_trade_shares'
 trade_shares_file_ext = '.xlsx'
-
-# Specify whether to re-download the data
-download_data = False
 
 # Specify names for WIOD data index levels
 ind_icode = 'industry_code'
