@@ -191,18 +191,18 @@ theta = 8.25
 
 # Specify changes to fundamentals (currently, a ten percent drop in inter-country trade cost)
 d_hat = np.ones(trade_shares.shape) #* .9 + np.eye(trade_shares.shape[0]) * .1
-L_hat = np.ones(trade_shares.shape[0],1)
-T_hat = np.ones(trade_shares.shape[0],1)
+L_hat = np.ones((trade_shares.shape[0], 1))
+T_hat = np.ones((trade_shares.shape[0], 1))
 
 # Set up initial guess for wage changes
-w_hat = np.ones(trade_shares.shape[0]) * .5
+w_hat = np.ones((trade_shares.shape[0], 1)) * .5
 
 # Set up a flag for convergence
 converged = False
 
 # Set up an interation counter and specify the maximum number of iterations after which the program aborts
 iter = 0
-max_iter = 500
+max_iter = 3000
 
 # Set a tolerance level; if excess demand is below this level for all countries (in absolute value), the program counts
 # that as having achieved convergence
@@ -213,8 +213,11 @@ adj_factor = .2
 
 # Note that expenditures and expenditures times trade shares don't add up in these data, which I'll need to account for
 # when checking excess demand below
-Z_orig = total_expenditure.as_matrix() @ trade_shares - total_expenditure
-print(Z_orig)
+Z_orig = (
+    trade_shares @ np.array(total_expenditure.values, ndmin=2).transpose()
+    - np.array(total_expenditure.values, ndmin=2).transpose()
+    )
+#print(Z_orig)
 # As long as convergence hasn't been achieved
 while not converged:
     # Calculate counterfactual trade shares,
@@ -222,7 +225,7 @@ while not converged:
     # is pi(j,i) T_hat(i) * (d_hat(j,i) * w_hat(i))^(-theta)
     trade_shares_prime = (
         trade_shares * d_hat**(-theta)
-        * ( np.ones((trade_shares.shape[0], 1)) @ (T_hat * w_hat**(-theta)).transpose()
+        * ( np.ones((trade_shares.shape[0], 1)) @ (T_hat * w_hat**(-theta)).transpose() )
         )
 
     # Divide that matrix by the sum across rows. This respects the organization of the trade shares matrix, where the
@@ -234,10 +237,11 @@ while not converged:
 
     # Calculate excess demand
     Z = (
-        np.array(total_expenditure * w_hat * L_hat) @ trade_shares_prime - w_hat * L_hat * total_expenditure - Z_orig
+        trade_shares_prime @ ( np.array(total_expenditure.values, ndmin=2).transpose() * w_hat * L_hat )
+        - w_hat * L_hat * np.array(total_expenditure.values, ndmin=2).transpose() - Z_orig
         )
 
-    w_hat = w_hat * (1 + (adj_factor * Z) / total_expenditure)
+    w_hat = w_hat * ( 1 + ( adj_factor * (Z / np.array(total_expenditure.values, ndmin=2).transpose()) ) )
 
     # Enforce the world GDP as numeraire normalization
     #w_hat = w_hat / ( w_hat * L_hat * ( total_expenditure/total_expenditure.sum() ) ).sum()
@@ -256,4 +260,4 @@ while not converged:
         # If so, print a message and abort the loop
         print('Maximum iterations reached (' + str(max_iter) + ')! Aborting...')
         break
-#print(w_hat)
+print(w_hat)
