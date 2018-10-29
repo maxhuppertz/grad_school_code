@@ -107,7 +107,7 @@ final_flows = data.iloc[:, [x not in intermediate_c_range for x in data.columns.
 intermediate_flows = intermediate_flows.sum(axis=0, level='country').sum(axis=1, level='country')
 final_flows = final_flows.sum(axis=0, level='country').sum(axis=1, level='country')
 
-# Create vectors of total intermediate goods and final goods imports by country
+# Create vectors of intermediate goods and final goods imports by country
 intermediate_imports = intermediate_flows.sum(axis=0) - np.diag(intermediate_flows)
 final_imports = final_flows.sum(axis=0) - np.diag(final_flows)
 
