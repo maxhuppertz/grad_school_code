@@ -253,6 +253,8 @@ while not converged:
         )
 
     # Adjust wages upwards if excess demand is positive, and downwards if it is negative
+    # This comes straight from Samuel Kortum's web page, and the MATLAB code for Dekle et al. (2007):
+    # http://kortum.elisites.yale.edu/home/programs-and-data-for-unbalanced-trade
     w_hat = w_hat * ( 1 + ( adj_factor * (Z / np.array(total_expenditure, ndmin=2).transpose()) ) )
 
     # Enforce the world GDP as numeraire normalization
