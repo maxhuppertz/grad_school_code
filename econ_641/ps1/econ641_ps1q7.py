@@ -131,7 +131,7 @@ total_expenditure = total_imports + np.diag(total_flows)
 trade_deficit_ratio = trade_deficit / total_expenditure
 
 # A word of caution: Note a) that using DataFrames such as total_expenditure directly when doing linear algebra is a
-# huge mess, and will screw up the results, so they have to be converted in to two-dimensional Numpy arrays before doing
+# huge mess, and will screw up the results, so they have to be converted into two-dimensional Numpy arrays before doing
 # anything with them. Also note b) that np.array(<input>, ndmin=2) creates a row vector, rather than a column vector,
 # hence there will be many .transpose() operations later. (Because I like column vectors much more than row vectors.)
 
