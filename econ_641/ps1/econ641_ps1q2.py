@@ -1,8 +1,19 @@
 from matplotlib import pyplot as plt
+from os import chdir, mkdir, path, mkdir
 
 # Set graph options
 plt.rc('font', **{'family': 'serif', 'serif': ['lmodern']})
 plt.rc('text', usetex=True)
+
+# Specify name for main directory (just uses the file's directory)
+mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
+
+# Set figures directory (doesn't need to exist)
+fdir = '/figures'
+
+# Create the figures directory if it doesn't exist
+if not path.isdir(mdir+fdir):
+    mkdir(mdir+fdir)
 
 # Set up model parameters
 alpha = .5
@@ -37,10 +48,13 @@ K_B = K_H + K_F - K_A
 # Display the results
 print('r =', r, 'L_A =', L_A, 'L_B =', L_B, 'K_A =', K_A, 'K_B =', K_B)
 
+# Plot the results
+# Change to figures directory
+chdir(mdir+fdir)
+
 # Set up a plot
 fig, ax = plt.subplots(figsize=(15,9))
 
-# Plot the results
 # Lower contour of the FPE set
 V1 = [0, L_A, L_A + L_B]
 V2 = [0, K_A, K_A + K_B]
@@ -55,6 +69,7 @@ E = [L_H, K_H]
 ax.plot(V1, V2, color='blue')
 ax.plot(V3, V4, color='blue')
 ax.scatter(E[0], E[1], marker='X', color='red')
+ax.annotate('Initial endowment', (E[0] + .5, E[1] + .5))
 ax.fill_between(V3, V4, facecolor='none', hatch='\\', edgecolor='b', interpolate=True)
 ax.fill_between(V1, V2, facecolor='white', interpolate=True)
 
@@ -72,4 +87,5 @@ fig.tight_layout()
 # Add some more space after the horizontal axis label
 ax.yaxis.labelpad = 10
 
-plt.show()
+# Save the plot
+plt.savefig('FPE_graph.pdf')
