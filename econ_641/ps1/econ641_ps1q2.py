@@ -1,3 +1,9 @@
+from matplotlib import pyplot as plt
+
+# Set graph options
+plt.rc('font', **{'family': 'serif', 'serif': ['lmodern']})
+plt.rc('text', usetex=True)
+
 # Set up model parameters
 alpha = .5
 w = 1  # Normalization
@@ -30,3 +36,40 @@ K_B = K_H + K_F - K_A
 
 # Display the results
 print('r =', r, 'L_A =', L_A, 'L_B =', L_B, 'K_A =', K_A, 'K_B =', K_B)
+
+# Set up a plot
+fig, ax = plt.subplots(figsize=(15,9))
+
+# Plot the results
+# Lower contour of the FPE set
+V1 = [0, L_A, L_A + L_B]
+V2 = [0, K_A, K_A + K_B]
+
+# Upper contour of the FPE set
+V3 = [0, L_B, L_A + L_B]
+V4 = [0, K_B, K_A + K_B]
+
+# Endowment vector
+E = [L_H, K_H]
+
+ax.plot(V1, V2, color='blue')
+ax.plot(V3, V4, color='blue')
+ax.scatter(E[0], E[1], marker='X', color='red')
+ax.fill_between(V3, V4, facecolor='none', hatch='\\', edgecolor='b', interpolate=True)
+ax.fill_between(V1, V2, facecolor='white', interpolate=True)
+
+# Change axis limits
+ax.set_xlim(0, L_A + L_B)
+ax.set_ylim(0, K_A + K_B)
+
+# Label the axes
+ax.set_xlabel('L')
+ax.set_ylabel('K', rotation=0)
+
+# Trim unnecessary whitespace
+fig.tight_layout()
+
+# Add some more space after the horizontal axis label
+ax.yaxis.labelpad = 10
+
+plt.show()
