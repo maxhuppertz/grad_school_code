@@ -133,7 +133,7 @@ trade_deficit_ratio = trade_deficit / total_expenditure
 # A word of caution: Note a) that using DataFrames such as total_expenditure directly when doing linear algebra is a
 # huge mess, and will screw up the results, so they have to be converted into two-dimensional Numpy arrays before doing
 # anything with them. Also note b) that np.array(<input>, ndmin=2) creates a row vector, rather than a column vector,
-# hence there will be many .transpose() operations later. (Because I like column vectors much more than row vectors.)
+# hence there will be many .transpose() operations later. (Because I like column vectors much better than row vectors.)
 
 # To get the trade shares, first make a matrix in which each column corresponds to a given country's total expenditure
 # (that is, each column just repeats total expenditure of that country)
