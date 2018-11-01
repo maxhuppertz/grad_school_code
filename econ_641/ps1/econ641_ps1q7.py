@@ -125,7 +125,7 @@ total_exports = total_flows.sum(axis=1) - np.diag(total_flows)
 trade_deficit = total_exports - total_imports
 
 # Make a vector of total expenditure
-total_expenditure = total_imports + np.diag(total_flows)
+total_expenditure = total_exports + np.diag(total_flows)
 
 # Calculate the ratio of trade deficits to total expenditure
 trade_deficit_ratio = trade_deficit / total_expenditure
