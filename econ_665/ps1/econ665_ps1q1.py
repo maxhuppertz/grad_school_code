@@ -1,10 +1,24 @@
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from os import chdir, mkdir, path, mkdir
 
 # Set graph options
 plt.rc('font', **{'family': 'serif', 'serif': ['lmodern']})
 plt.rc('text', usetex=True)
+
+# Specify name for main directory (just uses the file's directory)
+mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
+
+# Set figures directory (doesn't need to exist)
+fdir = '/figures'
+
+# Create the figures directory if it doesn't exist
+if not path.isdir(mdir+fdir):
+    mkdir(mdir+fdir)
+
+# Change directory to figures
+chdir(mdir+fdir)
 
 # Create vector of interest rates
 r_min = 0
@@ -32,7 +46,7 @@ for i, c in enumerate(np.flip(cutoffs, axis=0)):
         beta_min_plot[(beta_min > c) & (beta_min <= np.flip(cutoffs, axis=0)[i-1])] = c
 
 # Set up plot
-fig, ax = plt.subplots(figsize=(9,9))
+fig, ax = plt.subplots(figsize=(6.5,6.5))
 
 # Make the heat map
 cm = 'tab20c'
@@ -59,12 +73,18 @@ ax.set_xticklabels(np.linspace(s_min, s_max, n_ticks))
 ax.set_yticklabels(np.linspace(r_min, r_max, n_ticks))
 
 # Label color bar
-cbar.ax.set_ylabel(r'Implied minimum $\beta$', fontsize=11, rotation=-90, va="bottom")
+cbar.ax.set_ylabel(r"Implied minimum Mincer's $\beta$", fontsize=11, rotation=-90, va="bottom")
 
 # Set axis labels
 ax.set_xlabel(r'$s$', fontsize=11)
 ax.set_ylabel(r'$r$', fontsize=11, rotation=0)
 
+# Add some more space after the horizontal axis label
+ax.yaxis.labelpad = 10
+
+# Get rid of unnecessary whitespace
 fig.tight_layout()
 
-plt.show()
+# Save and close the figure (the bbox_inches='tight' helps remove even more unwanted whitespace)
+plt.savefig('r_s_heatmap.pdf', bbox_inches='tight')
+plt.close()
