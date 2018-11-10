@@ -97,25 +97,38 @@ plt.close()
 ### PS1Q2: Gains from reallocation triangle
 ########################################################################################################################
 
-zeta = 100
-f_0 = 5
+
+r = .02
+f_0 = 20000
+gamma = 10000
 
 s_0 = 9.75
 s_1 = 9.93
 
-def MB(s, zeta=zeta): return np.ones(s.shape) * zeta
-def MC(s, zeta=zeta, f_0=f_0): return f_0 + zeta * s
+zeta = (f_0 + gamma) / (1/r - s_1)
 
-s = np.linspace(0, 20, 10000)
+def MB(s, zeta=zeta, r=r):
+    try:
+        mb = np.ones(s.shape) * (zeta/r)
+    except:
+        mb = zeta/r
+    return mb
+
+def MC(s, zeta=zeta, f_0=f_0, gamma=gamma): return f_0 + zeta * s + gamma
+
+s_min = 9
+s_max = 11
+s = np.linspace(s_min, s_max, 10000)
 
 fig, ax = plt.subplots()
 
-ax.plot(s, MB(s), label=r"MB = \frac{f'(s)}{r}")
-ax.plot(s, MC(s), label='MC = f(s) + c(s)')
-ax.axvline(x=s_0)
-ax.axvline(x=s_1)
+ax.plot(s, MB(s), label=r"MB = \frac{f'(s)}{r}", color='green')
+ax.plot(s, MC(s), label='MC = f(s) + c(s)', color='blue')
+ax.axvline(x=s_0, ymax=(MB(s_0) - MC(s_min)*.999) / (MC(s_max)*1.001 - MC(s_min)*.999), linestyle='--', color='red')
+ax.axvline(x=s_1, ymax=(MB(s_1) - MC(s_min)*.999) / (MC(s_max)*1.001 - MC(s_min)*.999), linestyle='--', color='red')
 
-ax.set_xlim(0, max(s))
+ax.set_xlim(s_min, s_max)
+#ax.set_ylim(MC(s_min)*.999, MC(s_max)*1.001)
 
 ax.legend()
 
