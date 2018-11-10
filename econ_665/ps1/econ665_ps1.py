@@ -4,8 +4,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from os import chdir, mkdir, path, mkdir
 
 # Set graph options
-plt.rc('font', **{'family': 'serif', 'serif': ['lmodern']})
-plt.rc('text', usetex=True)
+#plt.rc('font', **{'family': 'serif', 'serif': ['lmodern']})
+#plt.rc('text', usetex=True)
 
 # Specify name for main directory (just uses the file's directory)
 mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
@@ -96,3 +96,27 @@ plt.close()
 ########################################################################################################################
 ### PS1Q2: Gains from reallocation triangle
 ########################################################################################################################
+
+zeta = 100
+f_0 = 5
+
+s_0 = 9.75
+s_1 = 9.93
+
+def MB(s, zeta=zeta): return np.ones(s.shape) * zeta
+def MC(s, zeta=zeta, f_0=f_0): return f_0 + zeta * s
+
+s = np.linspace(0, 20, 10000)
+
+fig, ax = plt.subplots()
+
+ax.plot(s, MB(s), label=r"MB = \frac{f'(s)}{r}")
+ax.plot(s, MC(s), label='MC = f(s) + c(s)')
+ax.axvline(x=s_0)
+ax.axvline(x=s_1)
+
+ax.set_xlim(0, max(s))
+
+ax.legend()
+
+plt.show()
