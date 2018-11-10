@@ -4,8 +4,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from os import chdir, mkdir, path, mkdir
 
 # Set graph options
-#plt.rc('font', **{'family': 'serif', 'serif': ['lmodern']})
-#plt.rc('text', usetex=True)
+plt.rc('font', **{'family': 'serif', 'serif': ['lmodern']})
+plt.rc('text', usetex=True)
 
 # Specify name for main directory (just uses the file's directory)
 mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
@@ -104,6 +104,7 @@ gamma = 10000
 
 s_0 = 9.75
 s_1 = 9.93
+delta_s = np.linspace(s_0, s_1, 2)
 
 zeta = (f_0 + gamma) / (1/r - s_1)
 
@@ -116,20 +117,32 @@ def MB(s, zeta=zeta, r=r):
 
 def MC(s, zeta=zeta, f_0=f_0, gamma=gamma): return f_0 + zeta * s + gamma
 
-s_min = 9
-s_max = 11
+s_min = 9.4
+s_max = 10.4
 s = np.linspace(s_min, s_max, 10000)
 
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(6.5, 4.5))
 
 ax.plot(s, MB(s), label=r"MB = \frac{f'(s)}{r}", color='green')
 ax.plot(s, MC(s), label='MC = f(s) + c(s)', color='blue')
-ax.axvline(x=s_0, ymax=(MB(s_0) - MC(s_min)*.999) / (MC(s_max)*1.001 - MC(s_min)*.999), linestyle='--', color='red')
-ax.axvline(x=s_1, ymax=(MB(s_1) - MC(s_min)*.999) / (MC(s_max)*1.001 - MC(s_min)*.999), linestyle='--', color='red')
+ax.fill_between(delta_s, MB(delta_s), MC(delta_s), facecolor='none', hatch='\\', edgecolor='red', interpolate=True)
+plt.annotate(r'T_{\$}', xy=(.998*(s_1 + s_0) / 2, MB(s_1)*1.0005), xycoords='data', color='red', fontsize=11)
+ax.axvline(x=s_0, ymax=(MB(s_0) - MC(s_min)*.999) / (MC(s_max)*1.001 - MC(s_min)*.999),
+    linestyle='--', color='black', label='s^*_0')
+ax.axvline(x=s_1, ymax=(MB(s_1) - MC(s_min)*.999) / (MC(s_max)*1.001 - MC(s_min)*.999),
+    linestyle='--', color='black', label='s^*_1')
+
+plt.tick_params(axis='both', which='both',
+    bottom='off', top='off', labelbottom='off', right='off', left='off', labelleft='off')
 
 ax.set_xlim(s_min, s_max)
-#ax.set_ylim(MC(s_min)*.999, MC(s_max)*1.001)
+ax.set_ylim(MC(s_min)*.999, MC(s_max)*1.001)
 
-ax.legend()
+ax.set_xlabel('$s$', fontsize=11)
+
+ax.legend(fontsize=11, loc='lower center', bbox_to_anchor=(0.5, -0.1), ncol=4)
+
+ax.spines['right'].set_visible(False)
+ax.spines['top'].set_visible(False)
 
 plt.show()
