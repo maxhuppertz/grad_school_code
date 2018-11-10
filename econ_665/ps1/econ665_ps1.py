@@ -4,8 +4,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from os import chdir, mkdir, path, mkdir
 
 # Set graph options
-#plt.rc('font', **{'family': 'serif', 'serif': ['lmodern']})
-#plt.rc('text', usetex=True)
+plt.rc('font', **{'family': 'serif', 'serif': ['lmodern']})
+plt.rc('text', usetex=True)
 
 # Specify name for main directory (just uses the file's directory)
 mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
@@ -97,17 +97,22 @@ plt.close()
 ### PS1Q2: Gains from reallocation triangle
 ########################################################################################################################
 
-
+# Define discount rate, f(0), and c(s) = gamma
 r = .02
 f_0 = 20000
 gamma = 10000
 
+# Define initial allocation s_0 and reallocation point s_1
 s_0 = 9.75
 s_1 = 9.93
+
+# Make a range of values between the two for later use
 delta_s = np.linspace(s_0, s_1, 2)
 
+# Calculate f'(s) = zeta to make sure s_1 is optimal
 zeta = (f_0 + gamma) / (1/r - s_1)
 
+# Define a marginal benefit function
 def MB(s, zeta=zeta, r=r):
     try:
         mb = np.ones(s.shape) * (zeta/r)
@@ -115,38 +120,57 @@ def MB(s, zeta=zeta, r=r):
         mb = zeta/r
     return mb
 
+# Define a marginal cost function
 def MC(s, zeta=zeta, f_0=f_0, gamma=gamma): return f_0 + zeta * s + gamma
 
-s_min = 9.4
-s_max = 10.4
-s = np.linspace(s_min, s_max, 10000)
+# Select years of schooling to plot over
+s_min = 9.4  # Minimum
+s_max = 10.4  # Maximum
+s = np.linspace(s_min, s_max, 10000)  # Linear spare of years to plot
 
+# Set up plot
 fig, ax = plt.subplots(figsize=(6.5, 4.5))
 
+# Plot marginal benefit and marginal cost, add labels to the curves (inside the graph)
 ax.plot(s, MB(s), color='green')
 ax.annotate(r"MB$= \frac{f'(s)}{r}$", xy=(s_min*1.0005, MB(s_min)*1.0005), color='green', fontsize=11)
 ax.plot(s, MC(s), color='blue')
 ax.annotate('MC$= f(s) + c(s)$', xy=(s_min*1.0005, MC(s_min)*.9994), color='blue', fontsize=11)
 
+# Plot T_$ triangle plus annotation
 ax.fill_between(delta_s, MB(delta_s), MC(delta_s), facecolor='none', hatch='\\', edgecolor='red', interpolate=True)
 ax.annotate(r'$T_{\$}$', xy=(.995*(s_1 + s_0) / 2, MC(s_0) + .6*(s_1 - s_0)*zeta), color='red',
-    fontsize=11, bbox=dict(boxstyle="circle", fc="white", ec="red"))
+    fontsize=11, bbox=dict(boxstyle="circle, pad=.4", fc="white", ec="red"))
+
+# Plot initial allocation and reallocation point
 ax.axvline(x=s_0, ymax=(MB(s_0) - MC(s_min)*.999) / (MC(s_max)*1.001 - MC(s_min)*.999),
     linestyle='--', color='black')
 ax.axvline(x=s_1, ymax=(MB(s_1) - MC(s_min)*.999) / (MC(s_max)*1.001 - MC(s_min)*.999),
     linestyle='--', color='black')
 
+# Remove y ticks
 plt.tick_params(axis='y', which='both',
     bottom='off', top='off', labelbottom='off', right='off', left='off', labelleft='off')
 
+# Set x ticks at allocations only
 ax.set_xticks([s_0, s_1])
 ax.set_xticklabels(['$s^*_0$', '$s^*_1$'], fontsize=11)
 
+# Set axis limits
 ax.set_xlim(s_min, s_max)
 ax.set_ylim(MC(s_min)*.999, MC(s_max)*1.001)
 
+# Label x axis, set label position
 ax.set_xlabel('$s$', fontsize=11)
 ax.xaxis.set_label_coords(1, -0.025)
 
+# Remove top and right axis spines, to make this look more like a graph
 ax.spines['right'].set_visible(False)
 ax.spines['top'].set_visible(False)
+
+# Get rid of unnecessary whitespace
+fig.tight_layout()
+
+# Save figure and close
+plt.savefig('q2_triangle.pdf')
+plt.close()
