@@ -123,9 +123,11 @@ s = np.linspace(s_min, s_max, 10000)
 
 fig, ax = plt.subplots(figsize=(6.5, 4.5))
 
-ax.plot(s, MB(s), label=r"MB $= \frac{f'(s)}{r}$", color='green')
-ax.annotate(r"MB $= \frac{f'(s)}{r}$", xy=(s_min, MB(s_min)), color='green')
-ax.plot(s, MC(s), label='MC $= f(s) + c(s)$', color='blue')
+ax.plot(s, MB(s), color='green')
+ax.annotate(r"MB$= \frac{f'(s)}{r}$", xy=(s_min*1.0005, MB(s_min)*1.0005), color='green', fontsize=11)
+ax.plot(s, MC(s), color='blue')
+ax.annotate('MC$= f(s) + c(s)$', xy=(s_min*1.0005, MC(s_min)*.9994), color='blue', fontsize=11)
+
 ax.fill_between(delta_s, MB(delta_s), MC(delta_s), facecolor='none', hatch='\\', edgecolor='red', interpolate=True)
 ax.annotate(r'$T_{\$}$', xy=(.998*(s_1 + s_0) / 2, MB(s_1)*1.0005), xycoords='data', color='red', fontsize=11)
 ax.axvline(x=s_0, ymax=(MB(s_0) - MC(s_min)*.999) / (MC(s_max)*1.001 - MC(s_min)*.999),
@@ -137,14 +139,13 @@ plt.tick_params(axis='y', which='both',
     bottom='off', top='off', labelbottom='off', right='off', left='off', labelleft='off')
 
 ax.set_xticks([s_0, s_1])
-ax.set_xticklabels(['$s^*_0$', '$s^*_1$'])
+ax.set_xticklabels(['$s^*_0$', '$s^*_1$'], fontsize=11)
 
 ax.set_xlim(s_min, s_max)
 ax.set_ylim(MC(s_min)*.999, MC(s_max)*1.001)
 
 ax.set_xlabel('$s$', fontsize=11)
-
-ax.legend(fontsize=11)
+ax.xaxis.set_label_coords(1, -0.025)
 
 ax.spines['right'].set_visible(False)
 ax.spines['top'].set_visible(False)
