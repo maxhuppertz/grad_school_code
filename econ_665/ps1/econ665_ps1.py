@@ -20,6 +20,10 @@ if not path.isdir(mdir+fdir):
 # Change directory to figures
 chdir(mdir+fdir)
 
+########################################################################################################################
+### PS1Q1: Heatmap of minimum Mincer's betas
+########################################################################################################################
+
 # Create vector of interest rates
 r_min = 0
 r_max = .2
@@ -88,3 +92,7 @@ fig.tight_layout()
 # Save and close the figure (the bbox_inches='tight' helps remove even more unwanted whitespace)
 plt.savefig('r_s_heatmap.pdf', bbox_inches='tight')
 plt.close()
+
+########################################################################################################################
+### PS1Q2: Gains from reallocation triangle
+########################################################################################################################
