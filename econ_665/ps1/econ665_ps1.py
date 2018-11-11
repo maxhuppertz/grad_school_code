@@ -94,7 +94,7 @@ plt.savefig('r_s_heatmap.pdf', bbox_inches='tight')
 plt.close()
 
 ########################################################################################################################
-### PS1Q2: Gains from reallocation triangle
+### PS1Q2.1: Gains from reallocation triangle - Graph
 ########################################################################################################################
 
 # Define discount rate, f(0), and c(s) = gamma
@@ -133,9 +133,9 @@ fig, ax = plt.subplots(figsize=(6.5, 4.5))
 
 # Plot marginal benefit and marginal cost, add labels to the curves (inside the graph)
 ax.plot(s, MB(s), color='green')
-ax.annotate(r"MB$= \frac{f'(s)}{r}$", xy=(s_min*1.0005, MB(s_min)*1.0005), color='green', fontsize=11)
+ax.annotate(r"MB$= \frac{\zeta}{r}$", xy=(s_min*1.0005, MB(s_min)*1.0005), color='green', fontsize=11)
 ax.plot(s, MC(s), color='blue')
-ax.annotate('MC$= f(s) + c(s)$', xy=(s_min*1.0005, MC(s_min)*.9994), color='blue', fontsize=11)
+ax.annotate(r'MC$= f(0) + \zeta s + \gamma$', xy=(s_min*1.0005, MC(s_min)*.99935), color='blue', fontsize=11)
 
 # Plot T_$ triangle plus annotation
 ax.fill_between(delta_s, MB(delta_s), MC(delta_s), facecolor='none', hatch='\\', edgecolor='red', interpolate=True)
@@ -174,3 +174,25 @@ fig.tight_layout()
 # Save figure and close
 plt.savefig('q2_triangle.pdf')
 plt.close()
+
+########################################################################################################################
+### PS1Q2.1: Gains from reallocation triangle - Gains table
+########################################################################################################################
+
+# Specify Mincer's beta
+beta = .08
+
+# Specify vector of discount rates to use
+R = np.linspace(.01, .1, 10)
+
+# Set up output display
+cw = 4
+print('r'.ljust(cw), 'T')
+
+# Go through all discount rates
+for r in R:
+    # Calculate triangle
+    T = .5 * (s_1 - s_0)**2 * r * beta
+
+    # Display result
+    print(str(r).ljust(cw), str(T))
