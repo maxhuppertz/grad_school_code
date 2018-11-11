@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from os import chdir, mkdir, path, mkdir
 
@@ -183,16 +184,18 @@ plt.close()
 beta = .08
 
 # Specify vector of discount rates to use
-R = np.linspace(.01, .1, 10)
+R = np.array(np.linspace(.01, .1, 10), ndmin=2)
 
-# Set up output display
-cw = 4
-print('r'.ljust(cw), 'T')
+# Set up vector of triangles
+T = np.zeros(R.shape)
 
 # Go through all discount rates
-for r in R:
-    # Calculate triangle
-    T = .5 * (s_1 - s_0)**2 * r * beta
+for i, r in enumerate(R):
+    # Calculate triangle (in percent of lifetime income)
+    T[i] = .5 * (s_1 - s_0)**2 * r * beta * 100
 
-    # Display result
-    print(str(r).ljust(cw), str(T))
+# Combine interest rates and triangles in a DataFrame
+RT_table = pd.DataFrame(data=np.hstack((R.transpose(), T.transpose())), columns=['r', 'T (percent)'])
+
+# Make a tex table
+RT_table.to_latex('triangle_table.tex')
