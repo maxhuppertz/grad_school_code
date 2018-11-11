@@ -195,18 +195,22 @@ fig, ax = plt.subplots(figsize=(6.5, 6.5))
 # Plot triangles as a function of interest rates
 ax.plot(R, T(R))
 
+# Format horizontal axis
 ax.set_xlim(min(R), max(R))
 ax.set_xticks(R)
 ax.set_xticklabels(R, fontsize=11)
 ax.set_xlabel('r', fontsize=11)
 
+# Format vertical axis
 ax.set_ylim(min(T(R)), max(T(R)))
 ax.set_yticks(T(R))
 ax.set_yticklabels(T(R), fontsize=11)
-ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+ax.yaxis.set_major_formatter(FormatStrFormatter('%.4f'))
 ax.set_ylabel('$T(r)$ (percent)', fontsize=11)
 
-
+# Remove unnecessary whitespace
 fig.tight_layout()
 
-plt.show()
+# Save figure and close
+plt.savefig('q2_triangle_sizes.pdf')
+plt.close()
