@@ -1,3 +1,8 @@
+########################################################################################################################
+### ECON 665: PS1 - Triangles and rectangles in schooling
+########################################################################################################################
+
+# Import necessary packages
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import FormatStrFormatter
@@ -177,7 +182,7 @@ plt.savefig('q2_triangle.pdf')
 plt.close()
 
 ########################################################################################################################
-### PS1Q2.1: Gains from reallocation triangle - Gains table
+### PS1Q2.2: Gains from reallocation triangle - Gains table
 ########################################################################################################################
 
 # Specify Mincer's beta
