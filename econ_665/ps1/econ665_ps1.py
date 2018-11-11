@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
+from matplotlib.ticker import FormatStrFormatter
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from os import chdir, mkdir, path, mkdir
 
@@ -184,18 +184,29 @@ plt.close()
 beta = .08
 
 # Specify vector of discount rates to use
-R = np.array(np.linspace(.01, .1, 10), ndmin=2)
+R = np.linspace(.01, .1, 10)
 
-# Set up vector of triangles
-T = np.zeros(R.shape)
+# Define triangle function
+def T(r, s_1=s_1, s_0=s_0, beta=beta): return .5 * (s_1 - s_0)**2 * r * beta * 100
 
-# Go through all discount rates
-for i, r in enumerate(R):
-    # Calculate triangle (in percent of lifetime income)
-    T[i] = .5 * (s_1 - s_0)**2 * r * beta * 100
+# Set up plot
+fig, ax = plt.subplots(figsize=(6.5, 6.5))
 
-# Combine interest rates and triangles in a DataFrame
-RT_table = pd.DataFrame(data=np.hstack((R.transpose(), T.transpose())), columns=['r', 'T (percent)'])
+# Plot triangles as a function of interest rates
+ax.plot(R, T(R))
 
-# Make a tex table
-RT_table.to_latex('triangle_table.tex')
+ax.set_xlim(min(R), max(R))
+ax.set_xticks(R)
+ax.set_xticklabels(R, fontsize=11)
+ax.set_xlabel('r', fontsize=11)
+
+ax.set_ylim(min(T(R)), max(T(R)))
+ax.set_yticks(T(R))
+ax.set_yticklabels(T(R), fontsize=11)
+ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+ax.set_ylabel('$T(r)$ (percent)', fontsize=11)
+
+
+fig.tight_layout()
+
+plt.show()
