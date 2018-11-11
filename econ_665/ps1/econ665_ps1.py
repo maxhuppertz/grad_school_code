@@ -3,6 +3,7 @@
 ########################################################################################################################
 
 # Import necessary packages
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import FormatStrFormatter
@@ -12,6 +13,7 @@ from os import chdir, mkdir, path, mkdir
 # Set graph options
 plt.rc('font', **{'family': 'serif', 'serif': ['lmodern']})
 plt.rc('text', usetex=True)
+matplotlib.rcParams["text.latex.preamble"].append(r'\usepackage{amsmath}')
 
 # Specify name for main directory (just uses the file's directory)
 mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
@@ -186,7 +188,7 @@ plt.savefig('q2_triangle.pdf')
 plt.close()
 
 ########################################################################################################################
-### PS1Q2.2: Gains from reallocation triangle - Gains table
+### PS1Q2.2: Gains from reallocation triangle - Sizes
 ########################################################################################################################
 
 # Specify Mincer's beta
@@ -222,4 +224,61 @@ fig.tight_layout()
 
 # Save figure and close
 plt.savefig('q2_triangle_sizes.pdf')
+plt.close()
+
+########################################################################################################################
+### PS1Q4: School construction in the model - Graph
+########################################################################################################################
+
+gamma_0 = zeta / r - f_0 - zeta * s_0
+
+# Set up plot
+fig, ax = plt.subplots(figsize=(6.5, 4.5))
+
+# Plot original marginal benefit and marginal cost, add labels to the curves (inside the graph)
+ax.plot(s, MB(s), color='green')
+ax.annotate(r"MB$= \frac{\zeta}{r}$", xy=(s_min*1.0005, MB(s_min)*1.0005), color='green', fontsize=11)
+ax.plot(s, MC(s), color='blue', linestyle='--')
+ax.annotate(r'MC$= f(0) + \zeta s + \gamma_0$', xy=(s_min*1.0005, MC(s_min)*.99935), color='blue', fontsize=11)
+
+# Plot modified marginal benefit curve
+ax.plot(s, MC(s, gamma=gamma_0), color='blue')
+ax.annotate(r'$\widetilde{\text{MC}}= f(0) + \zeta s + \gamma_0 - \gamma$',
+    xy=(s_min*1.0005, MC(s_min, gamma=gamma_0)*.99935), color='blue', fontsize=11)
+
+# Plot initial allocation and reallocation point
+ax.axvline(x=s_0, ymax=(MB(s_0) - MC(s_min)*.999) / (MC(s_max)*1.001 - MC(s_min)*.999),
+    linestyle='--', color='black')
+ax.axvline(x=s_1, ymax=(MB(s_1) - MC(s_min)*.999) / (MC(s_max)*1.001 - MC(s_min)*.999),
+    linestyle='--', color='black')
+
+# Remove y ticks
+plt.tick_params(axis='y', which='both',
+    bottom='off', top='off', labelbottom='off', right='off', left='off', labelleft='off')
+
+# Set x ticks at allocations only
+ax.set_xticks([s_0, s_1])
+ax.set_xticklabels(['$s^*_0$', '$s^*_1$'], fontsize=11)
+
+# Set axis limits
+ax.set_xlim(s_min, s_max)
+ax.set_ylim(MC(s_min)*.999, MC(s_max)*1.001)
+
+# Label y axis, set label position (getting the dollar sign to show up is a bit of a pain)
+ax.set_ylabel(r'$\$$', fontsize=11, rotation=0)
+ax.yaxis.set_label_coords(-0.025, 1)
+
+# Label x axis, set label position
+ax.set_xlabel('$s$', fontsize=11)
+ax.xaxis.set_label_coords(1, -0.025)
+
+# Remove top and right axis spines, to make this look more like a graph
+ax.spines['right'].set_visible(False)
+ax.spines['top'].set_visible(False)
+
+# Get rid of unnecessary whitespace
+fig.tight_layout()
+
+# Save figure and close
+plt.savefig('q4_shift_cost_only.pdf')
 plt.close()
