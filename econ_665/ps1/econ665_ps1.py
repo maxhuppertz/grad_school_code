@@ -166,6 +166,10 @@ ax.set_xticklabels(['$s^*_0$', '$s^*_1$'], fontsize=11)
 ax.set_xlim(s_min, s_max)
 ax.set_ylim(MC(s_min)*.999, MC(s_max)*1.001)
 
+# Label y axis, set label position (getting the dollar sign to show up is a bit of a pain)
+ax.set_ylabel(r'$\$$', fontsize=11, rotation=0)
+ax.yaxis.set_label_coords(-0.025, 1)
+
 # Label x axis, set label position
 ax.set_xlabel('$s$', fontsize=11)
 ax.xaxis.set_label_coords(1, -0.025)
