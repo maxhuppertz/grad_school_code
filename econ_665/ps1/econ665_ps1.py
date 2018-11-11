@@ -245,7 +245,7 @@ ax.annotate(r'MC$= f(0) + \zeta s + \gamma_0$', xy=(s_min*1.0005, MC(s_min)*.999
 ax.plot(s, MC(s, gamma=gamma_0), color='blue')
 ax.annotate(r'$\widetilde{\text{MC}}= f(0) + \zeta s + \gamma_0 - \gamma$',
     xy=(s_min*1.0005, MC(s_min, gamma=gamma_0)*.99905), color='blue', fontsize=11,
-    bbox=dict(boxstyle="square, pad=.01", fc="white", ec="none", alpha=.8))
+    bbox=dict(boxstyle="square, pad=.01", fc="white", ec="none", alpha=.85))
 
 # Plot initial allocation and reallocation point
 ax.axvline(x=s_0, ymax=(MB(s_0) - MC(s_min)*.999) / (MC(s_max)*1.001 - MC(s_min)*.999),
