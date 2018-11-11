@@ -143,7 +143,7 @@ fig, ax = plt.subplots(figsize=(6.5, 4.5))
 ax.plot(s, MB(s), color='green')
 ax.annotate(r"MB$= \frac{\zeta}{r}$", xy=(s_min*1.0005, MB(s_min)*1.0005), color='green', fontsize=11)
 ax.plot(s, MC(s), color='blue')
-ax.annotate(r'MC$= f(0) + \zeta s + \gamma$', xy=(s_min*1.0005, MC(s_min)*.99935), color='blue', fontsize=11)
+ax.annotate(r'MC$= f(0) + \zeta s + \gamma$', xy=(s_min*1.0005, MC(s_min)*.9993), color='blue', fontsize=11)
 
 # Plot T_$ triangle plus annotation
 ax.fill_between(delta_s, MB(delta_s), MC(delta_s), facecolor='none', hatch='\\', edgecolor='red', interpolate=True)
@@ -239,12 +239,13 @@ fig, ax = plt.subplots(figsize=(6.5, 4.5))
 ax.plot(s, MB(s), color='green')
 ax.annotate(r"MB$= \frac{\zeta}{r}$", xy=(s_min*1.0005, MB(s_min)*1.0005), color='green', fontsize=11)
 ax.plot(s, MC(s), color='blue', linestyle='--')
-ax.annotate(r'MC$= f(0) + \zeta s + \gamma_0$', xy=(s_min*1.0005, MC(s_min)*.99935), color='blue', fontsize=11)
+ax.annotate(r'MC$= f(0) + \zeta s + \gamma_0$', xy=(s_min*1.0005, MC(s_min)*.9992), color='blue', fontsize=11)
 
-# Plot modified marginal benefit curve
+# Plot modified marginal benefit curve, add label to the curve (inside the graph)
 ax.plot(s, MC(s, gamma=gamma_0), color='blue')
 ax.annotate(r'$\widetilde{\text{MC}}= f(0) + \zeta s + \gamma_0 - \gamma$',
-    xy=(s_min*1.0005, MC(s_min, gamma=gamma_0)*.99935), color='blue', fontsize=11)
+    xy=(s_min*1.0005, MC(s_min, gamma=gamma_0)*.99905), color='blue', fontsize=11,
+    bbox=dict(boxstyle="square, pad=.01", fc="white", ec="none", alpha=.8))
 
 # Plot initial allocation and reallocation point
 ax.axvline(x=s_0, ymax=(MB(s_0) - MC(s_min)*.999) / (MC(s_max)*1.001 - MC(s_min)*.999),
