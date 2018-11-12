@@ -290,30 +290,39 @@ plt.close()
 ### PS1Q4: School construction in the model - Graph 2 (double shift)
 ########################################################################################################################
 
-zeta_0 = zeta*.9975
+# Set original zeta below current one, to get some action in the graph
+zeta_0 = .75 * zeta
+
+# Set original interest rate above current one, for the same reason (this doesn't change in this problem, but it will
+# look much more dramatic in the graph, since there'll be two levers to pull instead of one; otherwise, the two MC
+# curves often look quite parallel)
+r_0 = 1.09 * r
+
+# Calculate original intercept, so that the original MC curve hits the original MB curve at s_0
+gamma_0 = zeta / r_0 - f_0 - zeta_0 * s_0
 
 # Set up plot
 fig, ax = plt.subplots(figsize=(6.5, 4.5))
 
 # Plot original marginal benefit and marginal cost, add labels to the curves (inside the graph)
-ax.plot(s, MB(s, zeta=zeta_0), color='green', linestyle='--')
-ax.annotate(r"MB$= \frac{\zeta}{r}$", xy=(s_min*1.0005, MB(s_min, zeta=zeta_0)*1.0005), color='green', fontsize=11,
+ax.plot(s, MB(s, r=r_0), color='green', linestyle='--')
+ax.annotate(r"MB$= \frac{\zeta}{r}$", xy=(s_min*1.0005, MB(s_min, r=r_0)*1.0005), color='green', fontsize=11,
     bbox=dict(boxstyle="square, pad=.01", fc="white", ec="none", alpha=.85))
-ax.plot(s, MC(s, gamma=gamma_0), color='blue', linestyle='--')
+ax.plot(s, MC(s, gamma=gamma_0, zeta=zeta_0), color='blue', linestyle='--')
 ax.annotate(r'MC$= f(0) + \zeta s + \gamma_0$',
-    xy=(s_min*1.0005, MC(s_min, gamma=gamma_0)*.9992), color='blue', fontsize=11,
+    xy=(s_min*1.0005, MC(s_min, gamma=gamma_0, zeta=zeta_0)*.9992), color='blue', fontsize=11,
     bbox=dict(boxstyle="square, pad=.01", fc="white", ec="none", alpha=.85))
 
 # Plot modified marginal benefit curve, add label to the curve (inside the graph)
 ax.plot(s, MB(s), color='green',)
-ax.annotate(r"$\widetilde{\text{MB}}= \frac{\zeta}{r}$",
+ax.annotate(r"$\widetilde{\text{MB}}= \frac{\tilde{\zeta}}{r}$",
     xy=(s_min*1.0005, MB(s_min)*1.0005), color='green', fontsize=11)
 ax.plot(s, MC(s), color='blue')
-ax.annotate(r'$\widetilde{\text{MC}}= f(0) + \zeta s + \gamma_0 - \gamma$',
+ax.annotate(r'$\widetilde{\text{MC}}= f(0) + \tilde{\zeta} s + \gamma_0 - \gamma$',
     xy=(s_min*1.0005, MC(s_min)*.99905), color='blue', fontsize=11)
 
 # Plot initial allocation and reallocation point
-ax.axvline(x=s_0, ymax=(MB(s_0) - MC(s_min)*.999) / (MC(s_max)*1.001 - MC(s_min)*.999),
+ax.axvline(x=s_0, ymax=(MB(s_0, r=r_0) - MC(s_min)*.999) / (MC(s_max)*1.001 - MC(s_min)*.999),
     linestyle='--', color='black')
 ax.axvline(x=s_1, ymax=(MB(s_1) - MC(s_min)*.999) / (MC(s_max)*1.001 - MC(s_min)*.999),
     linestyle='--', color='black')
