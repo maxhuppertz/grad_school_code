@@ -204,7 +204,7 @@ def T(r, s_1=s_1, s_0=s_0, beta=beta): return .5 * (s_1 - s_0)**2 * r * beta * 1
 fig, ax = plt.subplots(figsize=(6.5, 6.5))
 
 # Plot triangles as a function of interest rates
-ax.plot(R, T(R))
+ax.plot(R, T(R), color='blue')
 
 # Format horizontal axis
 ax.set_xlim(min(R), max(R))
