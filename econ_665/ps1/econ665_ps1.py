@@ -47,10 +47,13 @@ s = np.array(np.linspace(s_min, s_max, s_num), ndmin=2)
 # Calculate lower bounds on Mincer's beta
 beta_min = (r.transpose() @ np.ones(r.shape)) * np.exp(r.transpose() @ s) * (1 + r.transpose() @ s)**(-1)
 
-
+# Set up matrix of betas to plot
 beta_min_plot = np.zeros(beta_min.shape)
+
+# Set up a vector of cutoffs to categorize beta (the upper bound matters most)
 cutoffs = np.linspace(0, .2, 511)
 
+# Go through all lower bounds and categorize them according to the cutoffs
 for i, c in enumerate(np.flip(cutoffs, axis=0)):
     if i == 0:
         beta_min_plot[(beta_min > c)] = c
@@ -188,42 +191,38 @@ plt.savefig('q2_triangle.pdf')
 plt.close()
 
 ########################################################################################################################
-### PS1Q2.2: Gains from reallocation triangle - Sizes
+### PS1Q2.2: Point elasticities
 ########################################################################################################################
 
-# Specify Mincer's beta
-beta = .087
-
 # Specify vector of discount rates to use
-R = np.linspace(.01, .1, 10)
+R = np.linspace(.01, .1, 10000)
 
-# Define triangle function
-def T(r, s_1=s_1, s_0=s_0, beta=beta): return .5 * (s_1 - s_0)**2 * r * beta * 100
+# Define point elasticity function
+def elasticity(r, s_0=s_0): return (1 / (r * s_0)) - 1
 
 # Set up plot
 fig, ax = plt.subplots(figsize=(6.5, 6.5))
 
-# Plot triangles as a function of interest rates
-ax.plot(R, T(R), color='blue')
+# Plot point elasticities as a function of interest rates
+ax.plot(R, elasticity(R), color='blue')
+ax.axhline(y=.0663, linestyle='--', color='black')
 
 # Format horizontal axis
-ax.set_xlim(min(R), max(R))
-ax.set_xticks(R)
-ax.set_xticklabels(R, fontsize=11)
+ax.set_xlim(0, max(R))
 ax.set_xlabel('r', fontsize=11)
 
 # Format vertical axis
-ax.set_ylim(min(T(R)), max(T(R)))
-ax.set_yticks(T(R))
-ax.set_yticklabels(T(R), fontsize=11)
-ax.yaxis.set_major_formatter(FormatStrFormatter('%.4f'))
-ax.set_ylabel('$T(r)$ (percent)', fontsize=11)
+ax.set_ylim(0, max(elasticity(R)))
+ax.set_ylabel(r'$\varepsilon_{s^*, \frac{\zeta}{r}}$', fontsize=11, rotation=0)
 
 # Remove unnecessary whitespace
 fig.tight_layout()
 
+# Add some more space after the horizontal axis label
+ax.yaxis.labelpad = 10
+
 # Save figure and close
-plt.savefig('q2_triangle_sizes.pdf')
+plt.savefig('q2_point_elasticities.pdf')
 plt.close()
 
 ########################################################################################################################
