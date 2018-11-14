@@ -29,7 +29,7 @@ if not path.isdir(mdir+fdir):
 chdir(mdir+fdir)
 
 ########################################################################################################################
-### PS1Q1: Heatmap of minimum Mincer's betas
+### PS1Q1: Heatmap of lower bound on Mincer's beta
 ########################################################################################################################
 
 # Create vector of interest rates
@@ -44,7 +44,7 @@ s_max = 20
 s_num = 101
 s = np.array(np.linspace(s_min, s_max, s_num), ndmin=2)
 
-# Calculate implied minimum Mincer's betas
+# Calculate lower bounds on Mincer's beta
 beta_min = (r.transpose() @ np.ones(r.shape)) * np.exp(r.transpose() @ s) * (1 + r.transpose() @ s)**(-1)
 
 
@@ -85,7 +85,7 @@ ax.set_xticklabels(np.linspace(s_min, s_max, n_ticks))
 ax.set_yticklabels(np.linspace(r_min, r_max, n_ticks))
 
 # Label color bar
-cbar.ax.set_ylabel(r"Implied minimum Mincer's $\beta$", fontsize=11, rotation=-90, va="bottom")
+cbar.ax.set_ylabel(r"Lower bound on Mincer's $\beta$", fontsize=11, rotation=-90, va="bottom")
 
 # Set axis labels
 ax.set_xlabel(r'$s$', fontsize=11)
