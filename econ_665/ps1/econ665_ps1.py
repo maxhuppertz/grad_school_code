@@ -192,7 +192,7 @@ plt.close()
 ########################################################################################################################
 
 # Specify Mincer's beta
-beta = .08
+beta = .082
 
 # Specify vector of discount rates to use
 R = np.linspace(.01, .1, 10)
