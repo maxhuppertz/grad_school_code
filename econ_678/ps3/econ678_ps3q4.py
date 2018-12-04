@@ -3,6 +3,22 @@
 ### Generates some data, then compares standard inference and various bootstrap procedures
 ########################################################################################################################
 
+# Define standard OLS regression (with Eicker-Huber-White (EHW) standard errors)
+def OLS(y, X):
+    # Calculate OLS coefficients
+    beta_hat = np.linalg.inv(X.transpose() @ X) @ X.transpose() @ y
+
+    # Get residuals
+    U_hat = y - X @ beta_hat
+
+    # Calculate EHW standard errors
+    V = (np.linalg.inv(X.transpose() @ X)
+        @ X.transpose() @ U_hat @ U_hat.transpose() @ X
+        @ np.linalg.inv(X.transpose() @ X))
+
+    # Return coefficients and EHW variance/covariance matrix
+    return beta_hat, V
+
 # Import necessary packages
 import numpy as np
 
@@ -30,10 +46,10 @@ beta = np.array([beta_0, beta_1, beta_2], ndmin=2).transpose()
 for e in range(E):
     # Generate components of X (as column vectors)
     X_1 = np.random.normal(loc=0, scale=1, size=(max(N), 1))
-    X2 = np.random.normal(loc=0, scale=1, size=X_1.shape)
+    X_2 = np.random.normal(loc=0, scale=1, size=X_1.shape)
 
     # Stack components (plus intercept)
-    X = np.concatenate((np.ones(X_1.shape), X_1, X2), axis=1)
+    X = np.concatenate((np.ones(X_1.shape), X_1, X_2), axis=1)
 
     # Generate additional component for the error term
     V = np.random.chisquare(df=5, size=X_1.shape) - 5
@@ -41,5 +57,5 @@ for e in range(E):
     # Generate y
     y = X @ beta + V * X_1**2
 
-    # Perform standard inference (using HAC standard errors)
-    beta_hat_OLS = (X.transpose() @ X)**(-1) @ (X.transpose() @ y)
+    # Perform standard inference (using EHW standard errors)
+    beta_hat_OLS, V_hat_OLS = OLS(y, X)
