@@ -12,9 +12,11 @@ def OLS(y, X):
     U_hat = y - X @ beta_hat
 
     # Calculate EHW standard errors
-    V = (np.linalg.inv(X.transpose() @ X)
+    V = (
+        np.linalg.inv(X.transpose() @ X)
         @ X.transpose() @ U_hat @ U_hat.transpose() @ X
-        @ np.linalg.inv(X.transpose() @ X))
+        @ np.linalg.inv(X.transpose() @ X)
+        )
 
     # Return coefficients and EHW variance/covariance matrix
     return beta_hat, V
