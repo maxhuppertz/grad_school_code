@@ -7,6 +7,7 @@
 import numpy as np
 from numpy.linalg import inv
 from scipy.stats import norm
+from statsmodels.regression.linear_model import OLS as OLS_builtin
 
 # Define standard OLS regression, with Eicker-Huber-White (EHW) standard errors
 def OLS(y, X):
@@ -14,33 +15,25 @@ def OLS(y, X):
     n, k = X.shape[0], X.shape[1]
 
     # Calculate OLS coefficients
-    beta_hat = inv(X.transpose() @ X) @ X.transpose() @ y
+    beta_hat = inv(X.transpose() @ X) @ (X.transpose() @ y)
 
     # Get residuals
-    U_hat = y - X @ beta_hat
+    U_hat = np.array(y - X @ beta_hat)
 
-    # Calculate annihilator matrix of X
-    M = np.eye(n) - X @ inv(X.transpose() @ X) @ X.transpose()
-
-    # Set up the center part of the EHW sandwich
-    S_hat = np.zeros(shape=(k,k))
-
-    # Go through all observations
-    for i in range(n):
-        # Add to the center part of the EHW sandwich
-        S_hat = S_hat + X[i,:] @ X[i,:].transpose() * U_hat[i]**2
+    # Calculate component of middle part of EHW sandwich
+    S = X * ( U_hat @ np.ones(shape=(1,k)) )
 
     # Calculate EHW asymptotic standard errors
-    V = (n**2 / (n-k)) * inv(X.transpose() @ X) @ S_hat @ inv(X.transpose() @ X)
+    V_hat = inv(X.transpose() @ X) @ (S.transpose() @ S) @ inv(X.transpose() @ X)
 
     # Return coefficients and EHW variance/covariance matrix
-    return beta_hat, V
+    return beta_hat, V_hat
 
 # Set seed
 np.random.seed(678)
 
 # Specify sample sizes
-N = [50] #N = [10, 25, 50]
+N = [5000] #N = [10, 25, 50]
 
 # Specify how often you want to run the experiment
 E = 1 #E = 1000
@@ -74,3 +67,6 @@ for e in range(E):
     # Perform standard inference (using EHW standard errors)
     beta_hat_OLS, V_hat_OLS = OLS(y, X)
     norm.ppf(.975)
+
+    check = OLS_builtin(endog=y, exog=X)
+    #print(check.fit(cov_type='HC0').cov_params())
