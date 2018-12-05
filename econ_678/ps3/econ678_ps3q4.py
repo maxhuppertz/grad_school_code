@@ -54,7 +54,7 @@ def pairs_bootstrap(y, X, beta_hat, B=1000):
         beta_hat_star, V_hat_star = OLS(y_star, X_star)
 
         # Calculate t statistic
-        T[b,:] = (beta_hat_star[:,0] - beta_hat[:,0]) / np.sqrt(np.diag(V_hat_star))
+        T[b,:] = np.sqrt(n) * (beta_hat_star[:,0] - beta_hat[:,0]) #/ np.sqrt(np.diag(V_hat_star))
 
     # Return the matrix of bootstrap t statistics
     return T
@@ -63,13 +63,13 @@ def pairs_bootstrap(y, X, beta_hat, B=1000):
 np.random.seed(678)
 
 # Specify sample sizes
-N = [10, 25, 50] #N = [10, 25, 50]
+N = [50]
 
 # Specify how often you want to run the experiment for each sample size
-E = 1000 #E = 1000
+E = 100
 
 # Specify the number of bootstrap simulations per experiment
-B = 1000 #B = 299
+B = 400
 
 # Set up components of beta vector
 beta_0 = 1
@@ -87,7 +87,7 @@ for n in N:
     # Set up rejection counters
     reject_OLS = 0
     reject_PB = 0
-    
+
     # Go through all iterations of the experiment
     for e in range(E):
         # Generate components of X (as column vectors)
@@ -108,8 +108,10 @@ for n in N:
         #test = OLS_builtin(y, X).fit(cov_type='HC1')
 
         # Get standard asymptotic confidence interval
-        CI_OLS = [beta_hat_OLS[1] - norm.ppf(1 - alpha/2) * np.sqrt(V_hat_OLS[1,1]),
-            beta_hat_OLS[1] + norm.ppf(1 - alpha/2) * np.sqrt(V_hat_OLS[1,1])]
+        CI_OLS = [
+            beta_hat_OLS[1] - norm.ppf(1 - alpha/2) * np.sqrt(V_hat_OLS[1,1]),
+            beta_hat_OLS[1] + norm.ppf(1 - alpha/2) * np.sqrt(V_hat_OLS[1,1])
+            ]
 
         # Check whether the standard test rejects
         if not CI_OLS[0] <= 0 <= CI_OLS[1]:
@@ -122,7 +124,10 @@ for n in N:
         Q_PB = np.sort(T_PB[:,1])
 
         # Get pairs bootstrap confidence interval
-        CI_PB = [Q_PB[np.int(np.floor(alpha/2 * B))], Q_PB[np.int(np.ceil((1 - alpha/2) * B))]]
+        CI_PB = [
+            beta_hat_OLS[1] - Q_PB[np.int(np.ceil((1 - alpha/2) * B))] * np.sqrt(V_hat_OLS[1,1]),
+            beta_hat_OLS[1] + Q_PB[np.int(np.floor(alpha/2 * B))] * np.sqrt(V_hat_OLS[1,1])
+            ]
 
         # Check whether the pairs bootstrap test rejects
         if not CI_PB[0] <= 0 <= CI_PB[1]:
