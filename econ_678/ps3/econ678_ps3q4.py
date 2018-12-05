@@ -5,6 +5,7 @@
 
 # Import necessary packages
 import numpy as np
+import warnings
 from numpy.linalg import inv
 from scipy.stats import norm
 
@@ -21,7 +22,8 @@ def OLS(y, X, get_cov=True):
         # Get residuals
         U_hat = y - X @ beta_hat
 
-        # Calculate component of middle part of EHW sandwich
+        # Calculate component of middle part of EHW sandwich (S_i = X_i u_i, meaning that it's easy to calculate
+        # sum_i X_i X_i' u_i^2 = S'S)
         S = X * ( U_hat @ np.ones(shape=(1,k)) )
 
         # Calculate EHW variance/covariance matrix
@@ -94,7 +96,7 @@ N = [10, 25, 50]
 E = 1000
 
 # Specify the number of bootstrap simulations per experiment
-B = 299
+B = 1000
 
 # Set up components of beta vector
 beta_0 = 1
@@ -140,8 +142,14 @@ for n in N:
         if not norm.ppf(alpha/2) <= t_OLS <= norm.ppf(1 - alpha/2):
             reject_OLS += 1
 
-        # Do the pairs bootstrap
-        T_PB = pairs_bootstrap(y, X, beta_hat_OLS, B=B)
+        # Do the pairs bootstrap (for small sample sizes, X'X may not be invertible, which will raise a warning but not
+        # stop the code from executing; catch that warning while running the bootstrap)
+        with warnings.catch_warnings():
+            # Catches the RuntimeWarning if it is thrown, and ignores it
+            warnings.simplefilter("ignore", RuntimeWarning)
+
+            # Runs the pairs bootstrap
+            T_PB = pairs_bootstrap(y, X, beta_hat_OLS, B=B)
 
         # Get sorted vector of t statistics for beta_1
         Q_PB = np.sort(T_PB[:,1])
