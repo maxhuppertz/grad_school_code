@@ -126,7 +126,7 @@ for n in N:
         # Get pairs bootstrap confidence interval
         CI_PB = [
             beta_hat_OLS[1] - Q_PB[np.int(np.ceil((1 - alpha/2) * B))] * np.sqrt(V_hat_OLS[1,1]),
-            beta_hat_OLS[1] + Q_PB[np.int(np.floor(alpha/2 * B))] * np.sqrt(V_hat_OLS[1,1])
+            beta_hat_OLS[1] - Q_PB[np.int(np.floor(alpha/2 * B))] * np.sqrt(V_hat_OLS[1,1])
             ]
 
         # Check whether the pairs bootstrap test rejects
