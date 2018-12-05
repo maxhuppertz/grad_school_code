@@ -90,13 +90,13 @@ def wild_bootstrap(y, X, beta_hat, U_hat, estimator=OLS, B=1000):
 np.random.seed(678)
 
 # Specify sample sizes
-N = [30, 50, 500]
+N = [30]
 
 # Specify how often you want to run the experiment for each sample size
 E = 1000
 
 # Specify the number of bootstrap iterations per experiment
-B = 999
+B = 4999
 
 # Set up components of beta vector
 beta_0 = 1
@@ -136,7 +136,7 @@ for n in N:
         y = X @ beta + V * X_1**2
 
         # Perform standard inference (using EHW standard errors)
-        beta_hat_OLS, V_hat_OLS = OLS(y, X)
+        beta_hat_OLS, V_hat_OLS = OLS(y, X, get_cov=True)
 
         # Get t statistic for beta_1
         t_OLS = beta_hat_OLS[1,0] / np.sqrt(V_hat_OLS[1,1])
@@ -158,7 +158,7 @@ for n in N:
         Q_PB = np.sort(T_PB[:,1])
 
         # Check whether the pairs bootstrap test rejects
-        if not Q_PB[np.int(np.round((alpha/2) * B))] <= t_OLS <= Q_PB[np.int(np.round((1 - alpha/2) * B))]:
+        if not Q_PB[np.int((alpha/2) * B)] <= t_OLS <= Q_PB[np.int((1 - alpha/2) * B)]:
             reject_PB += 1
 
         # Calculate OLS residuals (the wild bootstrap needs these)
@@ -171,7 +171,7 @@ for n in N:
         Q_WB_WIN = np.sort(T_WB_WIN[:,1])
 
         # Check whether the wild bootstrap test rejects
-        if not Q_WB_WIN[np.int(np.round((alpha/2) * B))] <= t_OLS <= Q_WB_WIN[np.int(np.round((1 - alpha/2) * B))]:
+        if not Q_WB_WIN[np.int((alpha/2) * B)] <= t_OLS <= Q_WB_WIN[np.int((1 - alpha/2) * B)]:
             reject_WB_WIN += 1
 
         # Estimate OLS under the null
@@ -190,7 +190,7 @@ for n in N:
         Q_WB_NULL = np.sort(T_WB_NULL[:,1])
 
         # Check whether the wild bootstrap test rejects
-        if not Q_WB_NULL[np.int(np.round((alpha/2) * B))] <= t_OLS <= Q_WB_NULL[np.int(np.round((1 - alpha/2) * B))]:
+        if not Q_WB_NULL[np.int((alpha/2) * B)] <= t_OLS <= Q_WB_NULL[np.int((1 - alpha/2) * B)]:
             reject_WB_NULL += 1
 
     # Print results for the current sample size
