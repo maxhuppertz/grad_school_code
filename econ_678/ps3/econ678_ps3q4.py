@@ -35,7 +35,7 @@ def OLS(y, X, get_cov=True):
         return beta_hat
 
 # Define pairs bootstrap
-def pairs_bootstrap(y, X, beta_hat, B=1000):
+def pairs_bootstrap(y, X, beta_hat, estimator=OLS, B=1000):
     # Get sample size and size of the coefficient vector
     n, k = X.shape[0], X.shape[1]
 
@@ -51,10 +51,36 @@ def pairs_bootstrap(y, X, beta_hat, B=1000):
         y_star, X_star = y[I], X[I,:]
 
         # Estimate model
-        beta_hat_star, V_hat_star = OLS(y_star, X_star)
+        beta_hat_star, V_hat_star = estimator(y_star, X_star)
 
         # Calculate t statistic
-        T[b,:] = np.sqrt(n) * (beta_hat_star[:,0] - beta_hat[:,0]) #/ np.sqrt(np.diag(V_hat_star))
+        T[b,:] = (beta_hat_star[:,0] - beta_hat[:,0]) / np.sqrt(np.diag(V_hat_star))
+
+    # Return the matrix of bootstrap t statistics
+    return T
+
+# Define wild bootstrap (uses a Rademacher distribution for disturbances)
+def wild_bootstrap(y, X, beta_hat, U_hat, estimator=OLS, B=1000):
+    # Get sample size and size of the coefficient vector
+    n, k = X.shape[0], X.shape[1]
+
+    # Set up vector of bootstrap t statistics
+    T = np.zeros(shape=(B,k))
+
+    # Go through all bootstrap iterations
+    for b in range(B):
+        # Draw perturbations from a Rademacher distribution
+        I = np.random.uniform(low=0, high=1, size=(n,1))
+        eta = np.ones(shape=(n,1)) * ( (-1)**(I < .5) )  # Isn't Pyton cool sometimes?
+
+        # Generate bootstrap data
+        y_star = X @ beta_hat + U_hat * eta
+
+        # Estimate model
+        beta_hat_star, V_hat_star = estimator(y, X)
+
+        # Calculate t statistic
+        T[b,:] = (beta_hat_star[:,0] - beta_hat[:,0]) / np.sqrt(np.diag(V_hat_star))
 
     # Return the matrix of bootstrap t statistics
     return T
@@ -66,7 +92,7 @@ np.random.seed(678)
 N = [50]
 
 # Specify how often you want to run the experiment for each sample size
-E = 100
+E = 500
 
 # Specify the number of bootstrap simulations per experiment
 B = 400
@@ -87,6 +113,7 @@ for n in N:
     # Set up rejection counters
     reject_OLS = 0
     reject_PB = 0
+    reject_WB_no_null = 0
 
     # Go through all iterations of the experiment
     for e in range(E):
@@ -110,7 +137,7 @@ for n in N:
         # Get standard asymptotic confidence interval
         CI_OLS = [
             beta_hat_OLS[1] - norm.ppf(1 - alpha/2) * np.sqrt(V_hat_OLS[1,1]),
-            beta_hat_OLS[1] + norm.ppf(1 - alpha/2) * np.sqrt(V_hat_OLS[1,1])
+            beta_hat_OLS[1] - norm.ppf(alpha/2) * np.sqrt(V_hat_OLS[1,1])
             ]
 
         # Check whether the standard test rejects
@@ -133,7 +160,24 @@ for n in N:
         if not CI_PB[0] <= 0 <= CI_PB[1]:
             reject_PB += 1
 
+        # Do the wild bootstrap without imposing the null
+        T_WB_no_null = wild_bootstrap(y, X, beta_hat_OLS, U_hat=y - X @ beta_hat_OLS, B=B)
+
+        # Get sorted vector of t statistics for beta_1
+        Q_WB_no_null = np.sort(T_WB_no_null[:,1])
+
+        # Get wild bootstrap confidence interval
+        CI_WB_no_null = [
+            beta_hat_OLS[1] - Q_WB[np.int(np.ceil((1 - alpha/2) * B))] * np.sqrt(V_hat_OLS[1,1]),
+            beta_hat_OLS[1] - Q_WB[np.int(np.floor(alpha/2 * B))] * np.sqrt(V_hat_OLS[1,1])
+            ]
+
+        # Check whether the wild bootstrap test rejects
+        if not CI_WB_no_null[0] <= 0 <= CI_WB_no_null[1]:
+            reject_WB_no_null += 1
+
     # Print results for the current sample size
     print('Sample size:', n)
     print('Rejection rate for standard OLS:', reject_OLS / E)
     print('Rejection rate for pairs bootstrap:', reject_PB / E)
+    print('Rejection rate for wild bootstrap (without imposing the null):', reject_WB_no_null / E)
