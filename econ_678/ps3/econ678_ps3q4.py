@@ -132,14 +132,11 @@ for n in N:
         # Perform standard inference (using EHW standard errors)
         beta_hat_OLS, V_hat_OLS = OLS(y, X)
 
-        # Get standard asymptotic confidence interval
-        CI_OLS = [
-            beta_hat_OLS[1] - norm.ppf(1 - alpha/2) * np.sqrt(V_hat_OLS[1,1]),
-            beta_hat_OLS[1] - norm.ppf(alpha/2) * np.sqrt(V_hat_OLS[1,1])
-            ]
+        # Get t statistic for beta_1
+        t_OLS = beta_hat_OLS[1,0] / np.sqrt(V_hat_OLS[1,1])
 
-        # Check whether the standard test rejects
-        if not CI_OLS[0] <= 0 <= CI_OLS[1]:
+        # Check whether standard asymptotic test rejects
+        if not norm.ppf(alpha/2) <= t_OLS <= norm.ppf(1 - alpha/2):
             reject_OLS += 1
 
         # Do the pairs bootstrap
@@ -155,7 +152,7 @@ for n in N:
             ]
 
         # Check whether the pairs bootstrap test rejects
-        if not CI_PB[0] <= 0 <= CI_PB[1]:
+        if not Q_PB[np.int(np.floor((alpha/2) * B))] <= t_OLS <= Q_PB[np.int(np.ceil((1 - alpha/2) * B))]:
             reject_PB += 1
 
         # Calculate OLS residuals (the wild bootstrap needs these)
@@ -167,14 +164,9 @@ for n in N:
         # Get sorted vector of t statistics for beta_1
         Q_WB_no_null = np.sort(T_WB_no_null[:,1])
 
-        # Get wild bootstrap confidence interval
-        CI_WB_no_null = [
-            beta_hat_OLS[1] - Q_WB_no_null[np.int(np.ceil((1 - alpha/2) * B))] * np.sqrt(V_hat_OLS[1,1]),
-            beta_hat_OLS[1] - Q_WB_no_null[np.int(np.floor(alpha/2 * B))] * np.sqrt(V_hat_OLS[1,1])
-            ]
-
         # Check whether the wild bootstrap test rejects
-        if not CI_WB_no_null[0] <= 0 <= CI_WB_no_null[1]:
+        if not (Q_WB_no_null[np.int(np.floor((alpha/2) * B))] <= t_OLS
+            <= Q_WB_no_null[np.int(np.ceil((1 - alpha/2) * B))]):
             reject_WB_no_null += 1
 
         # Estimate OLS under the null
@@ -186,7 +178,7 @@ for n in N:
         # Get residuals under the null
         U_hat_null = y - X @ beta_hat_OLS_null
 
-        
+
 
     # Print results for the current sample size
     print('Sample size:', n)
