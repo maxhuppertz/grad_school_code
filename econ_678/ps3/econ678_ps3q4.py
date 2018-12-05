@@ -6,7 +6,7 @@
 # Import necessary packages
 import numpy as np
 import warnings
-from numpy.linalg import inv
+from numpy.linalg import pinv
 from scipy.stats import norm
 
 # Define standard OLS regression, with Eicker-Huber-White (EHW) variance/covariance estimator
@@ -15,7 +15,7 @@ def OLS(y, X, get_cov=True):
     n, k = X.shape[0], X.shape[1]
 
     # Calculate OLS coefficients
-    beta_hat = inv(X.transpose() @ X) @ (X.transpose() @ y)
+    beta_hat = pinv(X.transpose() @ X) @ (X.transpose() @ y)
 
     # Check whether covariance is needed
     if get_cov:
@@ -27,7 +27,7 @@ def OLS(y, X, get_cov=True):
         S = X * ( U_hat @ np.ones(shape=(1,k)) )
 
         # Calculate EHW variance/covariance matrix
-        V_hat = ( n / (n - k) ) * inv(X.transpose() @ X) @ (S.transpose() @ S) @ inv(X.transpose() @ X)
+        V_hat = ( n / (n - k) ) * pinv(X.transpose() @ X) @ (S.transpose() @ S) @ pinv(X.transpose() @ X)
 
         # Return coefficients and EHW variance/covariance matrix
         return beta_hat, V_hat
@@ -96,7 +96,7 @@ N = [10, 25, 50]
 E = 1000
 
 # Specify the number of bootstrap simulations per experiment
-B = 1000
+B = 999
 
 # Set up components of beta vector
 beta_0 = 1
@@ -114,8 +114,8 @@ for n in N:
     # Set up rejection counters
     reject_OLS = 0
     reject_PB = 0
-    reject_WB_no_null = 0
-    reject_WB_null = 0
+    reject_WB_WIN = 0
+    reject_WB_NULL = 0
 
     # Go through all iterations of the experiment
     for e in range(E):
@@ -142,7 +142,7 @@ for n in N:
         if not norm.ppf(alpha/2) <= t_OLS <= norm.ppf(1 - alpha/2):
             reject_OLS += 1
 
-        # Do the pairs bootstrap (for small sample sizes, X'X may not be invertible, which will raise a warning but not
+        # Do the pairs bootstrap (for small sample sizes, X'X may not be pinvertible, which will raise a warning but not
         # stop the code from executing; catch that warning while running the bootstrap)
         with warnings.catch_warnings():
             # Catches the RuntimeWarning if it is thrown, and ignores it
@@ -155,45 +155,44 @@ for n in N:
         Q_PB = np.sort(T_PB[:,1])
 
         # Check whether the pairs bootstrap test rejects
-        if not Q_PB[np.int(np.floor((alpha/2) * B))] <= t_OLS <= Q_PB[np.int(np.ceil((1 - alpha/2) * B))]:
+        if not Q_PB[np.int(np.round((alpha/2) * B))] <= t_OLS <= Q_PB[np.int(np.round((1 - alpha/2) * B))]:
             reject_PB += 1
 
         # Calculate OLS residuals (the wild bootstrap needs these)
         U_hat = y - X @ beta_hat_OLS
 
-        # Do the wild bootstrap without imposing the null
-        T_WB_no_null = wild_bootstrap(y, X, beta_hat_OLS, U_hat=U_hat, B=B)
+        # Do the wild bootstrap without imposing the null (WIN)
+        T_WB_WIN = wild_bootstrap(y, X, beta_hat_OLS, U_hat=U_hat, B=B)
 
         # Get sorted vector of t statistics for beta_1
-        Q_WB_no_null = np.sort(T_WB_no_null[:,1])
+        Q_WB_WIN = np.sort(T_WB_WIN[:,1])
 
         # Check whether the wild bootstrap test rejects
-        if not (Q_WB_no_null[np.int(np.floor((alpha/2) * B))] <= t_OLS
-            <= Q_WB_no_null[np.int(np.ceil((1 - alpha/2) * B))]):
-            reject_WB_no_null += 1
+        if not Q_WB_WIN[np.int(np.round((alpha/2) * B))] <= t_OLS <= Q_WB_WIN[np.int(np.round((1 - alpha/2) * B))]:
+            reject_WB_WIN += 1
 
         # Estimate OLS under the null
-        beta_hat_OLS_null, _ = OLS(y, X[:,[0,2]])
+        beta_hat_OLS_NULL = OLS(y, X[:,[0,2]], get_cov=False)
 
-        # Add beta_1 = 0 back into beta_hat_OLS_null (obj=1 specifies the index before which values=0 is inserted)
-        beta_hat_OLS_null = np.insert(beta_hat_OLS_null, obj=1, values=0, axis=0)
+        # Add beta_1 = 0 back into beta_hat_OLS_NULL (obj=1 specifies the index before which values=0 is inserted)
+        beta_hat_OLS_NULL = np.insert(beta_hat_OLS_NULL, obj=1, values=0, axis=0)
 
         # Get residuals under the null
-        U_hat_null = y - X @ beta_hat_OLS_null
+        U_hat_NULL = y - X @ beta_hat_OLS_NULL
 
         # Do the wild bootstrap imposing the null
-        T_WB_null = wild_bootstrap(y, X, beta_hat_OLS_null, U_hat_null, B=B)
+        T_WB_NULL = wild_bootstrap(y, X, beta_hat_OLS_NULL, U_hat_NULL, B=B)
 
         # Get sorted vector of t statistics for beta_1
-        Q_WB_null = np.sort(T_WB_null[:,1])
+        Q_WB_NULL = np.sort(T_WB_NULL[:,1])
 
-        # Check whether the wild bootstrap test reject
-        if not Q_WB_null[np.int(np.floor((alpha/2) * B))] <= t_OLS <= Q_WB_null[np.int(np.ceil((1 - alpha/2) * B))]:
-            reject_WB_null += 1
+        # Check whether the wild bootstrap test rejects
+        if not Q_WB_NULL[np.int(np.round((alpha/2) * B))] <= t_OLS <= Q_WB_NULL[np.int(np.round((1 - alpha/2) * B))]:
+            reject_WB_NULL += 1
 
     # Print results for the current sample size
     print('Sample size:', n)
     print('Rejection rate for standard OLS:', reject_OLS / E)
     print('Rejection rate for pairs bootstrap:', reject_PB / E)
-    print('Rejection rate for wild bootstrap (without imposing the null):', reject_WB_no_null / E)
-    print('Rejection rate for wild bootstrap (imposing the null):', reject_WB_null / E)
+    print('Rejection rate for wild bootstrap (without imposing the null):', reject_WB_WIN / E)
+    print('Rejection rate for wild bootstrap (imposing the null):', reject_WB_NULL / E)
