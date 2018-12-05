@@ -88,13 +88,13 @@ def wild_bootstrap(y, X, beta_hat, U_hat, estimator=OLS, B=1000):
 np.random.seed(678)
 
 # Specify sample sizes
-N = [50]
+N = [10, 25, 50]
 
 # Specify how often you want to run the experiment for each sample size
-E = 500
+E = 1000
 
 # Specify the number of bootstrap simulations per experiment
-B = 400
+B = 299
 
 # Set up components of beta vector
 beta_0 = 1
@@ -113,6 +113,7 @@ for n in N:
     reject_OLS = 0
     reject_PB = 0
     reject_WB_no_null = 0
+    reject_WB_null = 0
 
     # Go through all iterations of the experiment
     for e in range(E):
@@ -145,12 +146,6 @@ for n in N:
         # Get sorted vector of t statistics for beta_1
         Q_PB = np.sort(T_PB[:,1])
 
-        # Get pairs bootstrap confidence interval
-        CI_PB = [
-            beta_hat_OLS[1] - Q_PB[np.int(np.ceil((1 - alpha/2) * B))] * np.sqrt(V_hat_OLS[1,1]),
-            beta_hat_OLS[1] - Q_PB[np.int(np.floor(alpha/2 * B))] * np.sqrt(V_hat_OLS[1,1])
-            ]
-
         # Check whether the pairs bootstrap test rejects
         if not Q_PB[np.int(np.floor((alpha/2) * B))] <= t_OLS <= Q_PB[np.int(np.ceil((1 - alpha/2) * B))]:
             reject_PB += 1
@@ -178,10 +173,19 @@ for n in N:
         # Get residuals under the null
         U_hat_null = y - X @ beta_hat_OLS_null
 
+        # Do the wild bootstrap imposing the null
+        T_WB_null = wild_bootstrap(y, X, beta_hat_OLS_null, U_hat_null, B=B)
 
+        # Get sorted vector of t statistics for beta_1
+        Q_WB_null = np.sort(T_WB_null[:,1])
+
+        # Check whether the wild bootstrap test reject
+        if not Q_WB_null[np.int(np.floor((alpha/2) * B))] <= t_OLS <= Q_WB_null[np.int(np.ceil((1 - alpha/2) * B))]:
+            reject_WB_null += 1
 
     # Print results for the current sample size
     print('Sample size:', n)
     print('Rejection rate for standard OLS:', reject_OLS / E)
     print('Rejection rate for pairs bootstrap:', reject_PB / E)
     print('Rejection rate for wild bootstrap (without imposing the null):', reject_WB_no_null / E)
+    print('Rejection rate for wild bootstrap (imposing the null):', reject_WB_null / E)
