@@ -7,7 +7,6 @@
 import numpy as np
 from numpy.linalg import inv
 from scipy.stats import norm
-from statsmodels.regression.linear_model import OLS as OLS_builtin
 
 # Define standard OLS regression, with Eicker-Huber-White (EHW) variance/covariance estimator
 def OLS(y, X, get_cov=True):
@@ -77,7 +76,7 @@ def wild_bootstrap(y, X, beta_hat, U_hat, estimator=OLS, B=1000):
         y_star = X @ beta_hat + U_hat * eta
 
         # Estimate model
-        beta_hat_star, V_hat_star = estimator(y, X)
+        beta_hat_star, V_hat_star = estimator(y_star, X)
 
         # Calculate t statistic
         T[b,:] = (beta_hat_star[:,0] - beta_hat[:,0]) / np.sqrt(np.diag(V_hat_star))
@@ -131,8 +130,7 @@ for n in N:
         y = X @ beta + V * X_1**2
 
         # Perform standard inference (using EHW standard errors)
-        beta_hat_OLS, V_hat_OLS = OLS(y[0:n], X[0:n,:])
-        #test = OLS_builtin(y, X).fit(cov_type='HC1')
+        beta_hat_OLS, V_hat_OLS = OLS(y, X)
 
         # Get standard asymptotic confidence interval
         CI_OLS = [
@@ -160,21 +158,35 @@ for n in N:
         if not CI_PB[0] <= 0 <= CI_PB[1]:
             reject_PB += 1
 
+        # Calculate OLS residuals (the wild bootstrap needs these)
+        U_hat = y - X @ beta_hat_OLS
+
         # Do the wild bootstrap without imposing the null
-        T_WB_no_null = wild_bootstrap(y, X, beta_hat_OLS, U_hat=y - X @ beta_hat_OLS, B=B)
+        T_WB_no_null = wild_bootstrap(y, X, beta_hat_OLS, U_hat=U_hat, B=B)
 
         # Get sorted vector of t statistics for beta_1
         Q_WB_no_null = np.sort(T_WB_no_null[:,1])
 
         # Get wild bootstrap confidence interval
         CI_WB_no_null = [
-            beta_hat_OLS[1] - Q_WB[np.int(np.ceil((1 - alpha/2) * B))] * np.sqrt(V_hat_OLS[1,1]),
-            beta_hat_OLS[1] - Q_WB[np.int(np.floor(alpha/2 * B))] * np.sqrt(V_hat_OLS[1,1])
+            beta_hat_OLS[1] - Q_WB_no_null[np.int(np.ceil((1 - alpha/2) * B))] * np.sqrt(V_hat_OLS[1,1]),
+            beta_hat_OLS[1] - Q_WB_no_null[np.int(np.floor(alpha/2 * B))] * np.sqrt(V_hat_OLS[1,1])
             ]
 
         # Check whether the wild bootstrap test rejects
         if not CI_WB_no_null[0] <= 0 <= CI_WB_no_null[1]:
             reject_WB_no_null += 1
+
+        # Estimate OLS under the null
+        beta_hat_OLS_null, _ = OLS(y, X[:,[0,2]])
+
+        # Add beta_1 = 0 back into beta_hat_OLS_null (obj=1 specifies the index before which values=0 is inserted)
+        beta_hat_OLS_null = np.insert(beta_hat_OLS_null, obj=1, values=0, axis=0)
+
+        # Get residuals under the null
+        U_hat_null = y - X @ beta_hat_OLS_null
+
+        
 
     # Print results for the current sample size
     print('Sample size:', n)
