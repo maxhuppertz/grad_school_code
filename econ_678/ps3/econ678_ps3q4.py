@@ -11,7 +11,7 @@ from scipy.stats import norm
 
 # Define standard OLS regression, with Eicker-Huber-White (EHW) variance/covariance estimator
 def OLS(y, X, get_cov=True):
-    # Get number of observations n and number of coefficients k, using X.shape[1] = k, X.shape[0] = n
+    # Get number of observations n and number of coefficients k
     n, k = X.shape[0], X.shape[1]
 
     # Calculate OLS coefficients
@@ -37,7 +37,7 @@ def OLS(y, X, get_cov=True):
 
 # Define pairs bootstrap
 def pairs_bootstrap(y, X, beta_hat, estimator=OLS, B=1000):
-    # Get sample size and size of the coefficient vector
+    # Get number of observations n and number of coefficients k
     n, k = X.shape[0], X.shape[1]
 
     # Set up vector of bootstrap t statistics
@@ -62,7 +62,7 @@ def pairs_bootstrap(y, X, beta_hat, estimator=OLS, B=1000):
 
 # Define wild bootstrap (uses a Rademacher distribution for disturbances)
 def wild_bootstrap(y, X, beta_hat, U_hat, estimator=OLS, B=1000):
-    # Get sample size and size of the coefficient vector
+    # Get number of observations n and number of coefficients k
     n, k = X.shape[0], X.shape[1]
 
     # Set up vector of bootstrap t statistics
@@ -90,12 +90,12 @@ def wild_bootstrap(y, X, beta_hat, U_hat, estimator=OLS, B=1000):
 np.random.seed(678)
 
 # Specify sample sizes
-N = [10, 25, 50]
+N = [30, 50, 500]
 
 # Specify how often you want to run the experiment for each sample size
 E = 1000
 
-# Specify the number of bootstrap simulations per experiment
+# Specify the number of bootstrap iterations per experiment
 B = 999
 
 # Set up components of beta vector
@@ -108,6 +108,9 @@ beta = np.array([beta_0, beta_1, beta_2], ndmin=2).transpose()
 
 # Set test level
 alpha = .05
+
+# Display number of experiments and number of bootstrap iterations
+print(E, 'experiments,', B, 'bootstrap iterations')
 
 # Go through all sample sizes
 for n in N:
@@ -151,7 +154,7 @@ for n in N:
             # Runs the pairs bootstrap
             T_PB = pairs_bootstrap(y, X, beta_hat_OLS, B=B)
 
-        # Get sorted vector of t statistics for beta_1
+        # Get sorted vector of bootstrap t statistics for beta_1
         Q_PB = np.sort(T_PB[:,1])
 
         # Check whether the pairs bootstrap test rejects
@@ -164,7 +167,7 @@ for n in N:
         # Do the wild bootstrap without imposing the null (WIN)
         T_WB_WIN = wild_bootstrap(y, X, beta_hat_OLS, U_hat=U_hat, B=B)
 
-        # Get sorted vector of t statistics for beta_1
+        # Get sorted vector of bootstrap t statistics for beta_1
         Q_WB_WIN = np.sort(T_WB_WIN[:,1])
 
         # Check whether the wild bootstrap test rejects
@@ -183,7 +186,7 @@ for n in N:
         # Do the wild bootstrap imposing the null
         T_WB_NULL = wild_bootstrap(y, X, beta_hat_OLS_NULL, U_hat_NULL, B=B)
 
-        # Get sorted vector of t statistics for beta_1
+        # Get sorted vector of bootstrap t statistics for beta_1
         Q_WB_NULL = np.sort(T_WB_NULL[:,1])
 
         # Check whether the wild bootstrap test rejects
