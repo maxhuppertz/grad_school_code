@@ -5,18 +5,22 @@
 
 # Define standard OLS regression (with Eicker-Huber-White (EHW) standard errors)
 def OLS(y, X):
+    # Get number of observations n and number of coefficients k, using X.shape[1] = k, X.shape[0] = n
+    n, k = X.shape[0], X.shape[1]
+
     # Calculate OLS coefficients
     beta_hat = np.linalg.inv(X.transpose() @ X) @ X.transpose() @ y
 
     # Get residuals
     U_hat = y - X @ beta_hat
 
-    # Calculate EHW standard errors
-    V = (
-        np.linalg.inv(X.transpose() @ X)
-        @ X.transpose() @ U_hat @ U_hat.transpose() @ X
-        @ np.linalg.inv(X.transpose() @ X)
-        )
+    # Get the center part of the EHW sandwich
+    S = np.zeros(shape=(k, k))
+    for i in range(n):
+        S = S + X[i,:] @ X[i,:].transpose() * U_hat[i]**2
+
+    # Calculate EHW asymptotic standard errors
+    V = n * np.linalg.inv(X.transpose() @ X) @ S @ np.linalg.inv(X.transpose() @ X)
 
     # Return coefficients and EHW variance/covariance matrix
     return beta_hat, V
@@ -61,3 +65,4 @@ for e in range(E):
 
     # Perform standard inference (using EHW standard errors)
     beta_hat_OLS, V_hat_OLS = OLS(y, X)
+    print(V_hat_OLS)
