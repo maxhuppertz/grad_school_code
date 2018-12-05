@@ -3,7 +3,7 @@
 ### Generates some data, then compares standard inference and various bootstrap procedures
 ########################################################################################################################
 
-# Define standard OLS regression (with Eicker-Huber-White (EHW) standard errors)
+# Define standard OLS regression, with MacKinnon-White / Andrews (MWA) standard errors
 def OLS(y, X):
     # Get number of observations n and number of coefficients k, using X.shape[1] = k, X.shape[0] = n
     n, k = X.shape[0], X.shape[1]
@@ -14,15 +14,21 @@ def OLS(y, X):
     # Get residuals
     U_hat = y - X @ beta_hat
 
-    # Get the center part of the EHW sandwich
-    S = np.zeros(shape=(k, k))
+    # Calculate annihilator matrix of X
+    M = np.eye(n) - X @ np.linalg.inv(X.transpose() @ X) @ X.transpose()
+
+    # Set up the center part of the MWA sandwich
+    S_hat = np.zeros(shape=(k,k))
+
+    # Go through all observations
     for i in range(n):
-        S = S + X[i,:] @ X[i,:].transpose() * U_hat[i]**2
+        # Calculate the center part of the MWA sandwich
+        S_hat = S_hat + X[i,:] @ X[i,:].transpose() * (U_hat[i] / M[i,i])**2
 
-    # Calculate EHW asymptotic standard errors
-    V = n * np.linalg.inv(X.transpose() @ X) @ S @ np.linalg.inv(X.transpose() @ X)
+    # Calculate MWA asymptotic standard errors
+    V = n * np.linalg.inv(X.transpose() @ X) @ S_hat @ np.linalg.inv(X.transpose() @ X)
 
-    # Return coefficients and EHW variance/covariance matrix
+    # Return coefficients and MWA variance/covariance matrix
     return beta_hat, V
 
 # Import necessary packages
@@ -63,6 +69,6 @@ for e in range(E):
     # Generate y
     y = X @ beta + V * X_1**2
 
-    # Perform standard inference (using EHW standard errors)
+    # Perform standard inference (using MWA standard errors)
     beta_hat_OLS, V_hat_OLS = OLS(y, X)
     print(V_hat_OLS)
