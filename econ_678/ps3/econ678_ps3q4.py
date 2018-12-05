@@ -72,11 +72,10 @@ for e in range(E):
 
     # Perform standard inference (using EHW standard errors)
     beta_hat_OLS, V_hat_OLS = OLS(y, X)
+    #test = OLS_builtin(y, X).fit(cov_type='HC1')
 
     CI = [beta_hat_OLS[1] - norm.ppf(1 - alpha/2) * np.sqrt(V_hat_OLS[1,1]),
         beta_hat_OLS[1] + norm.ppf(1 - alpha/2) * np.sqrt(V_hat_OLS[1,1])]
-
-    test = OLS_builtin(y, X).fit(cov_type='HC1')
 
     if not CI[0] <= 0 <= CI[1]:
         reject_OLS += 1
