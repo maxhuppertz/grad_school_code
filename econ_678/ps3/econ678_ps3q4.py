@@ -96,7 +96,7 @@ N = [30]
 E = 1000
 
 # Specify the number of bootstrap iterations per experiment
-B = 4999
+B = 299
 
 # Set up components of beta vector
 beta_0 = 1
@@ -158,7 +158,7 @@ for n in N:
         Q_PB = np.sort(T_PB[:,1])
 
         # Check whether the pairs bootstrap test rejects
-        if not Q_PB[np.int((alpha/2) * B)] <= t_OLS <= Q_PB[np.int((1 - alpha/2) * B)]:
+        if not Q_PB[np.int((alpha/2) * (B+1))] <= t_OLS <= Q_PB[np.int((1 - alpha/2) * (B+1))]:
             reject_PB += 1
 
         # Calculate OLS residuals (the wild bootstrap needs these)
@@ -171,7 +171,7 @@ for n in N:
         Q_WB_WIN = np.sort(T_WB_WIN[:,1])
 
         # Check whether the wild bootstrap test rejects
-        if not Q_WB_WIN[np.int((alpha/2) * B)] <= t_OLS <= Q_WB_WIN[np.int((1 - alpha/2) * B)]:
+        if not Q_WB_WIN[np.int((alpha/2) * (B+1))] <= t_OLS <= Q_WB_WIN[np.int((1 - alpha/2) * (B+1))]:
             reject_WB_WIN += 1
 
         # Estimate OLS under the null
@@ -190,7 +190,7 @@ for n in N:
         Q_WB_NULL = np.sort(T_WB_NULL[:,1])
 
         # Check whether the wild bootstrap test rejects
-        if not Q_WB_NULL[np.int((alpha/2) * B)] <= t_OLS <= Q_WB_NULL[np.int((1 - alpha/2) * B)]:
+        if not Q_WB_NULL[np.int((alpha/2) * (B+1))] <= t_OLS <= Q_WB_NULL[np.int((1 - alpha/2) * (B+1))]:
             reject_WB_NULL += 1
 
     # Print results for the current sample size
