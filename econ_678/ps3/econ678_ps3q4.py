@@ -1,7 +1,7 @@
 ########################################################################################################################
 ### Econ 678, PS3Q4: Create your own adventure (TM)
 ### Runs a Monte Carlo experiment that compares standard inference and three bootstrap procedures
-### Would benefit from parallel programming, but I don't have the time for that right now
+### This would benefit from parallel programming, but I don't have the time for that right now
 ########################################################################################################################
 
 # Import necessary packages
@@ -10,12 +10,14 @@ import warnings
 from numpy.linalg import pinv
 from scipy.stats import norm
 
-# Define standard OLS regression, with Eicker-Huber-White (EHW) variance/covariance estimator
+# Set up a function which does standard OLS regression, with Eicker-Huber-White (EHW) variance/covariance estimator
 def OLS(y, X, get_cov=True):
     # Get number of observations n and number of coefficients k
     n, k = X.shape[0], X.shape[1]
 
-    # Calculate OLS coefficients
+    # Calculate OLS coefficients (pinv() uses the normal matrix inverse if X'X is invertible, and the Moore-Penrose
+    # pseudo-inverse otherwise; invertibility of X'X can be an issue with the pairs bootstrap if sample sizes are small,
+    # which is why this is helpful)
     beta_hat = pinv(X.transpose() @ X) @ (X.transpose() @ y)
 
     # Check whether covariance is needed
@@ -36,13 +38,13 @@ def OLS(y, X, get_cov=True):
         # Otherwise, just return coefficients
         return beta_hat
 
-# Define bootstraps (I originally defined different functions, but really that just means you run many many more for
-# loops, which is extremely inefficient)
+# Set up a function which does the bootstraps (I originally defined different functions, but really that just means I
+# ran many many more for-loops, which was extremely inefficient)
 def bootstrap(y, X, beta_hat, U_hat, beta_hat_null, U_hat_null, estimator=OLS, B=1000):
     # Get number of observations n and number of coefficients k
     n, k = X.shape[0], X.shape[1]
 
-    # Set up vector of bootstrap t statistics
+    # Set up vector of bootstrap t statistics (output of this function)
     T = np.zeros(shape=(B,k*3))
 
     # Go through all bootstrap iterations
@@ -54,14 +56,14 @@ def bootstrap(y, X, beta_hat, U_hat, beta_hat_null, U_hat_null, estimator=OLS, B
         # Estimate model on bootstrap data
         beta_hat_star, V_hat_star = estimator(y[I], X[I,:])
 
-        # Calculate t statistic (remember Python's zero indexing, so :3 allocates to elements 0, 1, and 2)
+        # Calculate t statistic (remember Python's zero indexing: T[b,:3] allocates to column elements 0, 1, and 2)
         T[b,:3] = (beta_hat_star[:,0] - beta_hat[:,0]) / np.sqrt(np.diag(V_hat_star))
 
         # Second, do the wild bootstrap without imposing the null
         # Draw perturbations from a Rademacher distribution
-        I = np.random.uniform(low=0, high=1, size=(n,1))
-        eta = np.ones(shape=(n,1)) - 2*(I < .5)
-
+        I = np.random.binomial(n=1, p=.5, size=(n,1))
+        eta = np.ones(shape=(n,1)) - 2*(I == 0)
+        
         # Generate bootstrap data
         y_star = X @ beta_hat + U_hat * eta
 
@@ -73,8 +75,8 @@ def bootstrap(y, X, beta_hat, U_hat, beta_hat_null, U_hat_null, estimator=OLS, B
 
         # Third, do the wild bootstrap without imposing the null
         # Draw perturbations from a Rademacher distribution
-        I = np.random.uniform(low=0, high=1, size=(n,1))
-        eta = np.ones(shape=(n,1)) - 2*(I < .5)
+        I = np.random.binomial(n=1, p=.5, size=(n,1))
+        eta = np.ones(shape=(n,1)) - 2*(I == 0)
 
         # Generate bootstrap data
         y_star = X @ beta_hat_null + U_hat_null * eta
@@ -83,7 +85,7 @@ def bootstrap(y, X, beta_hat, U_hat, beta_hat_null, U_hat_null, estimator=OLS, B
         beta_hat_star, V_hat_star = estimator(y_star, X)
 
         # Calculate t statistic
-        T[b,6:] = (beta_hat_star[:,0] - beta_hat[:,0]) / np.sqrt(np.diag(V_hat_star))
+        T[b,6:] = (beta_hat_star[:,0] - beta_hat_null[:,0]) / np.sqrt(np.diag(V_hat_star))
 
     # Return the matrix of bootstrap t statistics
     return T
@@ -92,13 +94,13 @@ def bootstrap(y, X, beta_hat, U_hat, beta_hat_null, U_hat_null, estimator=OLS, B
 np.random.seed(678)
 
 # Specify sample sizes
-N = [10, 25, 50]
+N = [500]
 
 # Specify how often you want to run the experiment for each sample size
 E = 1000
 
 # Specify the number of bootstrap iterations per experiment
-B = 4999
+B = 299
 
 # Set up components of beta vector
 beta_0 = 1
@@ -135,13 +137,13 @@ for n in N:
         V = np.random.chisquare(df=5, size=(n, 1)) - 5
 
         # Generate y
-        y = X @ beta + V * X_1**2
+        y = X @ beta + V * (X_1**2)
 
         # Perform standard inference (using EHW standard errors)
         beta_hat_OLS, V_hat_OLS = OLS(y, X, get_cov=True)
 
         # Get t statistic for beta_1
-        t_OLS = beta_hat_OLS[1,0] / np.sqrt(V_hat_OLS[1,1])
+        t_OLS = beta_hat_OLS[1] / np.sqrt(V_hat_OLS[1,1])
 
         # Check whether standard asymptotic test rejects
         if not norm.ppf(alpha/2) <= t_OLS <= norm.ppf(1 - alpha/2):
@@ -150,13 +152,13 @@ for n in N:
         # Calculate OLS residuals (the wild bootstrap needs these)
         U_hat_OLS = y - X @ beta_hat_OLS
 
-        # Estimate OLS under the null
+        # Estimate OLS under the null (the wild bootstrap with the null imposed needs this)
         beta_hat_OLS_NULL = OLS(y, X[:,[0,2]], get_cov=False)
 
         # Add beta_1 = 0 back into beta_hat_OLS_NULL (obj=1 specifies the index before which values=0 is inserted)
         beta_hat_OLS_NULL = np.insert(beta_hat_OLS_NULL, obj=1, values=0, axis=0)
 
-        # Get residuals under the null
+        # Get residuals under the null (also for the wild bootstrap with the null imposed)
         U_hat_OLS_NULL = y - X @ beta_hat_OLS_NULL
 
         # Do the bootstraps
