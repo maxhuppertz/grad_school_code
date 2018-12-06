@@ -90,7 +90,7 @@ def wild_bootstrap(y, X, beta_hat, U_hat, estimator=OLS, B=1000):
 np.random.seed(678)
 
 # Specify sample sizes
-N = [30]
+N = [10, 25, 50]
 
 # Specify how often you want to run the experiment for each sample size
 E = 1000
@@ -145,14 +145,8 @@ for n in N:
         if not norm.ppf(alpha/2) <= t_OLS <= norm.ppf(1 - alpha/2):
             reject_OLS += 1
 
-        # Do the pairs bootstrap (for small sample sizes, X'X may not be pinvertible, which will raise a warning but not
-        # stop the code from executing; catch that warning while running the bootstrap)
-        with warnings.catch_warnings():
-            # Catches the RuntimeWarning if it is thrown, and ignores it
-            warnings.simplefilter("ignore", RuntimeWarning)
-
-            # Runs the pairs bootstrap
-            T_PB = pairs_bootstrap(y, X, beta_hat_OLS, B=B)
+        # Do the pairs bootstrap
+        T_PB = pairs_bootstrap(y, X, beta_hat_OLS, B=B)
 
         # Get sorted vector of bootstrap t statistics for beta_1
         Q_PB = np.sort(T_PB[:,1])
