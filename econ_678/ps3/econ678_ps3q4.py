@@ -36,41 +36,30 @@ def OLS(y, X, get_cov=True):
         # Otherwise, just return coefficients
         return beta_hat
 
-# Define pairs bootstrap
-def pairs_bootstrap(y, X, beta_hat, estimator=OLS, B=1000):
+# Define bootstraps (I originally defined different functions, but really that just means you run many many more for
+# loops, which is extremely inefficient)
+def bootstrap(y, X, beta_hat, U_hat, beta_hat_null, U_hat_null, estimator=OLS, B=1000):
     # Get number of observations n and number of coefficients k
     n, k = X.shape[0], X.shape[1]
 
     # Set up vector of bootstrap t statistics
-    T = np.zeros(shape=(B,k))
+    T = np.zeros(shape=(B,k*3))
 
     # Go through all bootstrap iterations
     for b in range(B):
+        # First, do the pairs bootstrap
         # Draw indices for bootstrap sample
         I = np.random.randint(low=0, high=n, size=n)
 
         # Estimate model on bootstrap data
         beta_hat_star, V_hat_star = estimator(y[I], X[I,:])
 
-        # Calculate t statistic
-        T[b,:] = (beta_hat_star[:,0] - beta_hat[:,0]) / np.sqrt(np.diag(V_hat_star))
+        # Calculate t statistic (remember Python's zero indexing, so :3 allocates to elements 0, 1, and 2)
+        T[b,:3] = (beta_hat_star[:,0] - beta_hat[:,0]) / np.sqrt(np.diag(V_hat_star))
 
-    # Return the matrix of bootstrap t statistics
-    return T
-
-# Define wild bootstrap (uses a Rademacher distribution for disturbances)
-def wild_bootstrap(y, X, beta_hat, U_hat, estimator=OLS, B=1000):
-    # Get number of observations n and number of coefficients k
-    n, k = X.shape[0], X.shape[1]
-
-    # Set up vector of bootstrap t statistics
-    T = np.zeros(shape=(B,k))
-
-    # Go through all bootstrap iterations
-    for b in range(B):
+        # Second, do the wild bootstrap without imposing the null
         # Draw perturbations from a Rademacher distribution
         I = np.random.uniform(low=0, high=1, size=(n,1))
-        #eta = np.ones(shape=(n,1)) * ( (-1)**(I < .5) )  # Isn't Pyton cool sometimes?
         eta = np.ones(shape=(n,1)) - 2*(I < .5)
 
         # Generate bootstrap data
@@ -80,7 +69,21 @@ def wild_bootstrap(y, X, beta_hat, U_hat, estimator=OLS, B=1000):
         beta_hat_star, V_hat_star = estimator(y_star, X)
 
         # Calculate t statistic
-        T[b,:] = (beta_hat_star[:,0] - beta_hat[:,0]) / np.sqrt(np.diag(V_hat_star))
+        T[b,3:6] = (beta_hat_star[:,0] - beta_hat[:,0]) / np.sqrt(np.diag(V_hat_star))
+
+        # Third, do the wild bootstrap without imposing the null
+        # Draw perturbations from a Rademacher distribution
+        I = np.random.uniform(low=0, high=1, size=(n,1))
+        eta = np.ones(shape=(n,1)) - 2*(I < .5)
+
+        # Generate bootstrap data
+        y_star = X @ beta_hat_null + U_hat_null * eta
+
+        # Estimate model
+        beta_hat_star, V_hat_star = estimator(y_star, X)
+
+        # Calculate t statistic
+        T[b,6:] = (beta_hat_star[:,0] - beta_hat[:,0]) / np.sqrt(np.diag(V_hat_star))
 
     # Return the matrix of bootstrap t statistics
     return T
@@ -89,13 +92,13 @@ def wild_bootstrap(y, X, beta_hat, U_hat, estimator=OLS, B=1000):
 np.random.seed(678)
 
 # Specify sample sizes
-N = [10, 25, 50]
+N = [50]
 
 # Specify how often you want to run the experiment for each sample size
-E = 1000
+E = 500
 
 # Specify the number of bootstrap iterations per experiment
-B = 4999
+B = 299
 
 # Set up components of beta vector
 beta_0 = 1
@@ -144,28 +147,8 @@ for n in N:
         if not norm.ppf(alpha/2) <= t_OLS <= norm.ppf(1 - alpha/2):
             reject_OLS += 1
 
-        # Do the pairs bootstrap
-        T_PB = pairs_bootstrap(y, X, beta_hat_OLS, B=B)
-
-        # Get sorted vector of bootstrap t statistics for beta_1
-        Q_PB = np.sort(T_PB[:,1])
-
-        # Check whether the pairs bootstrap test rejects
-        if not Q_PB[np.int((alpha/2) * (B+1))] <= t_OLS <= Q_PB[np.int((1 - alpha/2) * (B+1))]:
-            reject_PB += 1
-
         # Calculate OLS residuals (the wild bootstrap needs these)
-        U_hat = y - X @ beta_hat_OLS
-
-        # Do the wild bootstrap without imposing the null (WIN)
-        T_WB_WIN = wild_bootstrap(y, X, beta_hat_OLS, U_hat=U_hat, B=B)
-
-        # Get sorted vector of bootstrap t statistics for beta_1
-        Q_WB_WIN = np.sort(T_WB_WIN[:,1])
-
-        # Check whether the wild bootstrap test rejects
-        if not Q_WB_WIN[np.int((alpha/2) * (B+1))] <= t_OLS <= Q_WB_WIN[np.int((1 - alpha/2) * (B+1))]:
-            reject_WB_WIN += 1
+        U_hat_OLS = y - X @ beta_hat_OLS
 
         # Estimate OLS under the null
         beta_hat_OLS_NULL = OLS(y, X[:,[0,2]], get_cov=False)
@@ -174,13 +157,27 @@ for n in N:
         beta_hat_OLS_NULL = np.insert(beta_hat_OLS_NULL, obj=1, values=0, axis=0)
 
         # Get residuals under the null
-        U_hat_NULL = y - X @ beta_hat_OLS_NULL
+        U_hat_OLS_NULL = y - X @ beta_hat_OLS_NULL
 
-        # Do the wild bootstrap imposing the null
-        T_WB_NULL = wild_bootstrap(y, X, beta_hat_OLS_NULL, U_hat_NULL, B=B)
+        # Do the bootstraps
+        T = bootstrap(y, X, beta_hat_OLS, U_hat_OLS, beta_hat_OLS_NULL, U_hat_OLS_NULL, B=B)
+        
+        # Get sorted vector of pairs bootstrap t statistics for beta_1
+        Q_PB = np.sort(T[:,1])
 
-        # Get sorted vector of bootstrap t statistics for beta_1
-        Q_WB_NULL = np.sort(T_WB_NULL[:,1])
+        # Check whether the pairs bootstrap test rejects
+        if not Q_PB[np.int((alpha/2) * (B+1))] <= t_OLS <= Q_PB[np.int((1 - alpha/2) * (B+1))]:
+            reject_PB += 1
+
+        # Get sorted vector of wild boostrap without imposing the null (WIN) t statistics for beta_1
+        Q_WB_WIN = np.sort(T[:,4])
+
+        # Check whether the wild bootstrap test rejects
+        if not Q_WB_WIN[np.int((alpha/2) * (B+1))] <= t_OLS <= Q_WB_WIN[np.int((1 - alpha/2) * (B+1))]:
+            reject_WB_WIN += 1
+
+        # Get sorted vector of wild bootstrap with the null imposed t statistics for beta_1
+        Q_WB_NULL = np.sort(T[:,7])
 
         # Check whether the wild bootstrap test rejects
         if not Q_WB_NULL[np.int((alpha/2) * (B+1))] <= t_OLS <= Q_WB_NULL[np.int((1 - alpha/2) * (B+1))]:
