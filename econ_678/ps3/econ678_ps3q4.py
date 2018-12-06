@@ -92,13 +92,13 @@ def bootstrap(y, X, beta_hat, U_hat, beta_hat_null, U_hat_null, estimator=OLS, B
 np.random.seed(678)
 
 # Specify sample sizes
-N = [50]
+N = [10, 25, 50]
 
 # Specify how often you want to run the experiment for each sample size
-E = 500
+E = 1000
 
 # Specify the number of bootstrap iterations per experiment
-B = 299
+B = 4999
 
 # Set up components of beta vector
 beta_0 = 1
@@ -161,7 +161,7 @@ for n in N:
 
         # Do the bootstraps
         T = bootstrap(y, X, beta_hat_OLS, U_hat_OLS, beta_hat_OLS_NULL, U_hat_OLS_NULL, B=B)
-        
+
         # Get sorted vector of pairs bootstrap t statistics for beta_1
         Q_PB = np.sort(T[:,1])
 
