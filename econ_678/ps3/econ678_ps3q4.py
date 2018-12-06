@@ -1,6 +1,7 @@
 ########################################################################################################################
 ### Econ 678, PS3Q4: Create your own adventure (TM)
-### Generates some data, then compares standard inference and various bootstrap procedures
+### Runs a Monte Carlo experiment that compares standard inference and three bootstrap procedures
+### Would benefit from parallel programming, but I don't have the time for that right now
 ########################################################################################################################
 
 # Import necessary packages
@@ -48,11 +49,8 @@ def pairs_bootstrap(y, X, beta_hat, estimator=OLS, B=1000):
         # Draw indices for bootstrap sample
         I = np.random.randint(low=0, high=n, size=n)
 
-        # Get bootstrap data
-        y_star, X_star = y[I], X[I,:]
-
-        # Estimate model
-        beta_hat_star, V_hat_star = estimator(y_star, X_star)
+        # Estimate model on bootstrap data
+        beta_hat_star, V_hat_star = estimator(y[I], X[I,:])
 
         # Calculate t statistic
         T[b,:] = (beta_hat_star[:,0] - beta_hat[:,0]) / np.sqrt(np.diag(V_hat_star))
@@ -72,7 +70,8 @@ def wild_bootstrap(y, X, beta_hat, U_hat, estimator=OLS, B=1000):
     for b in range(B):
         # Draw perturbations from a Rademacher distribution
         I = np.random.uniform(low=0, high=1, size=(n,1))
-        eta = np.ones(shape=(n,1)) * ( (-1)**(I < .5) )  # Isn't Pyton cool sometimes?
+        #eta = np.ones(shape=(n,1)) * ( (-1)**(I < .5) )  # Isn't Pyton cool sometimes?
+        eta = np.ones(shape=(n,1)) - 2*(I < .5)
 
         # Generate bootstrap data
         y_star = X @ beta_hat + U_hat * eta
@@ -96,7 +95,7 @@ N = [10, 25, 50]
 E = 1000
 
 # Specify the number of bootstrap iterations per experiment
-B = 299
+B = 4999
 
 # Set up components of beta vector
 beta_0 = 1
