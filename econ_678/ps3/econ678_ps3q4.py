@@ -95,7 +95,7 @@ def bootstrap(y, X, beta_hat, U_hat, beta_hat_null, U_hat_null, estimator=OLS, B
 np.random.seed(678)
 
 # Specify sample sizes
-N = [10, 50, 1000]
+N = [30, 100, 500]
 
 # Specify how often you want to run the experiment for each sample size
 E = 1000
