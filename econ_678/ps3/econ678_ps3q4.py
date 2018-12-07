@@ -11,6 +11,7 @@ from numpy.linalg import pinv
 from scipy.stats import norm
 
 # Set up a function which does standard OLS regression, with Eicker-Huber-White (EHW) variance/covariance estimator
+# (HC1, i.e. it has the n / (n - k) correction)
 def OLS(y, X, get_cov=True):
     # Get number of observations n and number of coefficients k
     n, k = X.shape[0], X.shape[1]
@@ -63,7 +64,7 @@ def bootstrap(y, X, beta_hat, U_hat, beta_hat_null, U_hat_null, estimator=OLS, B
         # Draw perturbations from a Rademacher distribution
         I = np.random.binomial(n=1, p=.5, size=(n,1))
         eta = np.ones(shape=(n,1)) - 2*(I == 0)
-        
+
         # Generate bootstrap data
         y_star = X @ beta_hat + U_hat * eta
 
@@ -94,13 +95,13 @@ def bootstrap(y, X, beta_hat, U_hat, beta_hat_null, U_hat_null, estimator=OLS, B
 np.random.seed(678)
 
 # Specify sample sizes
-N = [500]
+N = [10, 50, 1000]
 
 # Specify how often you want to run the experiment for each sample size
 E = 1000
 
 # Specify the number of bootstrap iterations per experiment
-B = 299
+B = 4999
 
 # Set up components of beta vector
 beta_0 = 1
