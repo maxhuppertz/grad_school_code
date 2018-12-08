@@ -207,4 +207,4 @@ alpha = .05
 print(E, 'experiments,', B, 'bootstrap iterations')
 
 # Run experiments in parallel
-Parallel(n_jobs=mp.cpu_count())(delayed(run_experiments)(n, beta, B=B, E=E, alpha=alpha) for n in N)
+Parallel(n_jobs=mp.cpu_count() - 1)(delayed(run_experiments)(n, beta, B=B, E=E, alpha=alpha) for n in N)
