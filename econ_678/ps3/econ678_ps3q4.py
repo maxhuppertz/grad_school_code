@@ -184,7 +184,7 @@ def run_experiments(n, beta, B=999, E=1000, alpha=.05):
 ########################################################################################################################
 
 # Specify sample sizes
-N = [10, 25, 50]
+N = [30, 100, 1000]
 
 # Specify how often you want to run the experiment for each sample size
 E = 1000
