@@ -184,7 +184,7 @@ def run_experiments(n, beta, B=999, E=1000, alpha=.05):
 ########################################################################################################################
 
 # Specify sample sizes
-N = [15, 50, 500]
+N = [10, 25, 50]
 
 # Specify how often you want to run the experiment for each sample size
 E = 1000
@@ -206,5 +206,5 @@ alpha = .05
 # Display number of experiments and number of bootstrap iterations
 print(E, 'experiments,', B, 'bootstrap iterations')
 
-# Run experiments in parallel
+# Run experiments in parallel, using all but one of the available cores
 Parallel(n_jobs=mp.cpu_count() - 1)(delayed(run_experiments)(n, beta, B=B, E=E, alpha=alpha) for n in N)
