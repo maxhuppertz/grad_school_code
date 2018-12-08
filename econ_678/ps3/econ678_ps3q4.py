@@ -5,10 +5,17 @@
 ########################################################################################################################
 
 # Import necessary packages
+import multiprocessing as mp
 import numpy as np
+import time
 import warnings
+from joblib import Parallel, delayed
 from numpy.linalg import pinv
 from scipy.stats import norm
+
+########################################################################################################################
+### Part 1: Define functions
+########################################################################################################################
 
 # Set up a function which does standard OLS regression, with Eicker-Huber-White (EHW) variance/covariance estimator
 # (HC1, i.e. it has the n / (n - k) correction)
@@ -41,7 +48,7 @@ def OLS(y, X, get_cov=True):
 
 # Set up a function which does the bootstraps (I originally defined different functions, but really that just means I
 # ran many many more for-loops, which was extremely inefficient)
-def bootstrap(y, X, beta_hat, U_hat, beta_hat_null, U_hat_null, estimator=OLS, B=1000):
+def bootstrap(y, X, beta_hat, U_hat, beta_hat_null, U_hat_null, B=999):
     # Get number of observations n and number of coefficients k
     n, k = X.shape[0], X.shape[1]
 
@@ -55,7 +62,7 @@ def bootstrap(y, X, beta_hat, U_hat, beta_hat_null, U_hat_null, estimator=OLS, B
         I = np.random.randint(low=0, high=n, size=n)
 
         # Estimate model on bootstrap data
-        beta_hat_star, V_hat_star = estimator(y[I], X[I,:])
+        beta_hat_star, V_hat_star = OLS(y[I], X[I,:])
 
         # Calculate t statistic (remember Python's zero indexing: T[b,:3] allocates to column elements 0, 1, and 2)
         T[b,:3] = (beta_hat_star[:,0] - beta_hat[:,0]) / np.sqrt(np.diag(V_hat_star))
@@ -69,7 +76,7 @@ def bootstrap(y, X, beta_hat, U_hat, beta_hat_null, U_hat_null, estimator=OLS, B
         y_star = X @ beta_hat + U_hat * eta
 
         # Estimate model
-        beta_hat_star, V_hat_star = estimator(y_star, X)
+        beta_hat_star, V_hat_star = OLS(y_star, X)
 
         # Calculate t statistic
         T[b,3:6] = (beta_hat_star[:,0] - beta_hat[:,0]) / np.sqrt(np.diag(V_hat_star))
@@ -83,7 +90,7 @@ def bootstrap(y, X, beta_hat, U_hat, beta_hat_null, U_hat_null, estimator=OLS, B
         y_star = X @ beta_hat_null + U_hat_null * eta
 
         # Estimate model
-        beta_hat_star, V_hat_star = estimator(y_star, X)
+        beta_hat_star, V_hat_star = OLS(y_star, X)
 
         # Calculate t statistic
         T[b,6:] = (beta_hat_star[:,0] - beta_hat_null[:,0]) / np.sqrt(np.diag(V_hat_star))
@@ -91,34 +98,12 @@ def bootstrap(y, X, beta_hat, U_hat, beta_hat_null, U_hat_null, estimator=OLS, B
     # Return the matrix of bootstrap t statistics
     return T
 
-# Set seed
-np.random.seed(678)
+# Define a function to run E experiments for a given sample size n, using B bootstrap iterations and testing at level
+# alpha for standard OLS and all bootstraps
+def run_MC_experiments(n, beta, B=999, E=1000, alpha=.05):
+    # Set seed
+    np.random.seed(n)
 
-# Specify sample sizes
-N = [30, 100, 500]
-
-# Specify how often you want to run the experiment for each sample size
-E = 1000
-
-# Specify the number of bootstrap iterations per experiment
-B = 4999
-
-# Set up components of beta vector
-beta_0 = 1
-beta_1 = 0
-beta_2 = 1
-
-# Combine to (column) vector
-beta = np.array([beta_0, beta_1, beta_2], ndmin=2).transpose()
-
-# Set test level
-alpha = .05
-
-# Display number of experiments and number of bootstrap iterations
-print(E, 'experiments,', B, 'bootstrap iterations')
-
-# Go through all sample sizes
-for n in N:
     # Set up rejection counters
     reject_OLS = 0
     reject_PB = 0
@@ -187,8 +172,39 @@ for n in N:
             reject_WB_NULL += 1
 
     # Print results for the current sample size
-    print('Sample size:', n)
-    print('Rejection rate for standard OLS:', reject_OLS / E)
-    print('Rejection rate for pairs bootstrap:', reject_PB / E)
-    print('Rejection rate for wild bootstrap (without imposing the null):', reject_WB_WIN / E)
-    print('Rejection rate for wild bootstrap (imposing the null):', reject_WB_NULL / E)
+    print('Sample size: ', n,
+        '\nRejection rate for standard OLS: ', reject_OLS / E,
+        '\nRejection rate for pairs bootstrap: ', reject_PB / E,
+        '\nRejection rate for wild bootstrap (without imposing the null): ', reject_WB_WIN / E,
+        '\nRejection rate for wild bootstrap (imposing the null): ', reject_WB_NULL / E,
+        sep='')
+
+########################################################################################################################
+### Part 2: Set up & run experiments
+########################################################################################################################
+
+# Specify sample sizes
+N = [30, 50, 100]
+
+# Specify how often you want to run the experiment for each sample size
+E = 1000
+
+# Specify the number of bootstrap iterations per experiment
+B = 4999
+
+# Set up components of beta vector
+beta_0 = 1
+beta_1 = 0
+beta_2 = 1
+
+# Combine to (column) vector
+beta = np.array([beta_0, beta_1, beta_2], ndmin=2).transpose()
+
+# Set test level
+alpha = .05
+
+# Display number of experiments and number of bootstrap iterations
+print(E, 'experiments,', B, 'bootstrap iterations')
+
+# Run experiments in parallel
+Parallel(n_jobs=mp.cpu_count())(delayed(run_MC_experiments)(n, beta, B=B, E=E, alpha=alpha) for n in N)
