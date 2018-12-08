@@ -100,7 +100,7 @@ def bootstrap(y, X, beta_hat, U_hat, beta_hat_null, U_hat_null, B=999):
 
 # Define a function to run E experiments for a given sample size n, using B bootstrap iterations and testing at level
 # alpha for standard OLS and all bootstraps
-def run_MC_experiments(n, beta, B=999, E=1000, alpha=.05):
+def run_experiments(n, beta, B=999, E=1000, alpha=.05):
     # Set seed
     np.random.seed(n)
 
@@ -184,7 +184,7 @@ def run_MC_experiments(n, beta, B=999, E=1000, alpha=.05):
 ########################################################################################################################
 
 # Specify sample sizes
-N = [30, 50, 100]
+N = [15, 50, 500]
 
 # Specify how often you want to run the experiment for each sample size
 E = 1000
@@ -207,4 +207,4 @@ alpha = .05
 print(E, 'experiments,', B, 'bootstrap iterations')
 
 # Run experiments in parallel
-Parallel(n_jobs=mp.cpu_count())(delayed(run_MC_experiments)(n, beta, B=B, E=E, alpha=alpha) for n in N)
+Parallel(n_jobs=mp.cpu_count())(delayed(run_experiments)(n, beta, B=B, E=E, alpha=alpha) for n in N)
