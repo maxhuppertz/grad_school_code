@@ -44,8 +44,7 @@ ax.set_xlim(0, np.max(x))
 ax.set_ylim(0)
 
 # Set axis labels
-ax.set_xlabel('x', fontsize=11)
-ax.set_ylabel('Density', fontsize=11)
+ax.set_xlabel('$x$', fontsize=11)
 
 # Enable legend
 ax.legend(fontsize=11)
