@@ -1,7 +1,6 @@
 ########################################################################################################################
 ### Econ 678, PS3Q4: Create your own adventure (TM)
 ### Runs a Monte Carlo experiment that compares standard inference and three bootstrap procedures
-### This would benefit from parallel programming, but I don't have the time for that right now
 ########################################################################################################################
 
 # Import necessary packages
