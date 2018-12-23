@@ -119,6 +119,10 @@ else:
     # Read in the locally saved DataFrame
     data = pd.read_pickle(data_file+'.pkl')
 
+########################################################################################################################
+### Part 3: Estimate rank - size relationship
+########################################################################################################################
+
 # Specify the name of the year variable
 v_year = 'fyear'
 
@@ -127,14 +131,11 @@ v_year = 'fyear'
 v_sales = 'sale'
 v_log_sales = 'log_'+v_sales
 
-# Check where sales are not zero
-non_zero_sales = data[v_sales] > 0
-
 # Generate sales data as NaN
 data[v_log_sales] = np.nan
 
-# Where sales are not zero, replace them with the log
-data.loc[non_zero_sales, v_log_sales] = np.log(data.loc[non_zero_sales, v_sales])
+# Where sales are not zero, replace them with the log of sales
+data.loc[data[v_sales] > 0, v_log_sales] = np.log(data.loc[data[v_sales] > 0, v_sales])
 
 # Generate firms size rank, by year
 v_sales_rank = v_sales + '_rank'
@@ -145,14 +146,24 @@ v_log_sales_rank = 'log_' + v_sales_rank
 s = .5
 data[v_log_sales_rank] = np.log(data[v_sales_rank] - s)
 
-# For selection purposes, generate a rank that counts upwards
-v_sales_rank_lth = v_sales + '_rank_lth'
-data[v_sales_rank_lth] = data.groupby(v_year)[v_sales].rank(ascending=False)
+# Set minimum and maximum year for the estimation
+year_min = 2015
+year_max = 2015
 
-# Run OLS of log sales on log size
-beta_hat_OLS_GI, V_hat_OLS_GI = OLS_GI(data[v_log_sales_rank], data[v_log_sales])
-print(beta_hat_OLS_GI, V_hat_OLS_GI)
+# Select rank cutoffs for the estimation
+rank_cutoffs = [np.inf, 500, 100]
 
-beta_hat_OLS_GI, V_hat_OLS_GI = OLS_GI(data.loc[data[v_sales_rank] <= 500, v_log_sales_rank],
-    data.loc[data[v_sales_rank] <= 500, v_log_sales])
-print(beta_hat_OLS_GI, V_hat_OLS_GI)
+est_results = pd.DataFrame(np.zeros(shape=(len(rank_cutoffs), 3)),
+    columns=['Rank cutoff', 'beta_hat', 'SE beta_hat'])
+
+# Go through all cutoffs
+for i, c in enumerate(rank_cutoffs):
+    # Run the estimation, using only firms which are below the rank cutoffs and only data for selected years
+    beta_hat_OLS_GI, V_hat_OLS_GI = OLS_GI(
+        data.loc[(data[v_sales_rank] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_sales_rank],
+        data.loc[(data[v_sales_rank] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_sales])
+
+    # Save cutoff and associated results
+    est_results.iloc[i, :] = [c, beta_hat_OLS_GI, V_hat_OLS_GI]
+
+print(est_results)
