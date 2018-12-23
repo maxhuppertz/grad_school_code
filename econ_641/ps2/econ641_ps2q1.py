@@ -11,6 +11,10 @@ from numpy.linalg import pinv
 from os import chdir, mkdir, path, mkdir
 from requests import get
 
+# pandas_datareader has some issues with pandas sometimes
+pd.core.common.is_list_like = pd.api.types.is_list_like
+from pandas_datareader import wb
+
 ########################################################################################################################
 ### Part 1: Define Gabaix and Ibragimov (2011) estimator
 ########################################################################################################################
@@ -95,6 +99,10 @@ download_data = False
 data_file = 'PanelAnnual_compustat1980_2015'
 data_file_ext = '.dta'
 
+# Specify which CPI data to get from the World Bank, and a file name for a local copy
+cpi_data = 'FP.CPI.TOTL'  # Data to get
+cpi_file = 'US_CPI'  # File name for local copy
+
 # Change directory to data
 chdir(mdir+ddir)
 
@@ -115,23 +123,53 @@ if download_data:
 
     # Save the DataFrame locally
     data.to_pickle(data_file+'.pkl')
+
+    # Specify the name of the year variable
+    v_year = 'fyear'
+
+    # Get CPI data for the years covered in the CompuStat data
+    wb_data = wb.download(indicator=cpi_data, country='US',
+                          start=int(min(data[v_year])), end=int(max(data[v_year])), errors='ignore')
+
+    # Drop the country level from the index, since it's unnecessary
+    wb_data.index = wb_data.index.droplevel('country')
+
+    # Save the DataFrame locally
+    wb_data.to_pickle(cpi_file+'.pkl')
 else:
     # Read in the locally saved DataFrame
     data = pd.read_pickle(data_file+'.pkl')
+
+    # Specify the name of the year variable
+    v_year = 'fyear'
+
+    # Read in the World Bank CPI data
+    wb_data = pd.read_pickle(cpi_file+'.pkl')
+
+########################################################################################################################
+### Part 2: Adjust for inflation
+########################################################################################################################
+
+# Specify name of sales variable
+v_sales = 'sale'
+
+# Select a year to which to rescale the CPI date
+rescale_year = 2015
+
+# Rescale the CPI data (this also converts it to ratios rather than percentages)
+wb_data.loc[:, cpi_data] = wb_data.loc[:, cpi_data] / wb_data.loc[str(rescale_year), cpi_data]
+
+# Go through all years in the data
+for year in range(int(min(data[v_year])), int(max(data[v_year])+1)):
+    # Adjust for inflation
+    data.loc[data[v_year] == year, v_sales] = data.loc[data[v_year] == year, v_sales] * wb_data.loc[str(year), cpi_data]
 
 ########################################################################################################################
 ### Part 3: Estimate rank - size relationship, for different rank cutoffs
 ########################################################################################################################
 
-# Specify the name of the year variable
-v_year = 'fyear'
-
-# Generate log sales
-# Specify name of sales variable and log sales variable
-v_sales = 'sale'
+# Generate log sales data as NaN
 v_log_sales = 'log_'+v_sales
-
-# Generate sales data as NaN
 data[v_log_sales] = np.nan
 
 # Where sales are not zero, replace them with the log of sales
@@ -164,7 +202,7 @@ for i, c in enumerate(rank_cutoffs):
         data.loc[(data[v_sales_rank] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_sales])
 
     # Save cutoff and associated results
-    est_results.iloc[i, :] = [c, beta_hat_OLS_GI, V_hat_OLS_GI]
+    est_results.loc[i, :] = [c, beta_hat_OLS_GI, V_hat_OLS_GI]
 
 # Display estimation results
 print(est_results)
