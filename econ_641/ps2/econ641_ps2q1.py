@@ -12,7 +12,7 @@ from os import chdir, mkdir, path, mkdir
 from requests import get
 
 ########################################################################################################################
-### Part 1: Gabaix and Ibragimov (2011) estimator
+### Part 1: Define Gabaix and Ibragimov (2011) estimator
 ########################################################################################################################
 
 # Set up a function which does standard OLS regression, but reports the Gabaix and Ibragimov (2011) (GI) standard error;
@@ -65,7 +65,7 @@ def OLS_GI(rank, size, s=.5):
     return beta_hat[1,0], V_hat
 
 ########################################################################################################################
-### Part 1: Get data
+### Part 2: Get data
 ########################################################################################################################
 
 # Set graph options
