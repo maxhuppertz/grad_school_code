@@ -1,6 +1,6 @@
 ########################################################################################################################
 ### ECON 641: PS2, Q1
-### Investigates parts of the firm size distribution
+### Investigates characteristics of the firm size distribution
 ########################################################################################################################
 
 # Import necessary packages
@@ -120,7 +120,7 @@ else:
     data = pd.read_pickle(data_file+'.pkl')
 
 ########################################################################################################################
-### Part 3: Estimate rank - size relationship
+### Part 3: Estimate rank - size relationship, for different rank cutoffs
 ########################################################################################################################
 
 # Specify the name of the year variable
@@ -147,7 +147,7 @@ s = .5
 data[v_log_sales_rank] = np.log(data[v_sales_rank] - s)
 
 # Set minimum and maximum year for the estimation
-year_min = 2015
+year_min = -np.inf
 year_max = 2015
 
 # Select rank cutoffs for the estimation
@@ -166,4 +166,5 @@ for i, c in enumerate(rank_cutoffs):
     # Save cutoff and associated results
     est_results.iloc[i, :] = [c, beta_hat_OLS_GI, V_hat_OLS_GI]
 
+# Display estimation results
 print(est_results)
