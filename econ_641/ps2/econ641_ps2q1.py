@@ -17,11 +17,11 @@ from requests import get
 
 # Set up a function which does standard OLS regression, but reports the Gabaix and Ibragimov (2011) (GI) standard error
 def OLS_GI(rank, size, s=.5):
-    # Get number of observations n
-    n = rank.shape[0]
-
     # Check which rows contains entirely non-NaN values
-    use_rows = np.isnan(y) + np.isnan(X_1)
+    use_rows = np.logical_and(np.isnan(rank), np.isnan(size))
+
+    # Get number of observations n
+    n = rank[use_rows].shape[0]
 
     # This just makes sure you can feed the function any kind of vector, or list; the try part of this statement will
     # fail if the rank data are not a vector (i.e. not two dimensional)
@@ -29,27 +29,27 @@ def OLS_GI(rank, size, s=.5):
         # Check whether this is a row vector
         if rank.shape[0] < rank.shape[1]:
             # If so, transpose it
-            X_1 = rank.transpose
+            X_1 = rank[use_rows].transpose
         else:
             # Otherwise, leave it as it is
-            X_1 = rank
+            X_1 = rank[use_rows]
     # If the statement fails...
     except IndexError:
         # ...make it into a vector
-        X_1 = np.array(rank, ndmin=2).transpose()
+        X_1 = np.array(rank[use_rows], ndmin=2).transpose()
     print(size.shape)
     # Same thing, but for the size data; here, I also need to transform the data from y into y - s
     try:
         # Check whether this is a row vector
         if size.shape[0] < size.shape[1]:
             # If so, transpose it
-            y = size.transpose - .5
+            y = size[use_rows].transpose - .5
         else:
             # Otherwise, leave it as it is
-            y = size - .5
+            y = size[use_rows] - .5
     except IndexError:
         # If the first part fails, make it into a vector
-        y = np.array(size - .5, ndmin=2).transpose()
+        y = np.array(size[use_rows] - .5, ndmin=2).transpose()
 
     # Set up X matrix
     X = np.concatenate((np.ones(shape=(n, 1)), X_1), axis=1)
@@ -122,9 +122,18 @@ else:
 v_year = 'fyear'
 
 # Generate log sales
+# Specify name of sales variable and log sales variable
 v_sales = 'sale'
 v_log_sales = 'log_'+v_sales
-data[v_log_sales] = np.log(data[v_sales])
+
+# Check where sales are not zero
+non_zero_sales = data[v_sales] > 0
+
+# Generate sales data as NaN
+data[v_log_sales] = np.nan
+
+# Where sales are not zero, replace them with the log
+data.loc[non_zero_sales, v_log_sales] = np.log(data.loc[non_zero_sales, v_sales])
 
 # Generate firms size rank, by year
 v_sales_rank = v_sales+'_rank'
