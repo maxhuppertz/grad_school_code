@@ -185,7 +185,7 @@ s = .5
 data[v_log_sales_rank] = np.log(data[v_sales_rank] - s)
 
 # Set minimum and maximum year for the estimation
-year_min = -np.inf
+year_min = 2015
 year_max = 2015
 
 # Select rank cutoffs for the estimation
