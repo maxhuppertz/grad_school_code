@@ -59,10 +59,10 @@ def OLS_GI(rank, size, s=.5):
     beta_hat = pinv(X.transpose() @ X) @ (X.transpose() @ y)
 
     # Calculate GI standard errors for the slope coefficient
-    V_hat = beta_hat[1,0] / np.sqrt(n/2)
+    V_hat = -beta_hat[1,0] / np.sqrt(n/2)
 
     # Return size coefficient and GI variance/covariance matrix
-    return beta_hat[1,0], V_hat
+    return -beta_hat[1,0], V_hat
 
 ########################################################################################################################
 ### Part 2: Get data
@@ -138,13 +138,21 @@ data.loc[non_zero_sales, v_log_sales] = np.log(data.loc[non_zero_sales, v_sales]
 
 # Generate firms size rank, by year
 v_sales_rank = v_sales + '_rank'
-data[v_sales_rank] = data.groupby(v_year)[v_sales].rank() + 1
+data[v_sales_rank] = data.groupby(v_year)[v_sales].rank(ascending=False)
 
 # Generate log rank, with a scaling factor s, i.e. generate log(rank - s)
 v_log_sales_rank = 'log_' + v_sales_rank
 s = .5
 data[v_log_sales_rank] = np.log(data[v_sales_rank] - s)
 
+# For selection purposes, generate a rank that counts upwards
+v_sales_rank_lth = v_sales + '_rank_lth'
+data[v_sales_rank_lth] = data.groupby(v_year)[v_sales].rank(ascending=False)
+
 # Run OLS of log sales on log size
 beta_hat_OLS_GI, V_hat_OLS_GI = OLS_GI(data[v_log_sales_rank], data[v_log_sales])
+print(beta_hat_OLS_GI, V_hat_OLS_GI)
+
+beta_hat_OLS_GI, V_hat_OLS_GI = OLS_GI(data.loc[data[v_sales_rank] <= 500, v_log_sales_rank],
+    data.loc[data[v_sales_rank] <= 500, v_log_sales])
 print(beta_hat_OLS_GI, V_hat_OLS_GI)
