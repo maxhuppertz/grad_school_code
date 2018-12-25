@@ -70,9 +70,49 @@ def OLS_GI(rank, size, s=.5):
 
 # Set up a function which does standard OLS regression, with Eicker-Huber-White (EHW) variance/covariance estimator
 # (HC1, i.e. it has the n / (n - k) correction)
-def OLS(y, X, get_cov=True):
-    # Get number of observations n and number of coefficients k
-    n, k = X.shape[0], X.shape[1]
+def OLS(y_input, X_input, get_cov=True):
+    # Check which rows contains entirely non-NaN values
+    try:
+        use_rows = np.logical_and(np.isfinite(y_input), np.isfinite(X_input.sum(axis=1)))
+    except:
+        use_rows = np.logical_and(np.isfinite(y_input), np.isfinite(X_input))
+
+    # Get number of observations n
+    n = y_input[use_rows].shape[0]
+
+    # This just makes sure you can feed the function any kind of vector, or list; the try part of this statement will
+    # fail if the size data are not a vector (i.e. not two dimensional)
+    try:
+        # Check whether this is a row vector
+        if X_input.shape[0] < X_input.shape[1]:
+            # If so, transpose it
+            X_1 = X_input[use_rows].transpose
+        else:
+            # Otherwise, leave it as it is
+            X_1 = X_input[use_rows]
+    # If the statement fails...
+    except IndexError:
+        # ...make it into a vector
+        X_1 = np.array(X_input[use_rows], ndmin=2).transpose()
+
+    # Same thing, but for the rank data; here, I also need to transform the data from y into y - s
+    try:
+        # Check whether this is a row vector
+        if y_input.shape[0] < y_input.shape[1]:
+            # If so, transpose it
+            y = y_input[use_rows].transpose
+        else:
+            # Otherwise, leave it as it is
+            y = y_input[use_rows]
+    except IndexError:
+        # If the first part fails, make it into a vector
+        y = np.array(y_input[use_rows], ndmin=2).transpose()
+
+    # Set up X matrix
+    X = np.concatenate((np.ones(shape=(n, 1)), X_1), axis=1)
+
+    # Get number of coefficients k
+    k = X.shape[1]
 
     # Calculate OLS coefficients (pinv() uses the normal matrix inverse if X'X is invertible, and the Moore-Penrose
     # pseudo-inverse otherwise; invertibility of X'X can be an issue with the pairs bootstrap if sample sizes are small,
@@ -234,6 +274,7 @@ for i, c in enumerate(rank_cutoffs):
     est_results.loc[i, :] = [c, beta_hat_OLS_GI, V_hat_OLS_GI]
 
 # Display estimation results
+print('Log size - log rank estimation')
 print(est_results)
 
 ########################################################################################################################
@@ -271,3 +312,38 @@ collapsed_data = collapsed_data.rename(index=str, columns={v_sales_growth: v_log
 # Add log average sales to the data set
 v_log_mean_sales = 'log_mean_' + v_sales  # Mean sales variable
 collapsed_data[v_log_mean_sales] = np.log(data.groupby(v_name)[v_sales].mean())
+
+# Regress log sales growth standard deviation on log mean sales
+theta_hat, V_hat_theta = OLS(collapsed_data[v_log_sales_growth_sd], np.array(collapsed_data[v_log_mean_sales]))
+
+# Display the results
+print('Log sales growth SD - log mean sales estimation (no fixed effects)')
+print('theta_hat =', theta_hat[1,0])
+print('SE =', np.sqrt(V_hat_theta[1,1]))
+
+# Add sector fixed effects
+# Add sectors to the data set
+v_sector = 'sic'
+collapsed_data[v_sector] = np.floor(data.groupby(v_name)[v_sector].max() / 1000)
+
+# Set up a list of sector variables
+sector_vars = []
+
+# Go through all sectors
+for sector in collapsed_data[v_sector].unique():
+    # Omit SIC 0
+    if sector != 0:
+        # Add a dummy for that sector to the data set
+        collapsed_data[v_sector + '_' + str(sector)] = (collapsed_data[v_sector] == sector).astype(int)
+
+        # Add the new variable to the data set
+        sector_vars.append(v_sector + '_' + str(sector))
+
+# Run the same regression as before, but adding sector fixed effects
+theta_hat, V_hat_theta = OLS(collapsed_data[v_log_sales_growth_sd],
+    np.array(collapsed_data.loc[:, [v_log_mean_sales] + sector_vars]))
+
+# Display the results
+print('Log sales growth SD - log mean sales estimation (no fixed effects)')
+print('theta_hat =', theta_hat[1,0])
+print('SE =', np.sqrt(V_hat_theta[1,1]))
