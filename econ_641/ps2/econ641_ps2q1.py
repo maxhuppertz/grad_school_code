@@ -7,6 +7,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import warnings
 from numpy.linalg import pinv
 from os import chdir, mkdir, path, mkdir
 from requests import get
@@ -14,6 +15,9 @@ from requests import get
 # pandas_datareader has some issues with pandas sometimes
 pd.core.common.is_list_like = pd.api.types.is_list_like
 from pandas_datareader import wb
+
+# Some of the logs and divisions will raise warnings, which are obvious and not necessary
+warnings.simplefilter("ignore")
 
 ########################################################################################################################
 ### Part 1: Define Gabaix and Ibragimov (2011) estimator and standard OLS
