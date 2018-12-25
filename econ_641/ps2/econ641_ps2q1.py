@@ -16,7 +16,7 @@ pd.core.common.is_list_like = pd.api.types.is_list_like
 from pandas_datareader import wb
 
 ########################################################################################################################
-### Part 1: Define Gabaix and Ibragimov (2011) estimator
+### Part 1: Define Gabaix and Ibragimov (2011) estimator and standard OLS
 ########################################################################################################################
 
 # Set up a function which does standard OLS regression, but reports the Gabaix and Ibragimov (2011) (GI) standard error;
@@ -67,6 +67,35 @@ def OLS_GI(rank, size, s=.5):
 
     # Return size coefficient and GI variance/covariance matrix
     return -beta_hat[1,0], V_hat
+
+# Set up a function which does standard OLS regression, with Eicker-Huber-White (EHW) variance/covariance estimator
+# (HC1, i.e. it has the n / (n - k) correction)
+def OLS(y, X, get_cov=True):
+    # Get number of observations n and number of coefficients k
+    n, k = X.shape[0], X.shape[1]
+
+    # Calculate OLS coefficients (pinv() uses the normal matrix inverse if X'X is invertible, and the Moore-Penrose
+    # pseudo-inverse otherwise; invertibility of X'X can be an issue with the pairs bootstrap if sample sizes are small,
+    # which is why this is helpful)
+    beta_hat = pinv(X.transpose() @ X) @ (X.transpose() @ y)
+
+    # Check whether covariance is needed
+    if get_cov:
+        # Get residuals
+        U_hat = y - X @ beta_hat
+
+        # Calculate component of middle part of EHW sandwich (S_i = X_i u_i, meaning that it's easy to calculate
+        # sum_i X_i X_i' u_i^2 = S'S)
+        S = X * ( U_hat @ np.ones(shape=(1,k)) )
+
+        # Calculate EHW variance/covariance matrix
+        V_hat = ( n / (n - k) ) * pinv(X.transpose() @ X) @ (S.transpose() @ S) @ pinv(X.transpose() @ X)
+
+        # Return coefficients and EHW variance/covariance matrix
+        return beta_hat, V_hat
+    else:
+        # Otherwise, just return coefficients
+        return beta_hat
 
 ########################################################################################################################
 ### Part 2: Get data
@@ -147,7 +176,7 @@ else:
     wb_data = pd.read_pickle(cpi_file+'.pkl')
 
 ########################################################################################################################
-### Part 2: Adjust for inflation
+### Part 3: Adjust for inflation
 ########################################################################################################################
 
 # Specify name of sales variable
@@ -165,7 +194,7 @@ for year in range(int(min(data[v_year])), int(max(data[v_year])+1)):
     data.loc[data[v_year] == year, v_sales] = data.loc[data[v_year] == year, v_sales] * wb_data.loc[str(year), cpi_data]
 
 ########################################################################################################################
-### Part 3: Estimate rank - size relationship, for different rank cutoffs
+### Part 4: Estimate rank - size relationship, for different rank cutoffs
 ########################################################################################################################
 
 # Generate log sales data as NaN
@@ -206,3 +235,24 @@ for i, c in enumerate(rank_cutoffs):
 
 # Display estimation results
 print(est_results)
+
+########################################################################################################################
+### Part 5: Size-volatility relationship
+########################################################################################################################
+
+# Specify firm name variable
+v_name = 'conm'
+
+# Sort data by firm, and by year within firm
+data = data.sort_values([v_name, v_year])
+
+# Calculate sales growth rates
+v_sales_growth = v_sales + '_growth'
+data[v_sales_growth] = data.groupby(v_name)[v_sales].diff()  # .pct_change() has some weird issues with groupby()
+data.loc[1:, v_sales_growth] = (
+    data.loc[1:, v_sales_growth].values / data.loc[0:data[v_sales_growth].shape[0] - 2, v_sales].values
+    )
+
+v_sales_growth_sd = v_sales_growth + '_sd'
+data[v_sales_growth_sd] = data.groupby(v_name)[v_sales_growth].std()
+print(data.loc[:, [v_name, v_year, v_sales_growth, v_sales_growth_sd]])
