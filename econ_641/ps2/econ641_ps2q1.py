@@ -247,12 +247,27 @@ v_name = 'conm'
 data = data.sort_values([v_name, v_year])
 
 # Calculate sales growth rates
+# Specify sales growth variable
 v_sales_growth = v_sales + '_growth'
+
+# Get the difference in sales from year to year
 data[v_sales_growth] = data.groupby(v_name)[v_sales].diff()  # .pct_change() has some weird issues with groupby()
+
+# Divide by the previous year's sales
 data.loc[1:, v_sales_growth] = (
     data.loc[1:, v_sales_growth].values / data.loc[0:data[v_sales_growth].shape[0] - 2, v_sales].values
     )
 
-v_sales_growth_sd = v_sales_growth + '_sd'
-data[v_sales_growth_sd] = data.groupby(v_name)[v_sales_growth].std()
-print(data.loc[:, [v_name, v_year, v_sales_growth, v_sales_growth_sd]])
+# Calculate the standard deviation of sales growth, within firms, and use it to start a collapsed data set
+# Specify the log standard deviation of sales growth variable
+v_log_sales_growth_sd = 'log_' + v_sales_growth + '_sd'
+
+# Calculate the standard deviation of sales growth, within firm, and add it to a collapsed data set
+collapsed_data = np.log(pd.DataFrame(data.groupby(v_name)[v_sales_growth].std()))
+
+# Rename the variable
+collapsed_data = collapsed_data.rename(index=str, columns={v_sales_growth: v_log_sales_growth_sd})
+
+# Add log average sales to the data set
+v_log_mean_sales = 'log_mean_' + v_sales  # Mean sales variable
+collapsed_data[v_log_mean_sales] = np.log(data.groupby(v_name)[v_sales].mean())
