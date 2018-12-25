@@ -344,6 +344,6 @@ theta_hat, V_hat_theta = OLS(collapsed_data[v_log_sales_growth_sd],
     np.array(collapsed_data.loc[:, [v_log_mean_sales] + sector_vars]))
 
 # Display the results
-print('Log sales growth SD - log mean sales estimation (no fixed effects)')
+print('Log sales growth SD - log mean sales estimation (with sector fixed effects)')
 print('theta_hat =', theta_hat[1,0])
 print('SE =', np.sqrt(V_hat_theta[1,1]))
