@@ -305,6 +305,12 @@ for i, c in enumerate(rank_cutoffs):
         data.loc[(data[v_sales_rank] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_sales_rank],
         data.loc[(data[v_sales_rank] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_sales])
 
+    # Make a line for the tex table this will be presented in
+    if perc_cutoffs[i] == np.inf:
+        col1 = 'All firms'
+    else:
+        col1 = 'Top ' + str(np.int(perc_cutoffs[i]*100)) + '\% (' + str(np.int(c)) + ' firms)'
+
     # Save cutoff and associated results
     est_results.loc[i, :] = [c, beta_hat_OLS_GI, V_hat_OLS_GI]
 
@@ -368,8 +374,14 @@ for k, sector in enumerate(sorted(data[v_sector].unique())):
             data.loc[(data[v_sales_rank_sector] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max) &
             (data[v_sector] == sector), v_log_sales])
 
+        # Make a line for the tex table this will be presented in
+        if perc_cutoffs[i] == np.inf:
+            col1 = 'All firms'
+        else:
+            col1 = 'Top ' + str(np.int(perc_cutoffs[i]*100)) + '\% (' + str(np.int(c)) + ' firms)'
+        
         # Save cutoff and associated results
-        est_results.loc[i, :] = [c, beta_hat_OLS_GI, V_hat_OLS_GI]
+        est_results.loc[i, :] = [col1, beta_hat_OLS_GI, V_hat_OLS_GI]
 
     # Display estimation results
     print('\n')
