@@ -238,7 +238,7 @@ for year in range(int(min(data[v_year])), int(max(data[v_year])+1)):
     data.loc[data[v_year] == year, v_sales] = data.loc[data[v_year] == year, v_sales] * wb_data.loc[str(year), cpi_data]
 
 ########################################################################################################################
-### Part 4: Estimate log rank - log sales relationship, for different rank cutoffs
+### Part 4: Estimate log rank - log sales relationship, for different rank cutoffs, and make some plots
 ########################################################################################################################
 
 # Generate log sales data as NaN
@@ -260,6 +260,27 @@ data[v_log_sales_rank] = np.log(data[v_sales_rank] - s)
 # Set minimum and maximum year for the estimation
 year_min = 2015
 year_max = 2015
+
+# Switch to figures directory
+chdir(mdir+fdir)
+
+# Set up plot of log-log relationship
+fig, ax = plt.subplots(figsize=(4.5, 4.5))
+
+# Plot log-log relationship
+ax.scatter(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_sales_rank],
+    data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_sales], s=5)
+
+# Set axis labels
+ax.set_xlabel('log sales rank', fontsize=11)
+ax.set_ylabel('log sales', fontsize=11)
+
+# Trim unnecessary whitespace
+fig.tight_layout()
+
+# Save the plot
+plt.savefig('log_sales_log_rank.pdf')
+plt.close()
 
 # Specify firm name variable
 v_name = 'conm'
@@ -300,8 +321,30 @@ data[v_sector] = np.floor(data[v_sic] / 1000)
 v_sales_rank_sector = v_sales_rank + '_sector'
 data[v_sales_rank_sector] = data.groupby([v_year, v_sector])[v_sales].rank(ascending=False)
 
+# Set up plot of log-log relationship
+fig, axes = plt.subplots(nrows=2, ncols=5, figsize=(9.5, 4.5))
+
 # Go through all sectors
-for sector in sorted(data[v_sector].unique()):
+for k, sector in enumerate(sorted(data[v_sector].unique())):
+    # Figure out row and column index
+    i = np.int(np.floor(k/5))
+    j = np.int(k - i * 5)
+
+    # Plot log-log relationship
+    axes[i,j].scatter(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) & (data[v_sector] == sector),
+        v_log_sales_rank],
+        data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) & (data[v_sector] == sector),
+        v_log_sales], s=5)
+
+    # Add a graph title
+    axes[i,j].set_title('SIC ' + str(np.int(sector)), y=1)
+
+    # Set axis labels
+    if i == 1:
+        axes[i,j].set_xlabel('log sales rank', fontsize=11)
+    if j == 0:
+        axes[i,j].set_ylabel('log sales', fontsize=11)
+
     # Check how many firms there are in the data for the years under consideration
     n_firms = len(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) &
         (data[v_sector] == sector), v_name].unique())
@@ -329,6 +372,13 @@ for sector in sorted(data[v_sector].unique()):
     print('\n')
     print('Sales: Log size - log rank estimation, SIC', int(sector))
     print(est_results)
+
+# Trim unnecessary whitespace
+fig.tight_layout()
+plt.show()
+nnn
+# Save the plot
+plt.savefig('log_sales_log_rank_' + str(np.int(sector)) + '.pdf')
 
 ########################################################################################################################
 ### Part 5: Estimate log rank - log employment relationship, for different rank cutoffs
@@ -465,10 +515,10 @@ for sector in sorted(collapsed_data[v_sector].unique()):
     # Omit lowest SIC code
     if sector != min(collapsed_data[v_sector].unique()):
         # Add a dummy for that sector to the data set
-        collapsed_data[v_sector + '_' + str(sector)] = (collapsed_data[v_sector] == sector).astype(int)
+        collapsed_data[v_sector + '_' + str(np.int(sector))] = (collapsed_data[v_sector] == sector).astype(int)
 
         # Add the new variable to the data set
-        sector_vars.append(v_sector + '_' + str(sector))
+        sector_vars.append(v_sector + '_' + str(np.int(sector)))
 
 # Run the same regression as before, but adding sector fixed effects
 theta_hat, V_hat_theta = OLS(collapsed_data[v_log_sales_growth_sd],
@@ -509,10 +559,10 @@ for i, decade in enumerate(range(1980, 2020, 10)):
         # Omit lowest SIC code
         if sector != min(collapsed_data[v_sector].unique()):
             # Add a dummy for that sector to the data set
-            collapsed_data[v_sector + '_' + str(sector)] = (collapsed_data[v_sector] == sector).astype(int)
+            collapsed_data[v_sector + '_' + str(np.int(sector))] = (collapsed_data[v_sector] == sector).astype(int)
 
             # Add the new variable to the data set
-            sector_vars.append(v_sector + '_' + str(sector))
+            sector_vars.append(v_sector + '_' + str(np.int(sector)))
 
     # Run the same regression as before, but adding sector fixed effects
     theta_hat, V_hat_theta = OLS(collapsed_data[v_log_sales_growth_sd],
