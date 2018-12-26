@@ -272,14 +272,14 @@ ax.scatter(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max), v_l
     data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_sales], s=5)
 
 # Set axis labels
-ax.set_xlabel('log sales rank', fontsize=11)
+ax.set_xlabel(r'$\log r^s_i$', fontsize=11)
 ax.set_ylabel('log sales', fontsize=11)
 
 # Trim unnecessary whitespace
 fig.tight_layout()
 
 # Save the plot
-plt.savefig('log_sales_log_rank.pdf')
+plt.savefig('log_sales_log_rank_' + np.int(year_min) + '-' + np.int(year_max) + '.pdf')
 plt.close()
 
 # Specify firm name variable
@@ -341,7 +341,7 @@ for k, sector in enumerate(sorted(data[v_sector].unique())):
 
     # Set axis labels
     if i == 1:
-        axes[i,j].set_xlabel('log sales rank', fontsize=11)
+        axes[i,j].set_xlabel(r'$\log r^s_i$', fontsize=11)
     if j == 0:
         axes[i,j].set_ylabel('log sales', fontsize=11)
 
@@ -409,7 +409,7 @@ ax.scatter(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max), v_l
     data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_emp], s=5)
 
 # Set axis labels
-ax.set_xlabel('log employment rank', fontsize=11)
+ax.set_xlabel(r'$\log r^e_i$', fontsize=11)
 ax.set_ylabel('log employment', fontsize=11)
 
 # Trim unnecessary whitespace
@@ -468,7 +468,7 @@ for k, sector in enumerate(sorted(data[v_sector].unique())):
 
     # Set axis labels
     if i == 1:
-        axes[i,j].set_xlabel('log employment rank', fontsize=11)
+        axes[i,j].set_xlabel(r'$\log r^e_i$', fontsize=11)
     if j == 0:
         axes[i,j].set_ylabel('log employment', fontsize=11)
 
