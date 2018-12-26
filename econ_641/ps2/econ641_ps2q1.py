@@ -364,20 +364,14 @@ v_log_mean_sales = 'log_mean_' + v_sales  # Mean sales variable
 collapsed_data[v_log_mean_sales] = np.log(data.groupby(v_name)[v_sales].mean())
 
 # Set up a DataFrame for the estimation results
-est_results = pd.DataFrame(np.zeros(shape=(1, 4)),
-    columns=['theta_hat (no FE)', 'SE theta_hat', 'theta_hat (FE)', 'SE theta_hat'])
+est_results = pd.DataFrame(np.zeros(shape=(5, 5)),
+    columns=['Period', 'theta_hat (no FE)', 'SE theta_hat', 'theta_hat (FE)', 'SE theta_hat'])
 
 # Regress log sales growth standard deviation on log mean sales
 theta_hat, V_hat_theta = OLS(collapsed_data[v_log_sales_growth_sd], np.array(collapsed_data[v_log_mean_sales]))
 
 # Add the results to the results data frame
-est_results[0, 2:4] = [theta_hat[1,0], np.sqrt(V_hat_theta[1,1])]
-
-# Display the results
-print('\n')
-print('Log sales growth SD - log mean sales estimation (no fixed effects)')
-print('theta_hat =', theta_hat[1,0])
-print('SE =', np.sqrt(V_hat_theta[1,1]))
+est_results.iloc[0, :3] = ['Full sample', -theta_hat[1,0], np.sqrt(V_hat_theta[1,1])]
 
 # Add sector fixed effects
 # Add sectors to the data set
@@ -401,17 +395,11 @@ theta_hat, V_hat_theta = OLS(collapsed_data[v_log_sales_growth_sd],
     np.array(collapsed_data.loc[:, [v_log_mean_sales] + sector_vars]))
 
 # Add the results to the results data frame
-est_results[0, 2:4] = [theta_hat[1,0], np.sqrt(V_hat_theta[1,1])]
-
-# Display the results
-print(est_results)
-print('Log sales growth SD - log mean sales estimation (with sector fixed effects)')
-print('theta_hat =', theta_hat[1,0])
-print('SE =', np.sqrt(V_hat_theta[1,1]))
+est_results.iloc[0, 3:] = [-theta_hat[1,0], np.sqrt(V_hat_theta[1,1])]
 
 # Redo the estimation for each decade in the data set
 # Go through all decades
-for decade in range(1980, 2020, 10):
+for i, decade in enumerate(range(1980, 2020, 10)):
     # Generate the collapsed data set for this decade, starting with log sales growth standard deviation
     collapsed_data = np.log(pd.DataFrame(
         data.loc[(decade <= data[v_year]) & (data[v_year] <= (decade + 9)), :].groupby(v_name)[v_sales_growth].std()))
@@ -426,12 +414,8 @@ for decade in range(1980, 2020, 10):
     # Run the regression
     theta_hat, V_hat_theta = OLS(collapsed_data[v_log_sales_growth_sd], np.array(collapsed_data[v_log_mean_sales]))
 
-    # Print the results
-    print('\n')
-    print(decade, '-', decade+9)
-    print('Log sales growth SD - log mean sales estimation (no fixed effects)')
-    print('theta_hat =', theta_hat[1,0])
-    print('SE =', np.sqrt(V_hat_theta[1,1]))
+    # Add the results to the results data frame
+    est_results.iloc[i+1, :3] = [str(decade) + ' - ' + str(decade+9), -theta_hat[1,0], np.sqrt(V_hat_theta[1,1])]
 
     # Add sectors to the data set
     collapsed_data[v_sector] = np.floor(
@@ -454,7 +438,13 @@ for decade in range(1980, 2020, 10):
     theta_hat, V_hat_theta = OLS(collapsed_data[v_log_sales_growth_sd],
         np.array(collapsed_data.loc[:, [v_log_mean_sales] + sector_vars]))
 
-    # Display the results
-    print('Log sales growth SD - log mean sales estimation (with sector fixed effects)')
-    print('theta_hat =', theta_hat[1,0])
-    print('SE =', np.sqrt(V_hat_theta[1,1]))
+    # Add the results to the results data frame
+    est_results.iloc[i+1, 3:] = [-theta_hat[1,0], np.sqrt(V_hat_theta[1,1])]
+
+# Tell pandas to display more columns
+pd.set_option('display.max_columns', 5)
+
+# Display the results
+print('\n')
+print('Log sales growth SD - log mean sales estimation')
+print(est_results)
