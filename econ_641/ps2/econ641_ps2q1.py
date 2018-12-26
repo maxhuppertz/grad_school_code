@@ -238,7 +238,7 @@ for year in range(int(min(data[v_year])), int(max(data[v_year])+1)):
     data.loc[data[v_year] == year, v_sales] = data.loc[data[v_year] == year, v_sales] * wb_data.loc[str(year), cpi_data]
 
 ########################################################################################################################
-### Part 4: Estimate rank - size relationship, for different rank cutoffs
+### Part 4: Estimate log rank - log sales relationship, for different rank cutoffs
 ########################################################################################################################
 
 # Generate log sales data as NaN
@@ -288,7 +288,7 @@ for i, c in enumerate(rank_cutoffs):
     est_results.loc[i, :] = [c, beta_hat_OLS_GI, V_hat_OLS_GI]
 
 # Display estimation results
-print('Log size - log rank estimation')
+print('Sales: Log size - log rank estimation, full sample')
 print(est_results)
 
 # Add sectors to the data set
@@ -327,11 +327,91 @@ for sector in sorted(data[v_sector].unique()):
 
     # Display estimation results
     print('\n')
-    print('Log size - log rank estimation, SIC', int(sector))
+    print('Sales: Log size - log rank estimation, SIC', int(sector))
     print(est_results)
 
 ########################################################################################################################
-### Part 5: Size-volatility relationship
+### Part 5: Estimate log rank - log employment relationship, for different rank cutoffs
+########################################################################################################################
+
+# Generate log employment data as NaN
+v_emp = 'emp'
+v_log_emp = 'log_' + v_emp
+data[v_log_emp] = np.nan
+
+# Where employment is not zero, replace it with the log of employment
+data.loc[data[v_emp] > 0, v_log_emp] = np.log(data.loc[data[v_emp] > 0, v_emp])
+
+# Generate firms employment rank, by year
+v_emp_rank = v_emp + '_rank'
+data[v_emp_rank] = data.groupby(v_year)[v_emp].rank(ascending=False)
+
+# Generate log rank, with a scaling factor s, i.e. generate log(rank - s)
+v_log_emp_rank = 'log_' + v_emp_rank
+s = .5
+data[v_log_emp_rank] = np.log(data[v_emp_rank] - s)
+
+# Check how many firms there are in the data for the years under consideration
+n_firms = len(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max), v_name].unique())
+
+# Make a list of the respective ranks in the firm size distribution
+rank_cutoffs = [np.floor(p * n_firms) for p in perc_cutoffs]
+
+# Set up a DataFrame for the estimation results
+est_results = pd.DataFrame(np.zeros(shape=(len(rank_cutoffs), 3)),
+    columns=['Rank cutoff', 'beta_hat', 'SE beta_hat'])
+
+# Go through all cutoffs
+for i, c in enumerate(rank_cutoffs):
+    # Run the estimation, using only firms which are below the rank cutoffs and only data for selected years
+    beta_hat_OLS_GI, V_hat_OLS_GI = OLS_GI(
+        data.loc[(data[v_emp_rank] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_emp_rank],
+        data.loc[(data[v_emp_rank] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_emp])
+
+    # Save cutoff and associated results
+    est_results.loc[i, :] = [c, beta_hat_OLS_GI, V_hat_OLS_GI]
+
+# Display estimation results
+print('\n')
+print('Employment: Log size - log rank estimation')
+print(est_results)
+
+# Generate firms size rank, by year and sector
+v_emp_rank_sector = v_emp_rank + '_sector'
+data[v_emp_rank_sector] = data.groupby([v_year, v_sector])[v_emp].rank(ascending=False)
+
+# Go through all sectors
+for sector in sorted(data[v_sector].unique()):
+    # Check how many firms there are in the data for the years under consideration
+    n_firms = len(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) &
+        (data[v_sector] == sector), v_name].unique())
+
+    # Make a list of the respective ranks in the firm size distribution
+    rank_cutoffs = [np.floor(p * n_firms) for p in perc_cutoffs]
+
+    # Set up a DataFrame for the estimation results
+    est_results = pd.DataFrame(np.zeros(shape=(len(rank_cutoffs), 3)),
+        columns=['Rank cutoff', 'beta_hat', 'SE beta_hat'])
+
+    # Go through all cutoffs
+    for i, c in enumerate(rank_cutoffs):
+        # Run the estimation, using only firms which are below the rank cutoffs and only data for selected years
+        beta_hat_OLS_GI, V_hat_OLS_GI = OLS_GI(
+            data.loc[(data[v_emp_rank_sector] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max) &
+            (data[v_sector] == sector), v_log_emp_rank],
+            data.loc[(data[v_emp_rank_sector] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max) &
+            (data[v_sector] == sector), v_log_emp])
+
+        # Save cutoff and associated results
+        est_results.loc[i, :] = [c, beta_hat_OLS_GI, V_hat_OLS_GI]
+
+    # Display estimation results
+    print('\n')
+    print('Employment: Log size - log rank estimation, SIC', int(sector))
+    print(est_results)
+
+########################################################################################################################
+### Part 6: Size-volatility relationship
 ########################################################################################################################
 
 # Sort data by firm, and by year within firm
