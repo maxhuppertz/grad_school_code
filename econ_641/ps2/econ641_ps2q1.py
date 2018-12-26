@@ -353,3 +353,27 @@ print('\n')
 print('Log sales growth SD - log mean sales estimation (with sector fixed effects)')
 print('theta_hat =', theta_hat[1,0])
 print('SE =', np.sqrt(V_hat_theta[1,1]))
+
+# Redo the estimation without fixed effects for each decade in the data set
+# Go through all decades
+for decade in range(1980, 2020, 10):
+    # Generate the collapsed data set for this decade, starting with log sales growth standard deviation
+    collapsed_data = np.log(pd.DataFrame(
+        data.loc[(decade <= data[v_year]) & (data[v_year] <= (decade + 9)), :].groupby(v_name)[v_sales_growth].std()))
+
+    # Rename the variable
+    collapsed_data = collapsed_data.rename(index=str, columns={v_sales_growth: v_log_sales_growth_sd})
+
+    # Add log mean sales for this decade
+    collapsed_data[v_log_mean_sales] = np.log(
+        data.loc[(decade <= data[v_year]) & (data[v_year] <= (decade + 9)), :].groupby(v_name)[v_sales].mean())
+
+    # Run the regression
+    theta_hat, V_hat_theta = OLS(collapsed_data[v_log_sales_growth_sd], np.array(collapsed_data[v_log_mean_sales]))
+
+    # Print the results
+    print('\n')
+    print(decade, '-', decade+9)
+    print('Log sales growth SD - log mean sales estimation (no fixed effects)')
+    print('theta_hat =', theta_hat[1,0])
+    print('SE =', np.sqrt(V_hat_theta[1,1]))
