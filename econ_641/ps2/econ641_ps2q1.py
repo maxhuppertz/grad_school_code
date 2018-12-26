@@ -264,6 +264,7 @@ year_max = 2015
 # Select rank cutoffs for the estimation
 rank_cutoffs = [np.inf, 500, 100]
 
+# Set up a DataFrame for the estimation results
 est_results = pd.DataFrame(np.zeros(shape=(len(rank_cutoffs), 3)),
     columns=['Rank cutoff', 'beta_hat', 'SE beta_hat'])
 
@@ -280,6 +281,39 @@ for i, c in enumerate(rank_cutoffs):
 # Display estimation results
 print('Log size - log rank estimation')
 print(est_results)
+
+# Add sectors to the data set
+v_sic = 'sic'  # Variable containing SIC codes
+v_sector = 'sector'  # Variable containing sectors, i.e. one digit SIC codes
+data[v_sector] = np.floor(data[v_sic] / 1000)
+
+# Generate firms size rank, by year and sector
+v_sales_rank_sector = v_sales_rank + '_sector'
+data[v_sales_rank_sector] = data.groupby([v_year, v_sector])[v_sales].rank(ascending=False)
+
+# Go through all sectors
+for sector in sorted(data[v_sector].unique()):
+    # Set up a DataFrame for the estimation results
+    est_results = pd.DataFrame(np.zeros(shape=(len(rank_cutoffs), 3)),
+        columns=['Rank cutoff', 'beta_hat', 'SE beta_hat'])
+
+    # Go through all cutoffs
+    for i, c in enumerate(rank_cutoffs):
+        # Run the estimation, using only firms which are below the rank cutoffs and only data for selected years
+        beta_hat_OLS_GI, V_hat_OLS_GI = OLS_GI(
+            data.loc[(data[v_sales_rank_sector] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max) &
+            (data[v_sector] == sector), v_log_sales_rank],
+            data.loc[(data[v_sales_rank_sector] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max) &
+            (data[v_sector] == sector), v_log_sales])
+
+        # Save cutoff and associated results
+        est_results.loc[i, :] = [c, beta_hat_OLS_GI, V_hat_OLS_GI]
+
+    # Display estimation results
+    print('\n')
+    print('Log size - log rank estimation, SIC', int(sector))
+    print(est_results)
+
 
 ########################################################################################################################
 ### Part 5: Size-volatility relationship
@@ -328,14 +362,13 @@ print('SE =', np.sqrt(V_hat_theta[1,1]))
 
 # Add sector fixed effects
 # Add sectors to the data set
-v_sector = 'sic'
-collapsed_data[v_sector] = np.floor(data.groupby(v_name)[v_sector].max() / 1000)
+collapsed_data[v_sector] = np.floor(data.groupby(v_name)[v_sic].max() / 1000)
 
 # Set up a list of sector variables
 sector_vars = []
 
 # Go through all sectors
-for sector in collapsed_data[v_sector].unique():
+for sector in sorted(collapsed_data[v_sector].unique()):
     # Omit lowest SIC code
     if sector != min(collapsed_data[v_sector].unique()):
         # Add a dummy for that sector to the data set
@@ -379,13 +412,13 @@ for decade in range(1980, 2020, 10):
 
     # Add sectors to the data set
     collapsed_data[v_sector] = np.floor(
-        data.loc[(decade <= data[v_year]) & (data[v_year] <= (decade + 9)), :].groupby(v_name)[v_sector].max() / 1000)
+        data.loc[(decade <= data[v_year]) & (data[v_year] <= (decade + 9)), :].groupby(v_name)[v_sic].max() / 1000)
 
     # Set up a list of sector variables
     sector_vars = []
 
     # Go through all sectors
-    for sector in collapsed_data[v_sector].unique():
+    for sector in sorted(collapsed_data[v_sector].unique()):
         # Omit lowest SIC code
         if sector != min(collapsed_data[v_sector].unique()):
             # Add a dummy for that sector to the data set
