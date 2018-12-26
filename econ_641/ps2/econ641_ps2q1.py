@@ -279,7 +279,7 @@ ax.set_ylabel('log sales', fontsize=11)
 fig.tight_layout()
 
 # Save the plot
-plt.savefig('log_sales_log_rank_' + np.int(year_min) + '-' + np.int(year_max) + '.pdf')
+plt.savefig('log_sales_log_rank_' + str(np.int(year_min)) + '-' + str(np.int(year_max)) + '.pdf')
 plt.close()
 
 # Specify firm name variable
@@ -311,6 +311,9 @@ for i, c in enumerate(rank_cutoffs):
 # Display estimation results
 print('Sales: Log size - log rank estimation, full sample')
 print(est_results)
+
+# Save a tex copy
+est_results.to_latex('log_size_log_rank_full_sample.tex', index=False)
 
 # Add sectors to the data set
 v_sic = 'sic'  # Variable containing SIC codes
@@ -370,8 +373,11 @@ for k, sector in enumerate(sorted(data[v_sector].unique())):
 
     # Display estimation results
     print('\n')
-    print('Sales: Log size - log rank estimation, SIC', int(sector))
+    print('Sales: Log size - log rank estimation, SIC', np.int(sector))
     print(est_results)
+
+    # Save a tex copy
+    est_results.to_latex('log_size_log_rank_sic_' + str(np.int(sector)) + '.tex', index=False)
 
 # Trim unnecessary whitespace
 fig.tight_layout()
@@ -625,3 +631,6 @@ pd.set_option('display.max_columns', 5)
 print('\n')
 print('Log sales growth SD - log mean sales estimation')
 print(est_results)
+
+# Save a tex copy
+est_results.to_latex('SD_mean_sales_reg.tex', index=False)
