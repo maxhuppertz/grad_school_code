@@ -261,8 +261,17 @@ data[v_log_sales_rank] = np.log(data[v_sales_rank] - s)
 year_min = 2015
 year_max = 2015
 
-# Select rank cutoffs for the estimation
-rank_cutoffs = [np.inf, 500, 100]
+# Specify firm name variable
+v_name = 'conm'
+
+# Check how many firms there are in the data for the years under consideration
+n_firms = len(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max), v_name].unique())
+
+# Specify percentile cutoffs for the estimation
+perc_cutoffs = [np.inf, .5, .3, .2, .1]
+
+# Make a list of the respective ranks in the firm size distribution
+rank_cutoffs = [np.floor(p * n_firms) for p in perc_cutoffs]
 
 # Set up a DataFrame for the estimation results
 est_results = pd.DataFrame(np.zeros(shape=(len(rank_cutoffs), 3)),
@@ -293,6 +302,13 @@ data[v_sales_rank_sector] = data.groupby([v_year, v_sector])[v_sales].rank(ascen
 
 # Go through all sectors
 for sector in sorted(data[v_sector].unique()):
+    # Check how many firms there are in the data for the years under consideration
+    n_firms = len(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) &
+        (data[v_sector] == sector), v_name].unique())
+
+    # Make a list of the respective ranks in the firm size distribution
+    rank_cutoffs = [np.floor(p * n_firms) for p in perc_cutoffs]
+
     # Set up a DataFrame for the estimation results
     est_results = pd.DataFrame(np.zeros(shape=(len(rank_cutoffs), 3)),
         columns=['Rank cutoff', 'beta_hat', 'SE beta_hat'])
@@ -317,9 +333,6 @@ for sector in sorted(data[v_sector].unique()):
 ########################################################################################################################
 ### Part 5: Size-volatility relationship
 ########################################################################################################################
-
-# Specify firm name variable
-v_name = 'conm'
 
 # Sort data by firm, and by year within firm
 data = data.sort_values([v_name, v_year])
@@ -350,8 +363,15 @@ collapsed_data = collapsed_data.rename(index=str, columns={v_sales_growth: v_log
 v_log_mean_sales = 'log_mean_' + v_sales  # Mean sales variable
 collapsed_data[v_log_mean_sales] = np.log(data.groupby(v_name)[v_sales].mean())
 
+# Set up a DataFrame for the estimation results
+est_results = pd.DataFrame(np.zeros(shape=(1, 4)),
+    columns=['theta_hat (no FE)', 'SE theta_hat', 'theta_hat (FE)', 'SE theta_hat'])
+
 # Regress log sales growth standard deviation on log mean sales
 theta_hat, V_hat_theta = OLS(collapsed_data[v_log_sales_growth_sd], np.array(collapsed_data[v_log_mean_sales]))
+
+# Add the results to the results data frame
+est_results[0, 2:4] = [theta_hat[1,0], np.sqrt(V_hat_theta[1,1])]
 
 # Display the results
 print('\n')
@@ -380,7 +400,11 @@ for sector in sorted(collapsed_data[v_sector].unique()):
 theta_hat, V_hat_theta = OLS(collapsed_data[v_log_sales_growth_sd],
     np.array(collapsed_data.loc[:, [v_log_mean_sales] + sector_vars]))
 
+# Add the results to the results data frame
+est_results[0, 2:4] = [theta_hat[1,0], np.sqrt(V_hat_theta[1,1])]
+
 # Display the results
+print(est_results)
 print('Log sales growth SD - log mean sales estimation (with sector fixed effects)')
 print('theta_hat =', theta_hat[1,0])
 print('SE =', np.sqrt(V_hat_theta[1,1]))
