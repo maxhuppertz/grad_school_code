@@ -336,8 +336,8 @@ sector_vars = []
 
 # Go through all sectors
 for sector in collapsed_data[v_sector].unique():
-    # Omit SIC 0
-    if sector != 0:
+    # Omit lowest SIC code
+    if sector != min(collapsed_data[v_sector].unique()):
         # Add a dummy for that sector to the data set
         collapsed_data[v_sector + '_' + str(sector)] = (collapsed_data[v_sector] == sector).astype(int)
 
@@ -349,12 +349,11 @@ theta_hat, V_hat_theta = OLS(collapsed_data[v_log_sales_growth_sd],
     np.array(collapsed_data.loc[:, [v_log_mean_sales] + sector_vars]))
 
 # Display the results
-print('\n')
 print('Log sales growth SD - log mean sales estimation (with sector fixed effects)')
 print('theta_hat =', theta_hat[1,0])
 print('SE =', np.sqrt(V_hat_theta[1,1]))
 
-# Redo the estimation without fixed effects for each decade in the data set
+# Redo the estimation for each decade in the data set
 # Go through all decades
 for decade in range(1980, 2020, 10):
     # Generate the collapsed data set for this decade, starting with log sales growth standard deviation
@@ -375,5 +374,31 @@ for decade in range(1980, 2020, 10):
     print('\n')
     print(decade, '-', decade+9)
     print('Log sales growth SD - log mean sales estimation (no fixed effects)')
+    print('theta_hat =', theta_hat[1,0])
+    print('SE =', np.sqrt(V_hat_theta[1,1]))
+
+    # Add sectors to the data set
+    collapsed_data[v_sector] = np.floor(
+        data.loc[(decade <= data[v_year]) & (data[v_year] <= (decade + 9)), :].groupby(v_name)[v_sector].max() / 1000)
+
+    # Set up a list of sector variables
+    sector_vars = []
+
+    # Go through all sectors
+    for sector in collapsed_data[v_sector].unique():
+        # Omit lowest SIC code
+        if sector != min(collapsed_data[v_sector].unique()):
+            # Add a dummy for that sector to the data set
+            collapsed_data[v_sector + '_' + str(sector)] = (collapsed_data[v_sector] == sector).astype(int)
+
+            # Add the new variable to the data set
+            sector_vars.append(v_sector + '_' + str(sector))
+
+    # Run the same regression as before, but adding sector fixed effects
+    theta_hat, V_hat_theta = OLS(collapsed_data[v_log_sales_growth_sd],
+        np.array(collapsed_data.loc[:, [v_log_mean_sales] + sector_vars]))
+
+    # Display the results
+    print('Log sales growth SD - log mean sales estimation (with sector fixed effects)')
     print('theta_hat =', theta_hat[1,0])
     print('SE =', np.sqrt(V_hat_theta[1,1]))
