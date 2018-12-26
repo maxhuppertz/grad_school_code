@@ -375,10 +375,10 @@ for k, sector in enumerate(sorted(data[v_sector].unique())):
 
 # Trim unnecessary whitespace
 fig.tight_layout()
-plt.show()
-nnn
+
 # Save the plot
-plt.savefig('log_sales_log_rank_' + str(np.int(sector)) + '.pdf')
+plt.savefig('log_sales_log_rank_sectors.pdf')
+plt.close()
 
 ########################################################################################################################
 ### Part 5: Estimate log rank - log employment relationship, for different rank cutoffs
@@ -401,6 +401,24 @@ v_log_emp_rank = 'log_' + v_emp_rank
 s = .5
 data[v_log_emp_rank] = np.log(data[v_emp_rank] - s)
 
+# Set up plot of log-log relationship
+fig, ax = plt.subplots(figsize=(4.5, 4.5))
+
+# Plot log-log relationship
+ax.scatter(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_emp_rank],
+    data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_emp], s=5)
+
+# Set axis labels
+ax.set_xlabel('log employment rank', fontsize=11)
+ax.set_ylabel('log employment', fontsize=11)
+
+# Trim unnecessary whitespace
+fig.tight_layout()
+
+# Save the plot
+plt.savefig('log_sales_log_emp.pdf')
+plt.close()
+
 # Check how many firms there are in the data for the years under consideration
 n_firms = len(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max), v_name].unique())
 
@@ -410,6 +428,9 @@ rank_cutoffs = [np.floor(p * n_firms) for p in perc_cutoffs]
 # Set up a DataFrame for the estimation results
 est_results = pd.DataFrame(np.zeros(shape=(len(rank_cutoffs), 3)),
     columns=['Rank cutoff', 'beta_hat', 'SE beta_hat'])
+
+# Set up plot of log-log relationship
+fig, axes = plt.subplots(nrows=2, ncols=5, figsize=(9.5, 4.5))
 
 # Go through all cutoffs
 for i, c in enumerate(rank_cutoffs):
@@ -431,7 +452,26 @@ v_emp_rank_sector = v_emp_rank + '_sector'
 data[v_emp_rank_sector] = data.groupby([v_year, v_sector])[v_emp].rank(ascending=False)
 
 # Go through all sectors
-for sector in sorted(data[v_sector].unique()):
+for k, sector in enumerate(sorted(data[v_sector].unique())):
+    # Figure out row and column index
+    i = np.int(np.floor(k/5))
+    j = np.int(k - i * 5)
+
+    # Plot log-log relationship
+    axes[i,j].scatter(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) & (data[v_sector] == sector),
+        v_log_emp_rank],
+        data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) & (data[v_sector] == sector),
+        v_log_emp], s=5)
+
+    # Add a graph title
+    axes[i,j].set_title('SIC ' + str(np.int(sector)), y=1)
+
+    # Set axis labels
+    if i == 1:
+        axes[i,j].set_xlabel('log employment rank', fontsize=11)
+    if j == 0:
+        axes[i,j].set_ylabel('log employment', fontsize=11)
+
     # Check how many firms there are in the data for the years under consideration
     n_firms = len(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) &
         (data[v_sector] == sector), v_name].unique())
@@ -459,6 +499,13 @@ for sector in sorted(data[v_sector].unique()):
     print('\n')
     print('Employment: Log size - log rank estimation, SIC', int(sector))
     print(est_results)
+
+# Trim unnecessary whitespace
+fig.tight_layout()
+
+# Save the plot
+plt.savefig('log_emp_log_rank_sectors.pdf')
+plt.close()
 
 ########################################################################################################################
 ### Part 6: Size-volatility relationship
