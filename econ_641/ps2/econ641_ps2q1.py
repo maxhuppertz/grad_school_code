@@ -319,7 +319,7 @@ print('Sales: Log size - log rank estimation: Full sample')
 print(est_results)
 
 # Save a tex copy
-est_results.to_latex('log_size_log_rank_full_sample.tex', index=False, escape=False)
+est_results.to_latex('log_sales_log_rank_full_sample.tex', index=False, escape=False)
 
 # Add sectors to the data set
 # Specify variable containing SIC codes
@@ -419,7 +419,7 @@ for sector in sic_sectors.keys():
         print(est_results)
 
         # Save a tex copy
-        est_results.to_latex('log_size_log_rank_sec_' + str(k) + '.tex', index=False, escape=False)
+        est_results.to_latex('log_sales_log_rank_sec_' + str(k) + '.tex', index=False, escape=False)
 
         # Increase sector counter
         k += 1
@@ -490,13 +490,22 @@ for i, c in enumerate(rank_cutoffs):
         data.loc[(data[v_emp_rank] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_emp_rank],
         data.loc[(data[v_emp_rank] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_emp])
 
+    # Make a line for the tex table this will be presented in
+    if perc_cutoffs[i] == np.inf:
+        col1 = 'All firms'
+    else:
+        col1 = 'Top ' + str(np.int(perc_cutoffs[i]*100)) + r'\% (' + str(np.int(c)) + ' firms)'
+
     # Save cutoff and associated results
-    est_results.loc[i, :] = [c, beta_hat_OLS_GI, V_hat_OLS_GI]
+    est_results.loc[i, :] = [col1, beta_hat_OLS_GI, V_hat_OLS_GI]
 
 # Display estimation results
 print('\n')
 print('Employment: Log size - log rank estimation')
 print(est_results)
+
+# Save a tex copy
+est_results.to_latex('log_emp_log_rank_full_sample.tex', index=False, escape=False)
 
 # Generate firms size rank, by year and sector
 v_emp_rank_sector = v_emp_rank + '_sector'
@@ -547,13 +556,25 @@ for k, sector in enumerate(data[v_sector].unique()):
                 data.loc[(data[v_emp_rank_sector] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max) &
                 (data[v_sector] == sector), v_log_emp])
 
+            # Make a line for the tex table this will be presented in
+            if perc_cutoffs[i] == np.inf:
+                col1 = 'All firms'
+            else:
+                col1 = 'Top ' + str(np.int(perc_cutoffs[i]*100)) + r'\% (' + str(np.int(c)) + ' firms)'
+
             # Save cutoff and associated results
-            est_results.loc[i, :] = [c, beta_hat_OLS_GI, V_hat_OLS_GI]
+            est_results.loc[i, :] = [col1, beta_hat_OLS_GI, V_hat_OLS_GI]
 
         # Display estimation results
         print('\n')
         print('Employment: Log size - log rank estimation:', sector)
         print(est_results)
+
+        # Save a tex copy
+        est_results.to_latex('log_emp_log_rank_sec_' + str(k) + '.tex', index=False, escape=False)
+
+        # Increase sector counter
+        k += 1
 
 # Trim unnecessary whitespace
 fig.tight_layout()
