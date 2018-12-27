@@ -268,8 +268,8 @@ chdir(mdir+fdir)
 fig, ax = plt.subplots(figsize=(4.5, 4.5))
 
 # Plot log-log relationship
-ax.scatter(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_sales_rank],
-    data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_sales], s=5)
+ax.scatter(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_sales],
+    data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_sales_rank], s=5)
 
 # Set axis labels
 ax.set_xlabel(r'$\log r^s_i$', fontsize=11)
@@ -371,9 +371,9 @@ for sector in sic_sectors.keys():
 
         # Plot log-log relationship
         axes[i,j].scatter(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) & (data[v_sector] == sector),
-            v_log_sales_rank],
+            v_log_sales],
             data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) & (data[v_sector] == sector),
-            v_log_sales], s=5)
+                v_log_sales_rank], s=5)
 
         # Add a graph title
         axes[i,j].set_title(sector, y=1)
@@ -456,8 +456,8 @@ data[v_log_emp_rank] = np.log(data[v_emp_rank] - s)
 fig, ax = plt.subplots(figsize=(4.5, 4.5))
 
 # Plot log-log relationship
-ax.scatter(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_emp_rank],
-    data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_emp], s=5)
+ax.scatter(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_emp],
+    data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max), v_log_emp_rank], s=5)
 
 # Set axis labels
 ax.set_xlabel(r'$\log r^e_i$', fontsize=11)
@@ -523,9 +523,9 @@ for sector in sic_sectors.keys():
 
         # Plot log-log relationship
         axes[i,j].scatter(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) & (data[v_sector] == sector),
-            v_log_emp_rank],
+            v_log_emp],
             data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) & (data[v_sector] == sector),
-            v_log_emp], s=5)
+                v_log_emp_rank], s=5)
 
         # Add a graph title
         axes[i,j].set_title(sector, y=1)
