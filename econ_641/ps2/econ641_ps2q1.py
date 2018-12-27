@@ -420,7 +420,7 @@ for k, sector in enumerate(sic_sectors.keys()):
 fig.tight_layout()
 
 # Save the plot
-plt.savefig('log_sales_log_rank_sectors.pdf')
+plt.savefig('log_sales_log_rank_sectors_' + str(np.int(year_min)) + '-' + str(np.int(year_max)) + '.pdf')
 plt.close()
 
 ########################################################################################################################
@@ -459,7 +459,7 @@ ax.set_ylabel('log employment', fontsize=11)
 fig.tight_layout()
 
 # Save the plot
-plt.savefig('log_emp_log_rank.pdf')
+plt.savefig('log_emp_log_rank_' + str(np.int(year_min)) + '-' + str(np.int(year_max)) + '.pdf')
 plt.close()
 
 # Check how many firms there are in the data for the years under consideration
@@ -547,7 +547,7 @@ for k, sector in enumerate(data[v_sector].unique()):
 fig.tight_layout()
 
 # Save the plot
-plt.savefig('log_emp_log_rank_sectors.pdf')
+plt.savefig('log_emp_log_rank_sectors_' + str(np.int(year_min)) + '-' + str(np.int(year_max)) + '.pdf')
 plt.close()
 
 ########################################################################################################################
