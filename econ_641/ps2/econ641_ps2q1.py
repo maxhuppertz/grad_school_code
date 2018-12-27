@@ -515,7 +515,7 @@ data[v_emp_rank_sector] = data.groupby([v_year, v_sector])[v_emp].rank(ascending
 k = 0
 
 # Go through all sectors
-for k, sector in enumerate(data[v_sector].unique()):
+for sector in sic_sectors.keys():
     if not (((year_min <= data[v_year]) & (data[v_year] <= year_max) & (data[v_sector] == sector)).sum() == 0):
         # Figure out row and column index
         i = np.int(np.floor(k/5))
