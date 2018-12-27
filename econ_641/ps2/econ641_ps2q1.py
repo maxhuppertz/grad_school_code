@@ -594,8 +594,8 @@ theta_hat, V_hat_theta = OLS(collapsed_data[v_log_sales_growth_sd], np.array(col
 est_results.iloc[0, :3] = ['Full sample', -theta_hat[1,0], np.sqrt(V_hat_theta[1,1])]
 
 # Add sector fixed effects
-# Add sectors to the data set
-collapsed_data[v_sector] = np.floor(data.groupby(v_name)[v_sic].max() / 1000)
+# Add sectors to the collapsed data set
+collapsed_data[v_sector] = data.groupby([v_name])[v_sector].first()
 
 # Set up a list of sector variables
 sector_vars = []
@@ -638,16 +638,17 @@ for i, decade in enumerate(range(1980, 2020, 10)):
     est_results.iloc[i+1, :3] = [str(decade) + ' - ' + str(decade+9), -theta_hat[1,0], np.sqrt(V_hat_theta[1,1])]
 
     # Add sectors to the data set
-    collapsed_data[v_sector] = np.floor(
-        data.loc[(decade <= data[v_year]) & (data[v_year] <= (decade + 9)), :].groupby(v_name)[v_sic].max() / 1000)
+    collapsed_data[v_sector] = (
+        data.loc[(decade <= data[v_year]) & (data[v_year] <= (decade + 9)), :].groupby([v_name])[v_sector].first()
+        )
 
     # Set up a list of sector variables
     sector_vars = []
 
     # Go through all sectors
-    for j, sector in enumerate(sorted(collapsed_data[v_sector].unique())):
+    for j, sector in enumerate(collapsed_data[v_sector].unique()):
         # Omit lowest SIC code
-        if sector != min(collapsed_data[v_sector].unique()):
+        if sector != collapsed_data[v_sector].unique()[0]:
             # Add a dummy for that sector to the data set
             collapsed_data[v_sector + '_' + str(j)] = (collapsed_data[v_sector] == sector).astype(int)
 
