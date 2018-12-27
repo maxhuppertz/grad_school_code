@@ -338,6 +338,19 @@ sic_sectors = {
     'Services': [7000, 8999],
     'Public administration': [9100, 9729]}
 
+# For plots, make a dictionary to translate sectors to acronyms
+sector_acronyms = {
+    'Agriculture, forestry and fishing': 'AFF',
+    'Mining': 'MINE',
+    'Construction': 'CONS',
+    'Manufacturing': 'MANU',
+    'Transportation, communications, electricity, gas and sanitary service': 'TCEGS',
+    'Wholesale trade': 'WHOLT',
+    'Retail trade': 'RETT',
+    'Finance, insurance and real estate': 'FIR',
+    'Services': 'SERV',
+    'Public administration': 'PAD'}
+
 # Specify variable for sectors
 v_sector = 'sector'
 data[v_sector] = 'Misc'
@@ -376,7 +389,7 @@ for sector in sic_sectors.keys():
                 v_log_sales_rank], s=5)
 
         # Add a graph title
-        axes[i,j].set_title(sector, y=1)
+        axes[i,j].set_title(sector_acronyms[sector], y=1)
 
         # Set axis labels
         if i == 1:
@@ -528,7 +541,7 @@ for sector in sic_sectors.keys():
                 v_log_emp_rank], s=5)
 
         # Add a graph title
-        axes[i,j].set_title(sector, y=1)
+        axes[i,j].set_title(sector_acronyms[sector], y=1)
 
         # Set axis labels
         if i == 1:
