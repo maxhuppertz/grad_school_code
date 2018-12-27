@@ -309,22 +309,47 @@ for i, c in enumerate(rank_cutoffs):
     if perc_cutoffs[i] == np.inf:
         col1 = 'All firms'
     else:
-        col1 = 'Top ' + str(np.int(perc_cutoffs[i]*100)) + '\% (' + str(np.int(c)) + ' firms)'
+        col1 = 'Top ' + str(np.int(perc_cutoffs[i]*100)) + r'\% (' + str(np.int(c)) + ' firms)'
 
     # Save cutoff and associated results
-    est_results.loc[i, :] = [c, beta_hat_OLS_GI, V_hat_OLS_GI]
+    est_results.loc[i, :] = [col1, beta_hat_OLS_GI, V_hat_OLS_GI]
 
 # Display estimation results
-print('Sales: Log size - log rank estimation, full sample')
+print('Sales: Log size - log rank estimation: Full sample')
 print(est_results)
 
 # Save a tex copy
-est_results.to_latex('log_size_log_rank_full_sample.tex', index=False)
+est_results.to_latex('log_size_log_rank_full_sample.tex', index=False, escape=False)
 
 # Add sectors to the data set
-v_sic = 'sic'  # Variable containing SIC codes
-v_sector = 'sector'  # Variable containing sectors, i.e. one digit SIC codes
-data[v_sector] = np.floor(data[v_sic] / 1000)
+# Specify variable containing SIC codes
+v_sic = 'sic'
+
+# Make a dictionary to translate SIC codes to sectors
+sic_sectors = {
+    'Agriculture, forestry and fishing': [100, 999],
+    'Mining': [1000, 1499],
+    'Construction': [1500, 1799],
+    'Manufacturing': [2000, 3999],
+    'Transportation, communications, electricity, gas and sanitary service': [4000, 4999],
+    'Wholesale trade': [5000, 5199],
+    'Retail trade': [5200, 5999],
+    'Finance, insurance and real estate': [6000, 6799],
+    'Services': [7000, 8999],
+    'Public administration': [9100, 9729]}
+
+# Specify variable for sectors
+v_sector = 'sector'
+data[v_sector] = 'Misc'
+
+# Go through all sectors
+for sector in sic_sectors.keys():
+    # Get the lower and upper bound of SIC codes for that sector
+    b_low = sic_sectors[sector][0]
+    b_up = sic_sectors[sector][1]
+
+    # Replace the variable
+    data.loc[(b_low <= data[v_sic]) & (data[v_sic] <= b_up), v_sector] = sector
 
 # Generate firms size rank, by year and sector
 v_sales_rank_sector = v_sales_rank + '_sector'
@@ -334,7 +359,7 @@ data[v_sales_rank_sector] = data.groupby([v_year, v_sector])[v_sales].rank(ascen
 fig, axes = plt.subplots(nrows=2, ncols=5, figsize=(9.5, 4.5))
 
 # Go through all sectors
-for k, sector in enumerate(sorted(data[v_sector].unique())):
+for k, sector in enumerate(sic_sectors.keys()):
     # Figure out row and column index
     i = np.int(np.floor(k/5))
     j = np.int(k - i * 5)
@@ -346,7 +371,7 @@ for k, sector in enumerate(sorted(data[v_sector].unique())):
         v_log_sales], s=5)
 
     # Add a graph title
-    axes[i,j].set_title('SIC ' + str(np.int(sector)), y=1)
+    axes[i,j].set_title(sector, y=1)
 
     # Set axis labels
     if i == 1:
@@ -378,18 +403,18 @@ for k, sector in enumerate(sorted(data[v_sector].unique())):
         if perc_cutoffs[i] == np.inf:
             col1 = 'All firms'
         else:
-            col1 = 'Top ' + str(np.int(perc_cutoffs[i]*100)) + '\% (' + str(np.int(c)) + ' firms)'
-        
+            col1 = 'Top ' + str(np.int(perc_cutoffs[i]*100)) + r'\% (' + str(np.int(c)) + ' firms)'
+
         # Save cutoff and associated results
         est_results.loc[i, :] = [col1, beta_hat_OLS_GI, V_hat_OLS_GI]
 
     # Display estimation results
     print('\n')
-    print('Sales: Log size - log rank estimation, SIC', np.int(sector))
+    print('Sales: Log size - log rank estimation:', sector)
     print(est_results)
 
     # Save a tex copy
-    est_results.to_latex('log_size_log_rank_sic_' + str(np.int(sector)) + '.tex', index=False)
+    est_results.to_latex('log_size_log_rank_sec_' + str(k) + '.tex', index=False, escape=False)
 
 # Trim unnecessary whitespace
 fig.tight_layout()
@@ -434,7 +459,7 @@ ax.set_ylabel('log employment', fontsize=11)
 fig.tight_layout()
 
 # Save the plot
-plt.savefig('log_sales_log_emp.pdf')
+plt.savefig('log_emp_log_rank.pdf')
 plt.close()
 
 # Check how many firms there are in the data for the years under consideration
@@ -470,7 +495,7 @@ v_emp_rank_sector = v_emp_rank + '_sector'
 data[v_emp_rank_sector] = data.groupby([v_year, v_sector])[v_emp].rank(ascending=False)
 
 # Go through all sectors
-for k, sector in enumerate(sorted(data[v_sector].unique())):
+for k, sector in enumerate(data[v_sector].unique()):
     # Figure out row and column index
     i = np.int(np.floor(k/5))
     j = np.int(k - i * 5)
@@ -482,7 +507,7 @@ for k, sector in enumerate(sorted(data[v_sector].unique())):
         v_log_emp], s=5)
 
     # Add a graph title
-    axes[i,j].set_title('SIC ' + str(np.int(sector)), y=1)
+    axes[i,j].set_title(sector, y=1)
 
     # Set axis labels
     if i == 1:
@@ -515,7 +540,7 @@ for k, sector in enumerate(sorted(data[v_sector].unique())):
 
     # Display estimation results
     print('\n')
-    print('Employment: Log size - log rank estimation, SIC', int(sector))
+    print('Employment: Log size - log rank estimation:', sector)
     print(est_results)
 
 # Trim unnecessary whitespace
@@ -576,14 +601,14 @@ collapsed_data[v_sector] = np.floor(data.groupby(v_name)[v_sic].max() / 1000)
 sector_vars = []
 
 # Go through all sectors
-for sector in sorted(collapsed_data[v_sector].unique()):
+for i, sector in enumerate(collapsed_data[v_sector].unique()):
     # Omit lowest SIC code
-    if sector != min(collapsed_data[v_sector].unique()):
+    if sector != collapsed_data[v_sector].unique()[0]:
         # Add a dummy for that sector to the data set
-        collapsed_data[v_sector + '_' + str(np.int(sector))] = (collapsed_data[v_sector] == sector).astype(int)
+        collapsed_data[v_sector + '_' + str(i)] = (collapsed_data[v_sector] == sector).astype(int)
 
         # Add the new variable to the data set
-        sector_vars.append(v_sector + '_' + str(np.int(sector)))
+        sector_vars.append(v_sector + '_' + str(i))
 
 # Run the same regression as before, but adding sector fixed effects
 theta_hat, V_hat_theta = OLS(collapsed_data[v_log_sales_growth_sd],
@@ -620,14 +645,14 @@ for i, decade in enumerate(range(1980, 2020, 10)):
     sector_vars = []
 
     # Go through all sectors
-    for sector in sorted(collapsed_data[v_sector].unique()):
+    for j, sector in enumerate(sorted(collapsed_data[v_sector].unique())):
         # Omit lowest SIC code
         if sector != min(collapsed_data[v_sector].unique()):
             # Add a dummy for that sector to the data set
-            collapsed_data[v_sector + '_' + str(np.int(sector))] = (collapsed_data[v_sector] == sector).astype(int)
+            collapsed_data[v_sector + '_' + str(j)] = (collapsed_data[v_sector] == sector).astype(int)
 
             # Add the new variable to the data set
-            sector_vars.append(v_sector + '_' + str(np.int(sector)))
+            sector_vars.append(v_sector + '_' + str(j))
 
     # Run the same regression as before, but adding sector fixed effects
     theta_hat, V_hat_theta = OLS(collapsed_data[v_log_sales_growth_sd],
