@@ -436,6 +436,8 @@ for sector in sic_sectors.keys():
 
         # Increase sector counter
         k += 1
+    else:
+        axes[-1,-1].axis('off')
 
 # Trim unnecessary whitespace
 fig.tight_layout()
@@ -588,6 +590,8 @@ for sector in sic_sectors.keys():
 
         # Increase sector counter
         k += 1
+    else:
+        axes[-1,-1].axis('off')
 
 # Trim unnecessary whitespace
 fig.tight_layout()
