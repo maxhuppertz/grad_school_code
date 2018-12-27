@@ -358,63 +358,71 @@ data[v_sales_rank_sector] = data.groupby([v_year, v_sector])[v_sales].rank(ascen
 # Set up plot of log-log relationship
 fig, axes = plt.subplots(nrows=2, ncols=5, figsize=(9.5, 4.5))
 
+# Set up a sector counter
+k = 0
+
 # Go through all sectors
-for k, sector in enumerate(sic_sectors.keys()):
-    # Figure out row and column index
-    i = np.int(np.floor(k/5))
-    j = np.int(k - i * 5)
+for sector in sic_sectors.keys():
+    # Check whether the sector actually appears in the data for the years under consideration
+    if not (((year_min <= data[v_year]) & (data[v_year] <= year_max) & (data[v_sector] == sector)).sum() == 0):
+        # Figure out row and column index
+        i = np.int(np.floor(k/5))
+        j = np.int(k - i * 5)
 
-    # Plot log-log relationship
-    axes[i,j].scatter(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) & (data[v_sector] == sector),
-        v_log_sales_rank],
-        data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) & (data[v_sector] == sector),
-        v_log_sales], s=5)
+        # Plot log-log relationship
+        axes[i,j].scatter(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) & (data[v_sector] == sector),
+            v_log_sales_rank],
+            data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) & (data[v_sector] == sector),
+            v_log_sales], s=5)
 
-    # Add a graph title
-    axes[i,j].set_title(sector, y=1)
+        # Add a graph title
+        axes[i,j].set_title(sector, y=1)
 
-    # Set axis labels
-    if i == 1:
-        axes[i,j].set_xlabel(r'$\log r^s_i$', fontsize=11)
-    if j == 0:
-        axes[i,j].set_ylabel('log sales', fontsize=11)
+        # Set axis labels
+        if i == 1:
+            axes[i,j].set_xlabel(r'$\log r^s_i$', fontsize=11)
+        if j == 0:
+            axes[i,j].set_ylabel('log sales', fontsize=11)
 
-    # Check how many firms there are in the data for the years under consideration
-    n_firms = len(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) &
-        (data[v_sector] == sector), v_name].unique())
+        # Check how many firms there are in the data for the years under consideration
+        n_firms = len(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) &
+            (data[v_sector] == sector), v_name].unique())
 
-    # Make a list of the respective ranks in the firm size distribution
-    rank_cutoffs = [np.floor(p * n_firms) for p in perc_cutoffs]
+        # Make a list of the respective ranks in the firm size distribution
+        rank_cutoffs = [np.floor(p * n_firms) for p in perc_cutoffs]
 
-    # Set up a DataFrame for the estimation results
-    est_results = pd.DataFrame(np.zeros(shape=(len(rank_cutoffs), 3)),
-        columns=['Rank cutoff', 'beta_hat', 'SE beta_hat'])
+        # Set up a DataFrame for the estimation results
+        est_results = pd.DataFrame(np.zeros(shape=(len(rank_cutoffs), 3)),
+            columns=['Rank cutoff', 'beta_hat', 'SE beta_hat'])
 
-    # Go through all cutoffs
-    for i, c in enumerate(rank_cutoffs):
-        # Run the estimation, using only firms which are below the rank cutoffs and only data for selected years
-        beta_hat_OLS_GI, V_hat_OLS_GI = OLS_GI(
-            data.loc[(data[v_sales_rank_sector] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max) &
-            (data[v_sector] == sector), v_log_sales_rank],
-            data.loc[(data[v_sales_rank_sector] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max) &
-            (data[v_sector] == sector), v_log_sales])
+        # Go through all cutoffs
+        for i, c in enumerate(rank_cutoffs):
+            # Run the estimation, using only firms which are below the rank cutoffs and only data for selected years
+            beta_hat_OLS_GI, V_hat_OLS_GI = OLS_GI(
+                data.loc[(data[v_sales_rank_sector] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max) &
+                (data[v_sector] == sector), v_log_sales_rank],
+                data.loc[(data[v_sales_rank_sector] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max) &
+                (data[v_sector] == sector), v_log_sales])
 
-        # Make a line for the tex table this will be presented in
-        if perc_cutoffs[i] == np.inf:
-            col1 = 'All firms'
-        else:
-            col1 = 'Top ' + str(np.int(perc_cutoffs[i]*100)) + r'\% (' + str(np.int(c)) + ' firms)'
+            # Make a line for the tex table this will be presented in
+            if perc_cutoffs[i] == np.inf:
+                col1 = 'All firms'
+            else:
+                col1 = 'Top ' + str(np.int(perc_cutoffs[i]*100)) + r'\% (' + str(np.int(c)) + ' firms)'
 
-        # Save cutoff and associated results
-        est_results.loc[i, :] = [col1, beta_hat_OLS_GI, V_hat_OLS_GI]
+            # Save cutoff and associated results
+            est_results.loc[i, :] = [col1, beta_hat_OLS_GI, V_hat_OLS_GI]
 
-    # Display estimation results
-    print('\n')
-    print('Sales: Log size - log rank estimation:', sector)
-    print(est_results)
+        # Display estimation results
+        print('\n')
+        print('Sales: Log size - log rank estimation:', sector)
+        print(est_results)
 
-    # Save a tex copy
-    est_results.to_latex('log_size_log_rank_sec_' + str(k) + '.tex', index=False, escape=False)
+        # Save a tex copy
+        est_results.to_latex('log_size_log_rank_sec_' + str(k) + '.tex', index=False, escape=False)
+
+        # Increase sector counter
+        k += 1
 
 # Trim unnecessary whitespace
 fig.tight_layout()
