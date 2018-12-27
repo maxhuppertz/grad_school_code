@@ -258,8 +258,8 @@ s = .5
 data[v_log_sales_rank] = np.log(data[v_sales_rank] - s)
 
 # Set minimum and maximum year for the estimation
-year_min = 2015
-year_max = 2015
+year_min = 1985
+year_max = 1985
 
 # Switch to figures directory
 chdir(mdir+fdir)
