@@ -502,54 +502,58 @@ print(est_results)
 v_emp_rank_sector = v_emp_rank + '_sector'
 data[v_emp_rank_sector] = data.groupby([v_year, v_sector])[v_emp].rank(ascending=False)
 
+# Set up sector counter
+k = 0
+
 # Go through all sectors
 for k, sector in enumerate(data[v_sector].unique()):
-    # Figure out row and column index
-    i = np.int(np.floor(k/5))
-    j = np.int(k - i * 5)
+    if not (((year_min <= data[v_year]) & (data[v_year] <= year_max) & (data[v_sector] == sector)).sum() == 0):
+        # Figure out row and column index
+        i = np.int(np.floor(k/5))
+        j = np.int(k - i * 5)
 
-    # Plot log-log relationship
-    axes[i,j].scatter(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) & (data[v_sector] == sector),
-        v_log_emp_rank],
-        data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) & (data[v_sector] == sector),
-        v_log_emp], s=5)
+        # Plot log-log relationship
+        axes[i,j].scatter(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) & (data[v_sector] == sector),
+            v_log_emp_rank],
+            data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) & (data[v_sector] == sector),
+            v_log_emp], s=5)
 
-    # Add a graph title
-    axes[i,j].set_title(sector, y=1)
+        # Add a graph title
+        axes[i,j].set_title(sector, y=1)
 
-    # Set axis labels
-    if i == 1:
-        axes[i,j].set_xlabel(r'$\log r^e_i$', fontsize=11)
-    if j == 0:
-        axes[i,j].set_ylabel('log employment', fontsize=11)
+        # Set axis labels
+        if i == 1:
+            axes[i,j].set_xlabel(r'$\log r^e_i$', fontsize=11)
+        if j == 0:
+            axes[i,j].set_ylabel('log employment', fontsize=11)
 
-    # Check how many firms there are in the data for the years under consideration
-    n_firms = len(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) &
-        (data[v_sector] == sector), v_name].unique())
+        # Check how many firms there are in the data for the years under consideration
+        n_firms = len(data.loc[(year_min <= data[v_year]) & (data[v_year] <= year_max) &
+            (data[v_sector] == sector), v_name].unique())
 
-    # Make a list of the respective ranks in the firm size distribution
-    rank_cutoffs = [np.floor(p * n_firms) for p in perc_cutoffs]
+        # Make a list of the respective ranks in the firm size distribution
+        rank_cutoffs = [np.floor(p * n_firms) for p in perc_cutoffs]
 
-    # Set up a DataFrame for the estimation results
-    est_results = pd.DataFrame(np.zeros(shape=(len(rank_cutoffs), 3)),
-        columns=['Rank cutoff', 'beta_hat', 'SE beta_hat'])
+        # Set up a DataFrame for the estimation results
+        est_results = pd.DataFrame(np.zeros(shape=(len(rank_cutoffs), 3)),
+            columns=['Rank cutoff', 'beta_hat', 'SE beta_hat'])
 
-    # Go through all cutoffs
-    for i, c in enumerate(rank_cutoffs):
-        # Run the estimation, using only firms which are below the rank cutoffs and only data for selected years
-        beta_hat_OLS_GI, V_hat_OLS_GI = OLS_GI(
-            data.loc[(data[v_emp_rank_sector] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max) &
-            (data[v_sector] == sector), v_log_emp_rank],
-            data.loc[(data[v_emp_rank_sector] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max) &
-            (data[v_sector] == sector), v_log_emp])
+        # Go through all cutoffs
+        for i, c in enumerate(rank_cutoffs):
+            # Run the estimation, using only firms which are below the rank cutoffs and only data for selected years
+            beta_hat_OLS_GI, V_hat_OLS_GI = OLS_GI(
+                data.loc[(data[v_emp_rank_sector] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max) &
+                (data[v_sector] == sector), v_log_emp_rank],
+                data.loc[(data[v_emp_rank_sector] <= c) & (year_min <= data[v_year]) & (data[v_year] <= year_max) &
+                (data[v_sector] == sector), v_log_emp])
 
-        # Save cutoff and associated results
-        est_results.loc[i, :] = [c, beta_hat_OLS_GI, V_hat_OLS_GI]
+            # Save cutoff and associated results
+            est_results.loc[i, :] = [c, beta_hat_OLS_GI, V_hat_OLS_GI]
 
-    # Display estimation results
-    print('\n')
-    print('Employment: Log size - log rank estimation:', sector)
-    print(est_results)
+        # Display estimation results
+        print('\n')
+        print('Employment: Log size - log rank estimation:', sector)
+        print(est_results)
 
 # Trim unnecessary whitespace
 fig.tight_layout()
