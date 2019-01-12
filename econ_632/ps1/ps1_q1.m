@@ -2,21 +2,20 @@
 % overflow and underflow values, respectively (the first row will be used
 % to pin down the overflow, the second to pin down the underflow value)
 bounds = ones(2,2);
+bounds(2,1) = -bounds(2,1);
 
 % Set an adjustment parameter (used only to adjust the initial upper bound
 % on the overflow and lower bound on the underflow value)
 alpha = 1.2;
 
-% Increase the upper bound on the overflow value until machine precision
-% isn't perfect anymore
-while log(exp(bounds(1,2))) == bounds(1,2)
-    bounds(1,2) = bounds(1,2) * alpha;
-end
-
-% Decrease the lower bound on the underflow value until machine precision
-% isn't perfect anymore
-while log(exp(bounds(2,1))) == bounds(2,1)
-    bounds(2,1) = bounds(2,1) / alpha;
+% Go through both bounds
+for i=1:2
+    % While the upper bound on the overflow value (i=1) and the lower bound
+    % on the underflow value (i=2) are inside of the machine precision
+    % range, keep increasing / decreasing them
+    while log(exp(bounds(i,3-i))) == bounds(i,3-i)
+        bounds(i,3-i) = bounds(i,3-i) * alpha;
+    end
 end
 
 % Set up a vector of indicators for whether overflow and underflow values
@@ -25,7 +24,7 @@ end
 conv = zeros(2,1);
 
 % Specify tolerance for bound convergence
-tol = 10^(-10);
+tol = 10^(-1);
 
 % As long as at least one bound hasn't converged...
 while conv(1,1) * conv(2,1) == 0
@@ -39,9 +38,9 @@ while conv(1,1) * conv(2,1) == 0
             % Adjust bounds accordingly
             if log(exp(mp)) == mp
                 % If the midpoint is not in the overflow or underflow
-                % region, use is the new lower bound on the overflow value
-                % (i.e. when i=1), or use it as the new upper bound on the
-                % underflow value (i.e. when i=2)
+                % region, use it as the new lower bound on the overflow
+                % value (i.e. when i=1), or use it as the new upper bound
+                % on the underflow value (i.e. when i=2)
                 bounds(i,i) = mp;
             else
                 % Otherwise, replace the other bound, i.e. the upper bound
@@ -49,7 +48,7 @@ while conv(1,1) * conv(2,1) == 0
                 % underflow value (i=2)
                 bounds(i,3-i) = mp;
             end
-
+            
             % If bounds are within tolerance, change convergence indicator
             if bounds(i,2) - bounds(i,1) <= tol
                 conv(i,1) = 1;
