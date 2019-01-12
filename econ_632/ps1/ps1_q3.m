@@ -24,7 +24,8 @@ eps = evrnd(0,1,n,J);
 % Construct utility
 u = beta*p + ones(n,1)*xi + eps;
 
-% Get vector of chosen goods, using the fact that MATLAB's max() function
-% returns the row maximum when applied to a matrix, and returns its index
-% as a second output argument (this index being the choice I'm looking for)
+% Get vector of chosen goods, using MATLAB's max() function (the 2 makes
+% sure it returns the row maximum); the second value it returns is the
+% index of the maximum (which is the index of the chosen good, i.e. the
+% choice I'm looing for)
 [~,c] = max(u,[],2);
