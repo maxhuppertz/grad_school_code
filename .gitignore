@@ -1,2 +1,6 @@
+# Ignore data and figures directories
 data/
 figures/
+
+# Ignore MATLAB autosaves
+*.asv
