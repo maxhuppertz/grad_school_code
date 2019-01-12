@@ -3,7 +3,8 @@
 % to pin down the overflow, the second to pin down the underflow value)
 bounds = ones(2,2);
 
-% Set an adjustment parameter
+% Set an adjustment parameter (used only to adjust the initial upper bound
+% on the overflow and lower bound on the underflow value)
 alpha = 1.2;
 
 % Increase the upper bound on the overflow value until machine precision
