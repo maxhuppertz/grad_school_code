@@ -1,3 +1,6 @@
+% Clear everything
+clear
+
 % Set up a vector of subscripts and a vector of values
 subs = [1,2; 1,2; 4,1; 5,1; 5,2];
 vals = (101:105)';

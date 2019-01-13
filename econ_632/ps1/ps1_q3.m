@@ -1,3 +1,6 @@
+% Clear everything
+clear
+
 % Set random number generator's seed
 rng(632)
 
@@ -6,7 +9,7 @@ n = 5000;
 J = 3;
 
 % Set beta
-beta = .2;
+beta = 1.2;
 
 % Set mean and variance for the price distribution
 mu = 10;
@@ -16,7 +19,7 @@ sigma = 10;
 p = randn(n,J) * sqrt(sigma) + 10;
 
 % Set up xi, where the jth element of this row vector equals xi_j
-xi = [1,1.5,.8];
+xi = [.2,.8,.4];
 
 % Draw epsilon as Gumbel(0,1) i.i.d. random variables
 eps = evrnd(0,1,n,J);
@@ -29,3 +32,11 @@ u = beta*p + ones(n,1)*xi + eps;
 % index of the maximum (which is the index of the chosen good, i.e. the
 % choice I'm looing for)
 [~,c] = max(u,[],2);
+
+% Set initial values
+beta0 = beta + randn();
+xi0 = xi + randn(size(xi));
+
+options = optimset('GradObj','off','LargeScale','off','Display','iter','TolFun',1e-6,'TolX',1e-6,'Diagnostics','on'); 
+[theta_hat,log_like,exitflag,output,Gradient,Hessian] = fminunc(@(theta)ll_multilogit_fc(theta(1),theta(2:4),p,c),[beta0,xi0],options);
+disp(theta_hat)

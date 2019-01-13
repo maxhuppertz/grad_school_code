@@ -1,3 +1,9 @@
+% Clear everything
+clear
+
+% Set random number generator's seed
+rng(632)
+
 % Finds the highest and lowest values x such that log(exp(x)) = x; denote
 % these as H and L, respectively
 
@@ -72,7 +78,7 @@ X = chi2rnd(5,1000,1);
 % Display results
 fprintf('\nUnderflow check, chi2(5) random variable:\n')
 disp(['Naive LIV: ', num2str(log(sum(exp(X))))])
-disp(['Underflow safe LIV: ', num2str(logsumexp_safe(X))])
+disp(['Underflow safe LIV: ', num2str(logsumexp_safe(X,1))])
 
 % Multiply the vector by a large positive number
 Xhi = X * exp(600);
@@ -80,7 +86,7 @@ Xhi = X * exp(600);
 % Display results
 fprintf('\nUnderflow check, chi2(5) * exp(600) random variable:\n')
 disp(['Naive LIV: ', num2str(log(sum(exp(Xhi))))])
-disp(['Underflow safe LIV: ', num2str(logsumexp_safe(Xhi))])
+disp(['Underflow safe LIV: ', num2str(logsumexp_safe(Xhi,1))])
 
 % Multiply the vector by a very large negative number
 Xlo = -Xhi;
@@ -88,4 +94,4 @@ Xlo = -Xhi;
 % Display the results
 fprintf('\nUnderflow check, chi2(5) * [-exp(600)] random variable:\n')
 disp(['Naive LIV: ', num2str(log(sum(exp(Xlo))))])
-disp(['Underflow safe LIV: ', num2str(logsumexp_safe(Xlo))])
+disp(['Underflow safe LIV: ', num2str(logsumexp_safe(Xlo,1))])
