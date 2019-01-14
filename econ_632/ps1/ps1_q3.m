@@ -55,7 +55,7 @@ V = inv(I);
 SE_a = sqrt(diag(V));
 
 % Specify number of bootstrap iterations
-B = 299;
+B = 2999;
 
 % Set up matrix of bootstrap estimates
 T = zeros(B,J+1);
@@ -69,7 +69,7 @@ for b=1:B
     pstar = p(i,:);
     cstar = c(i,:);
     
-    % Perform MLE
+    % Run MLE
     T(b,:) = fminunc( ...
         @(theta)ll_multilogit_fc(theta(1),theta(2:J+1),pstar,cstar), ...
         [beta0,xi0],options);
