@@ -44,18 +44,46 @@ options = optimset('GradObj','on','HessFcn','on', ...
 % Get MLE estimate of theta = [beta, xi], as well as the Hessian of the log
 % likelihood function, which is the same as the (sample) Fisher information
 % for the estimator
-[theta_hat,~,~,~,~,I] = fminunc( ...
+[theta_hat,~,~,~,G,I] = fminunc( ...
     @(theta)ll_multilogit_fc(theta(1),theta(2:J+1),p,c), ...
     [beta0,xi0],options);
 
 % Get analytic standard errors, based on properties of correctly specified
-% MLE (variance is the inverse of Fisher information, estimate this using
-% sample analogue)
+% MLE (variance is the negative inverse of Fisher information, estimate
+% this using sample analogue)
 V = inv(I);
-SE = sqrt(diag(V));
+SE_a = sqrt(diag(V));
+
+% Specify number of bootstrap iterations
+B = 299;
+
+% Set up matrix of bootstrap estimates
+T = zeros(B,J+1);
+
+% Set optimization options (turn off display for bootstrapping)
+options = optimset('GradObj','on','HessFcn','on','Display','off', ...
+    'TolFun',1e-6,'TolX',1e-6);
+
+% Go through all bootstrap iterations
+for b=1:B
+    % Draw bootstrap sample
+    i = randi([1,n],n,1);
+    
+    % Get prices and choices for the bootstrap sample
+    pstar = p(i,:);
+    cstar = c(i,:);
+    
+    % Perform MLE
+    T(b,:) = fminunc( ...
+        @(theta)ll_multilogit_fc(theta(1),theta(2:J+1),pstar,cstar), ...
+        [beta0,xi0],options);
+end
+
+% Get the boostrapped standard errors
+SE_b = sum((T - ones(B,1) * [beta, xi]).^2) / B;
 
 % Display the results
-D = cell(J+2,J);
-D(1,:) = {'theta', 'theta_hat', 'SE'};
-D(2:J+2,:) = num2cell([[beta, xi]', theta_hat', SE]);
+D = cell(J+2,4);
+D(1,:) = {'theta', 'theta_hat', 'SE_a', 'SE_b'};
+D(2:J+2,:) = num2cell([[beta, xi]', theta_hat', SE_a, SE_b']);
 disp(D)
