@@ -5,7 +5,7 @@ clear
 rng(632)
 
 % Set number of people and products
-n = 5000;
+n = 500000;
 J = 3;
 
 % Set beta
@@ -19,7 +19,7 @@ sigma = 10;
 p = randn(n,J) * sqrt(sigma) + 10;
 
 % Set up xi, where the jth element of this row vector equals xi_j
-xi = [12,.5,10];
+xi = [-1,2,0];
 
 % Draw epsilon as Gumbel(0,1) i.i.d. random variables
 eps = evrnd(0,1,n,J);
@@ -37,6 +37,7 @@ u = beta*p + ones(n,1)*xi + eps;
 beta0 = beta + randn();
 xi0 = xi + randn(size(xi));
 
-options = optimset('GradObj','off','LargeScale','off','TolFun',1e-6,'TolX',1e-6,'Diagnostics','on'); 
+% Set optimization options
+options = optimset('GradObj','on','TolFun',1e-10,'TolX',1e-10); 
 [theta_hat,~,~,~,Gradient,Hessian] = fminunc(@(theta)ll_multilogit_fc(theta(1),theta(2:4),p,c),[beta0,xi0],options);
 disp(theta_hat)
