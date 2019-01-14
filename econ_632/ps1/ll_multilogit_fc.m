@@ -34,7 +34,7 @@ dbeta2 = sum( (sum((p.^2).*exp(beta*p + X),2) ...
 dxi2 = zeros(J,1);
 for k = 1:J
     dxi2(k,1) = sum( (exp(beta*p(:,k) + X(:,k)) ...
-        .* sum(exp(beta*p + X),2) - exp(beta*p(:,k) + X(:,k)).^2) ...
+        .* sum(exp(beta*p + X),2) - (exp(beta*p(:,k) + X(:,k)).^2)) ...
         ./ (sum(exp(beta*p + X),2).^2) );
 end
 
@@ -42,11 +42,11 @@ end
 H = diag([dbeta2; dxi2]);
 
 % Fill in cross derivatives w.r.t. to beta and xi_k or xi_k and beta
-% (these are symmetric)
+% (note that these are symmetric)
 for k = 1:J
     H(1,k+1) = sum( (p(:,k).*exp(beta*p(:,k) + X(:,k)) ...
-        .*sum(exp(beta*p + X),2) - sum(p.*exp(beta*p + X),2) ...
-        .*exp(beta*p(:,k) + X(:,k))) ...
+        .* sum(exp(beta*p + X),2) - sum(p.*exp(beta*p + X),2) ...
+        .* exp(beta*p(:,k) + X(:,k))) ...
         ./ (sum(exp(beta*p + X),2).^2) );
     H(k+1,1) = H(1,k+1);
 end
@@ -59,5 +59,4 @@ for j = 1:J
         H(k+1,j+1) = H(j+1,k+1);
     end
 end
-
 end

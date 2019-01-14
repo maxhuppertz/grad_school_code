@@ -19,7 +19,7 @@ sigma = 10;
 p = randn(n,J) * sqrt(sigma) + 10;
 
 % Set up xi, where the jth element of this row vector equals xi_j
-xi = [-1,2,0];
+xi = [1,2,5];
 
 % Draw epsilon as Gumbel(0,1) i.i.d. random variables
 eps = evrnd(0,1,n,J);
@@ -54,4 +54,8 @@ options = optimset('GradObj','on','HessFcn','on', ...
 V = inv(I);
 SE = sqrt(diag(V));
 
-disp([[beta, xi]', theta_hat', SE])
+% Display the results
+D = cell(J+2,J);
+D(1,:) = {'theta', 'theta_hat', 'SE'};
+D(2:J+2,:) = num2cell([[beta, xi]', theta_hat', SE]);
+disp(D)
