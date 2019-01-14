@@ -38,7 +38,7 @@ beta0 = beta + randn();
 xi0 = xi + randn(size(xi));
 
 % Set optimization options
-options = optimset('GradObj','on','HessFcn','on', ...
+options = optimset('GradObj','on','HessFcn','on','Display','off', ...
     'TolFun',1e-6,'TolX',1e-6); 
 
 % Get MLE estimate of theta = [beta, xi], as well as the Hessian of the log
@@ -60,10 +60,6 @@ B = 299;
 % Set up matrix of bootstrap estimates
 T = zeros(B,J+1);
 
-% Set optimization options (turn off display for bootstrapping)
-options = optimset('GradObj','on','HessFcn','on','Display','off', ...
-    'TolFun',1e-6,'TolX',1e-6);
-
 % Go through all bootstrap iterations
 for b=1:B
     % Draw bootstrap sample
@@ -80,7 +76,7 @@ for b=1:B
 end
 
 % Get the boostrapped standard errors
-SE_b = sum((T - ones(B,1) * [beta, xi]).^2) / B;
+SE_b = sqrt(sum((T - ones(B,1) * [beta, xi]).^2) / B);
 
 % Display the results
 D = cell(J+2,4);
