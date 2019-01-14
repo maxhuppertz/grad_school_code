@@ -5,7 +5,7 @@ clear
 rng(632)
 
 % Set number of people and products
-n = 500000;
+n = 5000;
 J = 3;
 
 % Set beta
@@ -33,11 +33,25 @@ u = beta*p + ones(n,1)*xi + eps;
 % choice I'm looing for)
 [~,c] = max(u,[],2);
 
-% Set initial values
+% Set initial values for MLE
 beta0 = beta + randn();
 xi0 = xi + randn(size(xi));
 
 % Set optimization options
-options = optimset('GradObj','on','TolFun',1e-10,'TolX',1e-10); 
-[theta_hat,~,~,~,Gradient,Hessian] = fminunc(@(theta)ll_multilogit_fc(theta(1),theta(2:4),p,c),[beta0,xi0],options);
-disp(theta_hat)
+options = optimset('GradObj','on','HessFcn','on', ...
+    'TolFun',1e-6,'TolX',1e-6); 
+
+% Get MLE estimate of theta = [beta, xi], as well as the Hessian of the log
+% likelihood function, which is the same as the (sample) Fisher information
+% for the estimator
+[theta_hat,~,~,~,~,I] = fminunc( ...
+    @(theta)ll_multilogit_fc(theta(1),theta(2:J+1),p,c), ...
+    [beta0,xi0],options);
+
+% Get analytic standard errors, based on properties of correctly specified
+% MLE (variance is the inverse of Fisher information, estimate this using
+% sample analogue)
+V = inv(I);
+SE = sqrt(diag(V));
+
+disp([[beta, xi]', theta_hat', SE])
