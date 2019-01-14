@@ -44,7 +44,7 @@ options = optimset('GradObj','on','HessFcn','on','Display','off', ...
 % Get MLE estimate of theta = [beta, xi], as well as the Hessian of the log
 % likelihood function, which is the same as the (sample) Fisher information
 % for the estimator
-[theta_hat,~,~,~,G,I] = fminunc( ...
+[theta_hat,~,~,~,~,I] = fminunc( ...
     @(theta)ll_multilogit_fc(theta(1),theta(2:J+1),p,c), ...
     [beta0,xi0],options);
 
@@ -55,7 +55,7 @@ V = inv(I);
 SE_a = sqrt(diag(V));
 
 % Specify number of bootstrap iterations
-B = 2999;
+B = 2;
 
 % Set up matrix of bootstrap estimates
 T = zeros(B,J+1);

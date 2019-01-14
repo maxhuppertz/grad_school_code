@@ -53,13 +53,11 @@ end
 
 % Fill in cross derivatives w.r.t. xi_j and xi_k (also symmetric)
 for j = 1:J
-    for k = 1:J
-        if k ~= j
-            H(j+1,k+1) = -sum( (exp(beta*p(:,j) + X(:,j)) ...
-                .* exp(beta*p(:,k) + X(:,k))) ...
-                ./ (sum(exp(beta*p + X),2).^2) );
-            H(k+1,j+1) = H(j+1,k+1);
-        end
+    for k = j+1:J
+        H(j+1,k+1) = -sum( (exp(beta*p(:,j) + X(:,j)) ...
+            .* exp(beta*p(:,k) + X(:,k))) ...
+            ./ (sum(exp(beta*p + X),2).^2) );
+        H(k+1,j+1) = H(j+1,k+1);
     end
 end
 end
