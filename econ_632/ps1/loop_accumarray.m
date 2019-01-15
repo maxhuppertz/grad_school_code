@@ -1,4 +1,4 @@
-function A = loop_accumarray(subs,val,sz,fun)
+function B = loop_accumarray(subs,val,sz,fun,fillval,issparse)
 
 % Figure out the size of the subscript array
 [n,m] = size(subs);
@@ -10,8 +10,8 @@ if m>2
     disp('than two dimensions. This function cannot handle objects of')
     disp('that dimensionality.')
     
-    % Set output array to NaM
-    A = NaN;
+    % Set output array to NaN
+    B = NaN;
     
     % Abort
     return
@@ -23,19 +23,36 @@ if m == 1
     subs = [subs ones(n,1)];
 end
 
-% Set up output array as zeros
+% Set up output array B as zeros, and set up an intermediate cell array A
+% which will collect elements of val as a vector so they can be accumulated
+% using fun
 if size(sz) ~= [0,0]
-    A = zeros(max(max(subs(:,1),sz(1))), max(max(subs(:,2)),sz(2)));
+    A = cell(max(max(subs(:,1),sz(1))), max(max(subs(:,2)),sz(2)));
+    B = zeros(max(max(subs(:,1),sz(1))), max(max(subs(:,2)),sz(2)));
 else
-    A = zeros(max(subs(:,1)), max(subs(:,2)));
+    A = cell(max(subs(:,1)), max(subs(:,2)));
+    B = zeros(max(subs(:,1)), max(subs(:,2)));
 end
 
-% Go through all subscripts
-% To do: Make sure functions such as mean work, which have to be applied
-% to the whole vector of elements, not piece by piece
+% Go through all subscripts, add elements of val to the corresponding cell
+% in A, which collects them as a vector
 for i=1:n
-    % Add corresponding input array value to output array value
-    A(subs(i,1), subs(i,2)) = ...
-            fun([A(subs(i,1), subs(i,2)), val(i)]);
+    A{subs(i,1), subs(i,2)} = [A{subs(i,1), subs(i,2)}, val(i)];
 end
+
+% Go through all elements of output array, apply function
+for i=1:size(B,1)
+    for j=1:size(B,2)
+        if ~isempty(A{i,j})
+            B(i,j) = fun(A{i,j});
+        else
+            B(i,j) = fillval;
+        end
+    end
+end
+
+if issparse
+    B = sparse(B);
+end
+
 end

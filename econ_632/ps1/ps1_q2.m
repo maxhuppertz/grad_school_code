@@ -8,12 +8,12 @@ vals = (101:105)';
 % Compare results of loop-based accumarray and built-in function; the inner
 % all makes sure that within each column, the elements are the same, and
 % the outer all combines them across columns
-fagree = all(all(loop_accumarray(subs,vals,[],@mean) ...
-    == accumarray(subs,vals,[],@mean)));
+fagree = all(all(loop_accumarray(subs,vals,[7,7],@mean,0,1) ...
+    == accumarray(subs,vals,[7,7],@mean,0,1)));
 
 % Display whether the two agree
 fprintf('\nResult of function agreement check:\n')
-if fagree == 1
+if fagree
     % If they agree, display that
     disp('Loop-based and built-in accumarray functions agree')
 else
