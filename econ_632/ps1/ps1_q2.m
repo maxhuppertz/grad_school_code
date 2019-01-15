@@ -8,8 +8,8 @@ vals = (101:105)';
 % Compare results of loop-based accumarray and built-in function; the inner
 % all makes sure that within each column, the elements are the same, and
 % the outer all combines them across columns
-disp(loop_accumarray(subs, vals, @sum))
-%fagree = all(all(loop_accumarray(subs, vals, @sum) == accumarray(subs,vals,[],@sum)));
+fagree = all(all(loop_accumarray(subs,vals,@max) ...
+    == accumarray(subs,vals,[],@max)));
 
 % Display whether the two agree
 fprintf('\nResult of function agreement check:\n')
