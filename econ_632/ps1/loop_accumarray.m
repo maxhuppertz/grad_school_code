@@ -24,9 +24,15 @@ if m == 1
 end
 
 % Set up output array as zeros
-A = zeros(max(max(subs(:,1),sz(1))), max(max(subs(:,2)),sz(2)));
+if size(sz) ~= [0,0]
+    A = zeros(max(max(subs(:,1),sz(1))), max(max(subs(:,2)),sz(2)));
+else
+    A = zeros(max(subs(:,1)), max(subs(:,2)));
+end
 
 % Go through all subscripts
+% To do: Make sure functions such as mean work, which have to be applied
+% to the whole vector of elements, not piece by piece
 for i=1:n
     % Add corresponding input array value to output array value
     A(subs(i,1), subs(i,2)) = ...
