@@ -16,10 +16,10 @@ mu = 10;
 sigma = 10;
 
 % Draw prices as N(10,10) i.i.d. random variables
-p = randn(n,J) * sqrt(sigma) + 10;
+p = randn(n,J) * sqrt(sigma) + mu;
 
 % Set up xi, where the jth element of this row vector equals xi_j
-xi = [1,2,5];
+xi = [1,2,0];
 
 % Draw epsilon as Gumbel(0,1) i.i.d. random variables
 eps = evrnd(0,1,n,J);
