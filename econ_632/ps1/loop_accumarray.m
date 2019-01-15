@@ -1,4 +1,4 @@
-function A = loop_accumarray(subs, val, fun)
+function A = loop_accumarray(subs,val,sz,fun)
 
 % Figure out the size of the subscript array
 [n,m] = size(subs);
@@ -24,7 +24,7 @@ if m == 1
 end
 
 % Set up output array as zeros
-A = zeros(max(subs(:,1)), max(subs(:,2)));
+A = zeros(max(max(subs(:,1),sz(1))), max(max(subs(:,2)),sz(2)));
 
 % Go through all subscripts
 for i=1:n
