@@ -55,7 +55,7 @@ V = inv(I);
 SE_a = sqrt(diag(V));
 
 % Specify number of bootstrap iterations
-B = 2;
+B = 1999;
 
 % Set up matrix of bootstrap estimates
 T = zeros(B,J+1);

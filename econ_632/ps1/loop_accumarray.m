@@ -1,4 +1,4 @@
-function A = loop_accumarray(subs, val)
+function A = loop_accumarray(subs, val, fun)
 
 % Figure out the size of the subscript array
 [n,m] = size(subs);
@@ -30,6 +30,6 @@ A = zeros(max(subs(:,1)), max(subs(:,2)));
 for i=1:n
     % Add corresponding input array value to output array value
     A(subs(i,1), subs(i,2)) = ...
-            A(subs(i,1), subs(i,2)) + val(i);
+            fun(A(subs(i,1), subs(i,2)), val(i));
 end
 end
