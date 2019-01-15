@@ -1,4 +1,4 @@
-function [L,G,H] = ll_multilogit_fc(beta,xi,p,c)
+function [L,G,H] = ll_multilogit_fc(beta,xi,p,c,normalize)
 % Determine number of individuals and options
 [n,J] = size(p);
 
@@ -24,6 +24,11 @@ end
 
 % Combine the derivatives to a gradient
 G = [dbeta; dxi];
+
+% If normalization is required, leave out xi_J
+if normalize
+    G = G(1:J,1);
+end
 
 % Calculate second derivative w.r.t. beta
 dbeta2 = sum( (sum((p.^2).*exp(beta*p + X),2) ...
@@ -59,5 +64,10 @@ for j = 1:J
             ./ (sum(exp(beta*p + X),2).^2) );
         H(k+1,j+1) = H(j+1,k+1);
     end
+end
+
+% If normalization is required, leave out xi_J
+if normalize
+    H = H(1:J,1:J);
 end
 end

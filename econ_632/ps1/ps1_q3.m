@@ -33,9 +33,11 @@ u = beta*p + ones(n,1)*xi + eps;
 % choice I'm looing for)
 [~,c] = max(u,[],2);
 
-% Set initial values for MLE
+% Set initial values for MLE. To be able to identify the xi later, I'll
+% normalize xi_J = 0. Therefore, the initial values for xi only include the
+% first J-1 elements of the vector
 beta0 = beta + randn();
-xi0 = xi + randn(size(xi));
+xi0 = xi(1,1:J-1) + randn(size(xi(1,1:J-1)));
 
 % Set optimization options
 options = optimset('GradObj','on','HessFcn','on','Display','off', ...
@@ -45,7 +47,7 @@ options = optimset('GradObj','on','HessFcn','on','Display','off', ...
 % likelihood function, which is the same as the (sample) Fisher information
 % for the estimator
 [theta_hat,~,~,~,~,I] = fminunc( ...
-    @(theta)ll_multilogit_fc(theta(1),theta(2:J+1),p,c), ...
+    @(theta)ll_multilogit_fc(theta(1),[theta(2:J),0],p,c,1), ...
     [beta0,xi0],options);
 
 % Get analytic standard errors, based on properties of correctly specified
@@ -58,7 +60,7 @@ SE_a = sqrt(diag(V));
 B = 1999;
 
 % Set up matrix of bootstrap estimates
-T = zeros(B,J+1);
+T = zeros(B,J);
 
 % Go through all bootstrap iterations
 for b=1:B
@@ -71,15 +73,15 @@ for b=1:B
     
     % Run MLE
     T(b,:) = fminunc( ...
-        @(theta)ll_multilogit_fc(theta(1),theta(2:J+1),pstar,cstar), ...
+        @(theta)ll_multilogit_fc(theta(1),[theta(2:J),0],pstar,cstar,1),...
         [beta0,xi0],options);
 end
 
 % Get the boostrapped standard errors
-SE_b = sqrt(sum((T - ones(B,1) * [beta, xi]).^2) / B);
+SE_b = sqrt(sum((T - ones(B,1) * [beta, xi(1,1:J-1)]).^2) / B);
 
 % Display the results
-D = cell(J+2,4);
+D = cell(J+1,4);
 D(1,:) = {'theta', 'theta_hat', 'SE_a', 'SE_b'};
-D(2:J+2,:) = num2cell([[beta, xi]', theta_hat', SE_a, SE_b']);
+D(2:J+1,:) = num2cell([[beta, xi(1,1:J-1)]', theta_hat', SE_a, SE_b']);
 disp(D)
