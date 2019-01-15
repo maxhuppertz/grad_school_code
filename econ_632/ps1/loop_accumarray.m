@@ -40,7 +40,8 @@ for i=1:n
     A{subs(i,1), subs(i,2)} = [A{subs(i,1), subs(i,2)}, val(i)];
 end
 
-% Go through all elements of output array, apply function
+% Go through all elements of output array, apply function to elements; if
+% an element is empty, use fillval instead
 for i=1:size(B,1)
     for j=1:size(B,2)
         if ~isempty(A{i,j})
@@ -51,8 +52,8 @@ for i=1:size(B,1)
     end
 end
 
+% Make B sparse if desired
 if issparse
     B = sparse(B);
 end
-
 end
