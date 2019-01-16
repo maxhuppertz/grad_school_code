@@ -61,7 +61,7 @@ D = cell(J+2,3);
 D(1,:) = {'theta', 'theta_hat', 'SE_a'};
 D(2:J+2,:) = num2cell([[mu_beta, sigma2_beta, xi(1,1:J-1)]', ...
     theta_hat', SE_a]);
-disp('Direct integration')
+fprintf('\nDirect integration\n')
 disp(D)
 
 % Get the MLE using Monte Carlo draws
@@ -81,4 +81,23 @@ D(1,:) = {'theta', 'theta_hat', 'SE_a'};
 D(2:J+2,:) = num2cell([[mu_beta, sigma2_beta, xi(1,1:J-1)]', ...
     theta_hat', SE_a]);
 disp('Monte Carlo')
+disp(D)
+
+% Get the MLE using sparse grids
+[theta_hat,~,~,~,~,I] = fminunc( ...
+    @(theta)ll_multilogit_rc(theta(1),theta(2),[theta(3:J+1),0],p,c, ...
+    'sparse'),[beta_bar0,sigma2_beta0,xi0],options);
+
+% Get analytic standard errors, based on properties of correctly specified
+% MLE (variance is the negative inverse of Fisher information, estimate
+% this using sample analogue)
+V = inv(I);
+SE_a = sqrt(diag(V));
+
+% Display the results
+D = cell(J+2,3);
+D(1,:) = {'theta', 'theta_hat', 'SE_a'};
+D(2:J+2,:) = num2cell([[mu_beta, sigma2_beta, xi(1,1:J-1)]', ...
+    theta_hat', SE_a]);
+disp('Sparse grids')
 disp(D)
