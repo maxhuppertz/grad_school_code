@@ -65,7 +65,7 @@ elseif strcmp(method,'sparse')
     
     % Adjust quadrature points for N(beta_bar,sigma2) variable
     % Does this have any theoretical justification? I'm not sure.
-    %b = (b + beta_bar)*sqrt(sigma2)';
+    b = (b + beta_bar)*sqrt(sigma2)';
     
     % Set up matrix where each row contains quadrature points for each
     % individual
