@@ -63,7 +63,7 @@ D = cell(J+2,3);
 D(1,:) = {'theta', 'theta_hat', 'SE_a'};
 D(2:J+2,:) = num2cell([[mu_beta, sigma2_beta, xi(1,1:J-1)]', ...
     theta_hat', SE_a]);
-fprintf('\nDirect integration\n')
+fprintf('\nDirect integration\n\n')
 disp(D)
 disp(['Time elapsed: ', num2str(time), ' seconds'])
 
