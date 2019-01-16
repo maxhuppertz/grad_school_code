@@ -37,20 +37,27 @@ u = beta.*p + ones(n,1)*xi + eps;
 % choice I'm looing for)
 [~,c] = max(u,[],2);
 
-beta_bar0 = 0;
-sigma2_beta0 = 1.2;
+beta_bar0 = mu_beta * randn();
+sigma2_beta0 = sigma2_beta * randn();
 xi0 = xi(1,1:J-1) + randn(size(xi(1,1:J-1)));
 
 % Set optimization options
 options = optimset('GradObj','off','HessFcn','off','Display','off', ...
     'TolFun',1e-6,'TolX',1e-6); 
 
+% Get the MLE using direct integration
 [theta_hat,~,~,~,~,I] = fminunc( ...
-    @(theta)ll_multilogit_rc(theta(1),theta(2),[theta(3:J+1),0],p,c,'integral'), ...
-    [beta_bar0,sigma2_beta0,xi0],options);
+    @(theta)ll_multilogit_rc(theta(1),theta(2),[theta(3:J+1),0],p,c, ...
+    'integral'),[beta_bar0,sigma2_beta0,xi0],options);
 
 % Get analytic standard errors, based on properties of correctly specified
 % MLE (variance is the negative inverse of Fisher information, estimate
 % this using sample analogue)
 V = inv(I);
 SE_a = sqrt(diag(V));
+
+% Display the results
+D = cell(J+2,3);
+D(1,:) = {'theta', 'theta_hat integral', 'SE_a'};
+D(2:J+2,:) = num2cell([[mu_beta, sigma2_beta, xi(1,1:J-1)]', theta_hat', SE_a]);
+disp(D)
