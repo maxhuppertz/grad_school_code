@@ -38,7 +38,7 @@ end
 % Calculate log-likelihood
 if strcmp(method,'integral')
     % Calculate log-likelihood
-    L = -sum(log(integral(@(b)EP(b,beta_bar,sigma2,1),-Inf,Inf, ...
+    L = -sum(log(integral(@(b)EP(b,beta_bar,sigma2,0),-Inf,Inf, ...
         'ArrayValued',true,'RelTol',0,'AbsTol',1e-14)));
     
     % If this is (erroneously) evaluated to be infinite, set it to zero
@@ -52,7 +52,7 @@ elseif strcmp(method,'monte_carlo')
     % Apply the weighted normal PDF function to each column of the random
     % numbers, which will return a 1 x 500 cell array where each cell
     % contains an n x 1 vector of weighted normal PDF values
-    L = arrayfun(@(i)EP(L(:,i),beta_bar,sigma2,1),(1:500), ...
+    L = arrayfun(@(i)EP(L(:,i),beta_bar,sigma2,0),(1:500), ...
         'UniformOutput',false);
     
     % Convert the cell array into an n x 500 matrix using cell2mat, take
@@ -65,7 +65,7 @@ elseif strcmp(method,'sparse')
     
     % Adjust quadrature points for N(beta_bar,sigma2) variable
     % Does this have any theoretical justification? I'm not sure.
-    b = (b + beta_bar)*sqrt(sigma2)';
+    %b = (b + beta_bar)*sqrt(sigma2)';
     
     % Set up matrix where each row contains quadrature points for each
     % individual
@@ -74,7 +74,7 @@ elseif strcmp(method,'sparse')
     % Evaluate exponential ratio at each point, for all individuals, which
     % will return a 1 x size(b,1) cell array, where each cell contains a
     % vector of evaluated quadrature points
-    L = arrayfun(@(i)EP(L(:,i),beta_bar,sigma2,0),(1:size(b,1)), ...
+    L = arrayfun(@(i)EP(L(:,i),beta_bar,sigma2,1),(1:size(b,1)), ...
         'UniformOutput',false);
     
     % Convert the cell array into an n x 500 matrix using cell2mat, take
