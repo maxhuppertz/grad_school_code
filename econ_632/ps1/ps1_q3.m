@@ -13,10 +13,10 @@ beta = -.2;
 
 % Set mean and variance for the price distribution
 mu = 10;
-sigma = 10;
+sigma2 = 10;
 
 % Draw prices as N(10,10) i.i.d. random variables
-p = randn(n,J) * sqrt(sigma) + mu;
+p = randn(n,J) * sqrt(sigma2) + mu;
 
 % Set up xi, where the jth element of this row vector equals xi_j
 xi = [1,2,0];
@@ -57,7 +57,7 @@ V = inv(I);
 SE_a = sqrt(diag(V));
 
 % Specify number of bootstrap iterations
-B = 1999;
+B = 4999;
 
 % Set up matrix of bootstrap estimates
 T = zeros(B,J);
