@@ -66,6 +66,7 @@ elseif strcmp(method,'monte_carlo')
     % Convert the cell array into an n x D matrix using cell2mat, take the
     % mean within rows (this gives the choice probabilities), then take the
     % log and sum up
+    
     L = -sum(log(mean(cell2mat(L),2)));
 elseif strcmp(method,'sparse')
     % Get quadrature points for N(0,1) variable
