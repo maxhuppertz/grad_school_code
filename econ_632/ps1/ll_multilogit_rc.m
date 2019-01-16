@@ -1,4 +1,9 @@
 function L = ll_multilogit_rc(beta_bar,sigma2,xi,p,c,method)
+% Set some hard coded parameters
+tol = 10^(-14);  % Tolerance for direct integration
+D = 500;  % Number of draws for Monte Carlo integration
+k = 4;  % Precision for sparse grids integration
+
 % Determine number of individuals and options
 [n,J] = size(p);
 
@@ -39,7 +44,7 @@ end
 if strcmp(method,'integral')
     % Calculate log-likelihood
     L = -sum(log(integral(@(b)EP(b,beta_bar,sigma2,0),-Inf,Inf, ...
-        'ArrayValued',true,'RelTol',0,'AbsTol',1e-14)));
+        'ArrayValued',true,'RelTol',0,'AbsTol',tol)));
     
     % If this is (erroneously) evaluated to be infinite, set it to zero
     if L == Inf
@@ -47,21 +52,21 @@ if strcmp(method,'integral')
     end
 elseif strcmp(method,'monte_carlo')
     % Draw a matrix of i.i.d. N(beta_bar, sigma2) random variables
-    L = randn(n,500) * sqrt(sigma2) + beta_bar;
+    L = randn(n,D) * sqrt(sigma2) + beta_bar;
     
     % Apply the weighted normal PDF function to each column of the random
-    % numbers, which will return a 1 x 500 cell array where each cell
+    % numbers, which will return a 1 x D cell array where each cell
     % contains an n x 1 vector of weighted normal PDF values
-    L = arrayfun(@(i)EP(L(:,i),beta_bar,sigma2,0),(1:500), ...
+    L = arrayfun(@(i)EP(L(:,i),beta_bar,sigma2,0),(1:D), ...
         'UniformOutput',false);
     
-    % Convert the cell array into an n x 500 matrix using cell2mat, take
-    % the mean within rows (this gives the choice probabilities), then take
-    % the log and sum up
+    % Convert the cell array into an n x D matrix using cell2mat, take the
+    % mean within rows (this gives the choice probabilities), then take the
+    % log and sum up
     L = -sum(log(mean(cell2mat(L),2)));
 elseif strcmp(method,'sparse')
     % Get quadrature points for N(0,1) variable
-    [b,w] = nwspgr('KPN',1,4);
+    [b,w] = nwspgr('KPN',1,k);
     
     % Adjust quadrature points for N(beta_bar,sigma2) variable
     % Does this have any theoretical justification? I'm not sure.

@@ -10,7 +10,7 @@ J = 3;
 
 % Set mean and variance for price coefficient distribution
 mu_beta = -.2;
-sigma2_beta = 1;
+sigma2_beta = .5;
 
 % Draw price coefficients
 beta = randn(n,1) * sqrt(sigma2_beta) + mu_beta;
