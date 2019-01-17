@@ -37,6 +37,7 @@ u = beta.*p + ones(n,1)*xi + eps;
 % choice I'm looing for)
 [~,c] = max(u,[],2);
 
+% Set initial values for MLE
 beta_bar0 = mu_beta * randn();
 sigma2_beta0 = sigma2_beta * randn();
 xi0 = xi(1,1:J-1) + randn(size(xi(1,1:J-1)));
