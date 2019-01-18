@@ -1,4 +1,10 @@
 function L = ll_multilogit_rc(beta_bar,sigma2,xi,p,c,method,tol,qp,w)
+% Calculates the log-likelihood for a logit model with random intercepts
+% for each alternative, distributed to an N(beta_bar,sigma2) normal
+% distribution.
+% Inputs
+% beta_bar: 
+
 % Determine number of individuals and options
 [n,J] = size(p);
 
@@ -58,7 +64,7 @@ elseif strcmp(method,'points')
     % If quadrature points are the same across individuals, make them into
     % a matrix where each row contains the quadrature points
     if size(qp,1) == 1
-        qp = ones(n,1)*qp';
+        qp = ones(n,1)*qp;
     end
     
     % Evaluate exponential ratio at each point, for all individuals, which
