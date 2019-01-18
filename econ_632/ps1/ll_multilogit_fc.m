@@ -1,4 +1,22 @@
 function [L,G,H] = ll_multilogit_fc(beta,xi,p,c,normalize)
+% Calculates the log-likelihood for a logit model with a fixed coefficient
+% on price and fixed intercepts for each of the J alternatives
+%
+% Inputs
+% beta: scalar, coefficient on price
+% xi: [1,J] vector, alternative-specific intercepts
+% p: [n,J] matrix, prices
+% c: [n,1] vector, index of chosen goods
+% normalize: True/False or 0/1, if evaluated as true, the function
+%            normalizes xi[1,J] = 0, which means it does not return the
+%            last element of the Jacobian, and also leaves out the last
+%            row and column of the Hessian
+%
+% Outputs
+% L: scalar, log-likelihood
+% G: [J+1,1] vector, Jacobian (will be [J,1] if normalize is true)
+% H: [J+1,J+1] matrix, Hessian (will be [J,J] if normalize is true)
+
 % Determine number of individuals and options
 [n,J] = size(p);
 
