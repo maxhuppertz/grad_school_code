@@ -1,4 +1,4 @@
-function L = ll_multilogit_rc(beta_bar,sigma2,xi,p,c,method,tol,mcqp,k)
+function L = ll_multilogit_rc(beta_bar,sigma2,xi,p,c,method,tol,qp,w)
 % Determine number of individuals and options
 [n,J] = size(p);
 
@@ -39,7 +39,7 @@ function I = CP(b,beta_bar,sigma2,probonly)
 end
 
 % Calculate log-likelihood
-if strcmp(method,'integral')
+if strcmp(method,'direct')
     % Calculate log-likelihood
     L = -sum(log(integral(@(b)CP(b,beta_bar,sigma2,0),-Inf,Inf, ...
         'ArrayValued',true,'RelTol',0,'AbsTol',tol)));
@@ -48,39 +48,23 @@ if strcmp(method,'integral')
     if L == Inf
         L = 0;
     end
-elseif strcmp(method,'monte_carlo')
+elseif strcmp(method,'points')
     % Get number of quadrature points
-    D = size(mcqp,2);
+    K = size(qp,2);
     
-    % Convert N(0,1) Monte Carlo quadrature points to N(beta_bar, sigma2)
-    % quadrature points
-    L = mcqp * sqrt(sigma2) + beta_bar;
+    % Adjust N(0,1) quadrature points to N(beta_bar,sigma2) variable
+    qp = (qp * sqrt(sigma2) + beta_bar);
     
-    % Apply the choice probability function to each column of the random
-    % numbers, which will return a 1 x D cell array where each cell
-    % contains an n x 1 vector of conditional choice probabilities
-    L = arrayfun(@(i)CP(L(:,i),beta_bar,sigma2,1),(1:D), ...
-        'UniformOutput',false);
-    
-    % Convert the cell array into an n x D matrix using cell2mat, take the
-    % mean within rows (this gives the choice probabilities), then take the
-    % log and sum up
-    L = -sum(log(mean(cell2mat(L),2)));
-elseif strcmp(method,'sparse')
-    % Get quadrature points L and weights w for N(0,1) variable
-    [L,w] = nwspgr('KPN',1,k);
-    
-    % Adjust quadrature points for N(beta_bar,sigma2) variable
-    L = (L * sqrt(sigma2) + beta_bar);
-    
-    % Set up matrix where each row contains quadrature points for each
-    % individual
-    L = ones(n,1)*L';
+    % If quadrature points are the same across individuals, make them into
+    % a matrix where each row contains the quadrature points
+    if size(qp,1) == 1
+        qp = ones(n,1)*qp';
+    end
     
     % Evaluate exponential ratio at each point, for all individuals, which
     % will return a 1 x size(b,1) cell array, where each cell contains a
     % vector of evaluated quadrature points
-    L = arrayfun(@(i)CP(L(:,i),beta_bar,sigma2,1),(1:size(L,2)), ...
+    L = arrayfun(@(i)CP(qp(:,i),beta_bar,sigma2,1),(1:K), ...
         'UniformOutput',false);
     
     % Convert the cell array into an n x 500 matrix using cell2mat, take

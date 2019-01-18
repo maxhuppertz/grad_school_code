@@ -53,7 +53,7 @@ tol = 10^(-14);
 tic
 [theta_hat,~,~,~,~,I] = fminunc( ...
     @(theta)ll_multilogit_rc(theta(1),theta(2),[theta(3:J+1),0],p,c, ...
-    'integral',tol,[],[]),[beta_bar0,sigma2_beta0,xi0],options);
+    'direct',tol,[],[]),[beta_bar0,sigma2_beta0,xi0],options);
 time = toc;
 
 % Get analytic standard errors, based on properties of correctly specified
@@ -72,16 +72,19 @@ disp(D)
 disp(['Time elapsed: ', num2str(time), ' seconds'])
 
 % Number of draws for Monte Carlo integration
-D = 500;  
+K = 500;  
 
 % Generate Monte Carlo quadrature points as N(0,1) random variables
-mcqp = randn(n,D);
+mcqp = randn(n,K);
 
-% Get the MLE using Monte Carlo draws
+% Generate Monte Carlo quadrature weights, which are simply 1/K
+mcqw = ones(1,K)/K;
+
+% Get the MLE using Monte Carlo integration
 tic
 [theta_hat,~,~,~,~,I] = fminunc( ...
     @(theta)ll_multilogit_rc(theta(1),theta(2),[theta(3:J+1),0],p,c, ...
-    'monte_carlo',[],mcqp,[]),[beta_bar0,sigma2_beta0,xi0],options);
+    'points',[],mcqp,mcqw),[beta_bar0,sigma2_beta0,xi0],options);
 time = toc;
 
 % Get analytic standard errors, based on properties of correctly specified
@@ -100,13 +103,16 @@ disp(D)
 disp(['Time elapsed: ', num2str(time), ' seconds'])
 
 % Set precision for sparse grids integration
-k = 4;  
+k = 6;
+
+% Get sparse grid quadrature points L and weights w for N(0,1) variable
+[sgqp,spw] = nwspgr('KPN',1,k);
 
 % Get the MLE using sparse grids
 tic
 [theta_hat,~,~,~,~,I] = fminunc( ...
     @(theta)ll_multilogit_rc(theta(1),theta(2),[theta(3:J+1),0],p,c, ...
-    'sparse',[],[],k),[beta_bar0,sigma2_beta0,xi0],options);
+    'points',[],spqp,spw),[beta_bar0,sigma2_beta0,xi0],options);
 time = toc;
 
 % Get analytic standard errors, based on properties of correctly specified
