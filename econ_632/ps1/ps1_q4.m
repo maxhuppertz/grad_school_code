@@ -106,13 +106,13 @@ disp(['Time elapsed: ', num2str(time), ' seconds'])
 k = 6;
 
 % Get sparse grid quadrature points L and weights w for N(0,1) variable
-[sgqp,spw] = nwspgr('KPN',1,k);
+[sgqp,sgqw] = nwspgr('KPN',1,k);
 
 % Get the MLE using sparse grids
 tic
 [theta_hat,~,~,~,~,I] = fminunc( ...
     @(theta)ll_multilogit_rc(theta(1),theta(2),[theta(3:J+1),0],p,c, ...
-    'points',[],spqp,spw),[beta_bar0,sigma2_beta0,xi0],options);
+    'points',[],sgqp,sgqw),[beta_bar0,sigma2_beta0,xi0],options);
 time = toc;
 
 % Get analytic standard errors, based on properties of correctly specified

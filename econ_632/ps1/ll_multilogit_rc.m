@@ -62,7 +62,7 @@ elseif strcmp(method,'points')
     end
     
     % Evaluate exponential ratio at each point, for all individuals, which
-    % will return a 1 x size(b,1) cell array, where each cell contains a
+    % will return a 1 x K cell array, where each cell contains an n x 1
     % vector of evaluated quadrature points
     L = arrayfun(@(i)CP(qp(:,i),beta_bar,sigma2,1),(1:K), ...
         'UniformOutput',false);
@@ -70,7 +70,7 @@ elseif strcmp(method,'points')
     % Convert the cell array into an n x 500 matrix using cell2mat, take
     % the weighted mean within rows using quadrature weights (this gives
     % the expected choice probabilities), then take the log and sum up
-    L = -sum(log(sum(cell2mat(L).*(ones(n,1)*w'),2)));
+    L = -sum(log(sum(cell2mat(L).*(ones(n,1)*w),2)));
 else
     % Display an error message
     disp('Method unknown')
