@@ -1,9 +1,23 @@
 function L = ll_multilogit_rc(beta_bar,sigma2,xi,p,c,method,tol,qp,w)
-% Calculates the log-likelihood for a logit model with random intercepts
-% for each alternative, distributed to an N(beta_bar,sigma2) normal
-% distribution.
+% Calculates the log-likelihood for a logit model with a random coefficient
+% on price, distributed as an N(beta_bar,sigma2) random variable, and fixed
+% intercepts for each of the J alternatives
+%
 % Inputs
-% beta_bar: 
+% beta_bar: scalar, mean of the price distribution
+% sigma2: scalar, variance of the price distribution
+% xi: [1,J] vector, alternative-specific intercepts
+% p: [n,J] matrix, prices
+% c: [n,1] vector, index of chosen goods
+% method: string, either 'direct' for direct numerical integration using
+%                 Matlab's intergral() function, or 'points' if you want
+%                 to provide quadrature points and weights instead
+% tol: scalar, tolerance for direct numerical integration
+% qp: either [1,K] vector or [n,K] matrix, quadrature points
+% w: [1,K] vector, quadrature weights
+%
+% Output
+% L: scalar, log-likelihood
 
 % Determine number of individuals and options
 [n,J] = size(p);
