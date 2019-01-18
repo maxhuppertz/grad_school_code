@@ -71,8 +71,10 @@ fprintf('\nDirect integration\n\n')
 disp(D)
 disp(['Time elapsed: ', num2str(time), ' seconds'])
 
-% Generate Monte Carlo quadrature points
-D = 500;  % Number of draws for Monte Carlo integration
+% Number of draws for Monte Carlo integration
+D = 500;  
+
+% Generate Monte Carlo quadrature points as N(0,1) random variables
 mcqp = randn(n,D);
 
 % Get the MLE using Monte Carlo draws

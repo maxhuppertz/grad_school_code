@@ -49,7 +49,11 @@ if strcmp(method,'integral')
         L = 0;
     end
 elseif strcmp(method,'monte_carlo')
-    % Draw a matrix of i.i.d. N(beta_bar, sigma2) random variables
+    % Get number of quadrature points
+    D = size(mcqp,2);
+    
+    % Convert N(0,1) Monte Carlo quadrature points to N(beta_bar, sigma2)
+    % quadrature points
     L = mcqp * sqrt(sigma2) + beta_bar;
     
     % Apply the choice probability function to each column of the random
