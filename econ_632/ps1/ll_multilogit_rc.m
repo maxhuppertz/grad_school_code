@@ -65,24 +65,22 @@ elseif strcmp(method,'monte_carlo')
     % Convert the cell array into an n x D matrix using cell2mat, take the
     % mean within rows (this gives the choice probabilities), then take the
     % log and sum up
-    
     L = -sum(log(mean(cell2mat(L),2)));
 elseif strcmp(method,'sparse')
-    % Get quadrature points for N(0,1) variable
-    [b,w] = nwspgr('KPN',1,k);
+    % Get quadrature points L and weights w for N(0,1) variable
+    [L,w] = nwspgr('KPN',1,k);
     
     % Adjust quadrature points for N(beta_bar,sigma2) variable
-    % Does this have any theoretical justification? I'm not sure.
-    b = (b * sqrt(sigma2) + beta_bar)';
+    L = (L * sqrt(sigma2) + beta_bar);
     
     % Set up matrix where each row contains quadrature points for each
     % individual
-    L = ones(n,1)*b';
+    L = ones(n,1)*L';
     
     % Evaluate exponential ratio at each point, for all individuals, which
     % will return a 1 x size(b,1) cell array, where each cell contains a
     % vector of evaluated quadrature points
-    L = arrayfun(@(i)CP(L(:,i),beta_bar,sigma2,1),(1:size(b,1)), ...
+    L = arrayfun(@(i)CP(L(:,i),beta_bar,sigma2,1),(1:size(L,2)), ...
         'UniformOutput',false);
     
     % Convert the cell array into an n x 500 matrix using cell2mat, take
