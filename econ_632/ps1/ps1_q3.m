@@ -19,7 +19,7 @@ sigma2 = 10;
 p = randn(n,J) * sqrt(sigma2) + mu;
 
 % Set up xi, where the jth element of this row vector equals xi_j
-xi = [1,2,0];
+xi = [1,2,0] + 10;
 
 % Draw epsilon as Gumbel(0,1) i.i.d. random variables
 eps = evrnd(0,1,n,J);

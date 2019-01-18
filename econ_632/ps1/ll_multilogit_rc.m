@@ -1,9 +1,4 @@
-function L = ll_multilogit_rc(beta_bar,sigma2,xi,p,c,method)
-% Set some hard coded parameters
-tol = 10^(-14);  % Tolerance for direct integration
-D = 500;  % Number of draws for Monte Carlo integration
-k = 4;  % Precision for sparse grids integration
-
+function L = ll_multilogit_rc(beta_bar,sigma2,xi,p,c,method,tol,mcqp,k)
 % Determine number of individuals and options
 [n,J] = size(p);
 
@@ -55,7 +50,7 @@ if strcmp(method,'integral')
     end
 elseif strcmp(method,'monte_carlo')
     % Draw a matrix of i.i.d. N(beta_bar, sigma2) random variables
-    L = randn(n,D) * sqrt(sigma2) + beta_bar;
+    L = mcqp * sqrt(sigma2) + beta_bar;
     
     % Apply the choice probability function to each column of the random
     % numbers, which will return a 1 x D cell array where each cell
@@ -74,7 +69,7 @@ elseif strcmp(method,'sparse')
     
     % Adjust quadrature points for N(beta_bar,sigma2) variable
     % Does this have any theoretical justification? I'm not sure.
-    b = (b + beta_bar)*sqrt(sigma2)';
+    b = (b * sqrt(sigma2) + beta_bar)';
     
     % Set up matrix where each row contains quadrature points for each
     % individual

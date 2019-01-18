@@ -46,11 +46,14 @@ xi0 = xi(1,1:J-1) + randn(size(xi(1,1:J-1)));
 options = optimset('GradObj','off','HessFcn','off','Display','off', ...
     'TolFun',1e-6,'TolX',1e-6); 
 
+% Set tolerance for direct integration
+tol = 10^(-14);
+
 % Get the MLE using direct integration
 tic
 [theta_hat,~,~,~,~,I] = fminunc( ...
     @(theta)ll_multilogit_rc(theta(1),theta(2),[theta(3:J+1),0],p,c, ...
-    'integral'),[beta_bar0,sigma2_beta0,xi0],options);
+    'integral',tol,[],[]),[beta_bar0,sigma2_beta0,xi0],options);
 time = toc;
 
 % Get analytic standard errors, based on properties of correctly specified
@@ -68,11 +71,15 @@ fprintf('\nDirect integration\n\n')
 disp(D)
 disp(['Time elapsed: ', num2str(time), ' seconds'])
 
+% Generate Monte Carlo quadrature points
+D = 500;  % Number of draws for Monte Carlo integration
+mcqp = randn(n,D);
+
 % Get the MLE using Monte Carlo draws
 tic
 [theta_hat,~,~,~,~,I] = fminunc( ...
     @(theta)ll_multilogit_rc(theta(1),theta(2),[theta(3:J+1),0],p,c, ...
-    'monte_carlo'),[beta_bar0,sigma2_beta0,xi0],options);
+    'monte_carlo',[],mcqp,[]),[beta_bar0,sigma2_beta0,xi0],options);
 time = toc;
 
 % Get analytic standard errors, based on properties of correctly specified
@@ -90,11 +97,14 @@ fprintf('\nMonte Carlo\n')
 disp(D)
 disp(['Time elapsed: ', num2str(time), ' seconds'])
 
+% Set precision for sparse grids integration
+k = 4;  
+
 % Get the MLE using sparse grids
 tic
 [theta_hat,~,~,~,~,I] = fminunc( ...
     @(theta)ll_multilogit_rc(theta(1),theta(2),[theta(3:J+1),0],p,c, ...
-    'sparse'),[beta_bar0,sigma2_beta0,xi0],options);
+    'sparse',[],[],k),[beta_bar0,sigma2_beta0,xi0],options);
 time = toc;
 
 % Get analytic standard errors, based on properties of correctly specified
