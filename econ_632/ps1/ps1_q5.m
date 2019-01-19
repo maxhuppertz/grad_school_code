@@ -14,11 +14,11 @@ M = 100;
 m = ceil((1:n)' * (M/n));
 
 % Set up xi, where the [m,j] element of this matrix equals xi_{mj}
-mu_xi = [1,2,0];  % Means of the quality distribution for each alternative
-sigma_xi = 1;  % Scale of the quality distribution
+mu_xi = [10,20,15];  % Means of the quality distribution for each alternative
+sigma2_xi = 10;  % Variance of the quality distribution
 
-% Draw xi as Gumbel(0,sigma_xi) + mu_xi
-xi = evrnd(0,sigma_xi,M,J) + mu_xi;
+% Draw xi as N(mu_xi,sigma_xi)
+xi = randn(M,J) * sqrt(sigma2_xi) + ones(M,1)*mu_xi;
 
 % Set mean and variance for price coefficient distribution across markets
 mu_beta = -.2;
@@ -32,25 +32,25 @@ sigma_Z = .15;  % Standard deviation of base distribution for Z
 Z = lognrnd(mu_Z,sigma_Z,M,J);
 
 % Rescale Z to make sure it's below 1 (think e.g. tax rates)
-Z = Z./(1.2*ones(M,1)*max(Z,[],1));
+Z = ( Z./(1.2*ones(M,1)*max(Z,[],1)) ) * 100;
 
 % Set coefficient for pricing equation
-gamma_Z = .1;
+gamma_Z = .5;
 
 % Get prices
-p = xi + gamma_Z*Z;
+p = xi + gamma_Z*Z + randn(M,J)*sqrt(10);
 
 % Draw epsilon as Gumbel(0,1) i.i.d. random variables
 eps = evrnd(0,1,n,J);
 
 % Set price coefficient for utility function
-beta = -.2;
+beta = -5;
 
 % Construct utility as u_{ij} = beta*p_{ij} + xi_{mj} + eps_{ij}
 % The Kronecker product repeats the [1,J] vectors p_j and xi_j exactly n/M
 % times for each market, i.e. exactly as many times as there are people in
 % the market
-u = beta*kron(p+xi,ones(n/M,1)) + eps;
+u = kron(beta*p+xi,ones(n/M,1)) + eps;
 
 % Get [n,J] indicator matrix of chosen goods, where the [i,J] element is 1
 % if individual i chooses good J, and zero otherwise
@@ -60,14 +60,4 @@ C = (u == max(u,[],2));
 S = zeros(M,J);
 for i=1:J
     S(:,i) = accumarray(m,C(:,i),[],@mean);
-end
-
-for i=1:J
-    % J+1-i ensure the first iteration creates the last entry in the
-    % structure array, which means memory allocation for the array is done
-    % at the first iteration. Expanding the array during each iteration
-    % takes time.
-    y(J+1-i).eq = S(:,J+1-i);
-    X(J+1-i).eq = [ones(M,1), p(:,J+1-i)];
-    V(J+1-i).eq = [ones(M,1), Z(:,J+1-i)];
 end
