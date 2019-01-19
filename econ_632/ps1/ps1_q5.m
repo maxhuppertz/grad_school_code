@@ -62,4 +62,12 @@ for i=1:J
     S(:,i) = accumarray(m,C(:,i),[],@mean);
 end
 
-disp([(1:M)',S,p,Z])
+for i=1:J
+    % J+1-i ensure the first iteration creates the last entry in the
+    % structure array, which means memory allocation for the array is done
+    % at the first iteration. Expanding the array during each iteration
+    % takes time.
+    y(J+1-i).eq = S(:,J+1-i);
+    X(J+1-i).eq = [ones(M,1), p(:,J+1-i)];
+    V(J+1-i).eq = [ones(M,1), Z(:,J+1-i)];
+end
