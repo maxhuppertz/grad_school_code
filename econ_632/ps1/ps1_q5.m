@@ -29,16 +29,16 @@ mu_Z = .3;  % Mean of base distribution for Z
 sigma_Z = .15;  % Standard deviation of base distribution for Z
 
 % Draw Z as lognormal random variable
-Z = lognrnd(mu_Z,sigma_Z,M,1);
+Z = lognrnd(mu_Z,sigma_Z,M,J);
 
 % Rescale Z to make sure it's below 1 (think e.g. tax rates)
-Z = Z/(1.2*max(Z));
+Z = Z./(1.2*ones(M,1)*max(Z,[],1));
 
 % Set coefficient for pricing equation
 gamma_Z = .1;
 
 % Get prices
-p = xi + gamma_Z*(Z*ones(1,J));
+p = xi + gamma_Z*Z;
 
 % Draw epsilon as Gumbel(0,1) i.i.d. random variables
 eps = evrnd(0,1,n,J);
