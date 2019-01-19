@@ -20,29 +20,36 @@ sigma_xi = 1;  % Scale of the quality distribution
 % Draw xi as Gumbel(0,sigma_xi) + mu_xi, use kron() to repeat that vector
 % as many times as needed for each market
 xi = kron(evrnd(0,sigma_xi,M,J) + mu_xi,ones(n/M,1));
-return
+
 % Set mean and variance for price coefficient distribution across markets
 mu_beta = -.2;
 sigma2_beta = .5;
 
 % Set up Z, where the mth element of this column vector equals Z_m
+mu_Z = .3;  % Mean of base distribution for Z
+sigma_Z = .15;  % Standard deviation of base distribution for Z
 
+% Draw Z as lognormal random variable
+Z = lognrnd(mu_Z,sigma_Z,M,1);
 
-% Draw price coefficients
-beta = randn(n,1) * sqrt(sigma2_beta) + mu_beta;
+% Rescale Z to make sure it's below 1 (think e.g. tax rates)
+Z = Z/(1.2*max(Z));
 
-% Set mean and variance for the price distribution
-mu_p = 10;
-sigma2_p = 10;
+% Repeat Z as many times as needed
+Z = kron(Z,ones(n/M,1));
 
-% Draw prices as N(10,10) i.i.d. random variables
-p = randn(n,J) * sqrt(sigma2_p) + mu_p;
+% Set coefficients for pricing equation
+gamma_Z = -.1;
+p = xi + gamma_z*(Z*ones(1,J));
 
 % Draw epsilon as Gumbel(0,1) i.i.d. random variables
 eps = evrnd(0,1,n,J);
 
+% Set price coefficient for utility function
+beta = -.2;
+
 % Construct utility
-u = beta.*p + ones(n,1)*xi + eps;
+u = beta*p + xi + eps;
 
 % Get vector of chosen goods, using MATLAB's max() function (the 2 makes
 % sure it returns the row maximum); the second value it returns is the
