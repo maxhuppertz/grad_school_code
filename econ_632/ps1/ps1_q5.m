@@ -17,9 +17,8 @@ m = ceil((1:n)' * (M/n));
 mu_xi = [1,2,0];  % Means of the quality distribution for each alternative
 sigma_xi = 1;  % Scale of the quality distribution
 
-% Draw xi as Gumbel(0,sigma_xi) + mu_xi, use kron() to repeat that vector
-% as many times as needed for each market
-xi = kron(evrnd(0,sigma_xi,M,J) + mu_xi,ones(n/M,1));
+% Draw xi as Gumbel(0,sigma_xi) + mu_xi
+xi = evrnd(0,sigma_xi,M,J) + mu_xi;
 
 % Set mean and variance for price coefficient distribution across markets
 mu_beta = -.2;
@@ -35,12 +34,11 @@ Z = lognrnd(mu_Z,sigma_Z,M,1);
 % Rescale Z to make sure it's below 1 (think e.g. tax rates)
 Z = Z/(1.2*max(Z));
 
-% Repeat Z as many times as needed
-Z = kron(Z,ones(n/M,1));
+% Set coefficient for pricing equation
+gamma_Z = .1;
 
-% Set coefficients for pricing equation
-gamma_Z = -.1;
-p = xi + gamma_z*(Z*ones(1,J));
+% Get prices
+p = xi + gamma_Z*(Z*ones(1,J));
 
 % Draw epsilon as Gumbel(0,1) i.i.d. random variables
 eps = evrnd(0,1,n,J);
@@ -48,11 +46,20 @@ eps = evrnd(0,1,n,J);
 % Set price coefficient for utility function
 beta = -.2;
 
-% Construct utility
-u = beta*p + xi + eps;
+% Construct utility as u_{ij} = beta*p_{ij} + xi_{mj} + eps_{ij}
+% The Kronecker product repeats the [1,J] vectors p_j and xi_j exactly n/M
+% times for each market, i.e. exactly as many times as there are people in
+% the market
+u = beta*kron(p+xi,ones(n/M,1)) + eps;
 
-% Get vector of chosen goods, using MATLAB's max() function (the 2 makes
-% sure it returns the row maximum); the second value it returns is the
-% index of the maximum (which is the index of the chosen good, i.e. the
-% choice I'm looing for)
-[~,c] = max(u,[],2);
+% Get [n,J] indicator matrix of chosen goods, where the [i,J] element is 1
+% if individual i chooses good J, and zero otherwise
+C = (u == max(u,[],2));
+
+% Get market shares using accumarray on each option
+S = zeros(M,J);
+for i=1:J
+    S(:,i) = accumarray(m,C(:,i),[],@mean);
+end
+
+disp([(1:M)',S,p,Z])
