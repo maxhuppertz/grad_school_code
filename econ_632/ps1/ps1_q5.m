@@ -44,7 +44,7 @@ p = xi + gamma_Z*Z + randn(M,J)*sqrt(10);
 eps = evrnd(0,1,n,J);
 
 % Set price coefficient for utility function
-beta = -5;
+beta = -.5;
 
 % Construct utility as u_{ij} = beta*p_{ij} + xi_{mj} + eps_{ij}
 % The Kronecker product repeats the [1,J] vectors p_j and xi_j exactly n/M
@@ -61,3 +61,5 @@ S = zeros(M,J);
 for i=1:J
     S(:,i) = accumarray(m,C(:,i),[],@mean);
 end
+
+disp(ivreg(S(:,1),p(:,1),[ones(M,1),Z(:,1)]))

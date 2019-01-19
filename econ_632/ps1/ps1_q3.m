@@ -57,7 +57,7 @@ V = inv(I);
 SE_a = sqrt(diag(V));
 
 % Specify number of bootstrap iterations
-B = 4999;
+B = 499;
 
 % Set up matrix of bootstrap estimates
 T = zeros(B,J);
@@ -83,7 +83,7 @@ for b=1:B
 end
 
 % Get the boostrapped standard errors
-SE_b = sqrt(sum((T - ones(B,1) * [beta, xi(1,1:J-1)]).^2) / B);
+SE_b = sqrt(sum((T - ones(B,1) * theta_hat).^2) / B);
 
 % Display the results
 D = cell(J+1,4);
