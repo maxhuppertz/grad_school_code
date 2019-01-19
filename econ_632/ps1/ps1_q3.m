@@ -63,6 +63,11 @@ B = 4999;
 T = zeros(B,J);
 
 % Go through all bootstrap iterations
+% Using a pairs bootstrap is obviously pretty inefficient, and a wild
+% bootstrap would probably work better. But I've never used that with MLE,
+% and I'm not sure whether there are any big caveats I should know about
+% when doing that, so I stuck with the simpler (albeit less efficient)
+% choice.
 for b=1:B
     % Draw bootstrap sample
     i = randi([1,n],n,1);
