@@ -1,4 +1,4 @@
-function [beta_hat,Sigma_hat] = ivreg(y,X,Z)
+function [beta_hat,Sigma_hat,eps_hat] = ivreg(y,X,Z)
 % Get number of observationsn and coefficients k
 [n,k] = size(Z);
 
@@ -20,7 +20,7 @@ Qzx_hat = (Z'*X)/n;
 Ze = Z.*(eps_hat*ones(1,k));
 Omega_hat = (Ze'*Ze)/n;
 
-Sigma_hat = (Qxz_hat*(Qzz_hat\Qzx_hat))\ ...
-    ((Qxz_hat\Qzz_hat)*Omega_hat*(Qzz_hat\Qzx_hat)) ...
-    /(Qxz_hat*(Qzz_hat\Qzx_hat));
+Sigma_hat = ((Qxz_hat/Qzz_hat)*Qzx_hat)\ ...
+    ((Qxz_hat/Qzz_hat)*Omega_hat*(Qzz_hat\Qzx_hat)) ...
+    /((Qxz_hat/Qzz_hat)*Qzx_hat);
 end

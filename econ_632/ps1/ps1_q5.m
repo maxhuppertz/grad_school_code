@@ -51,13 +51,19 @@ u = kron(beta*p+xi,ones(n/M,1)) + eps;
 % if individual i chooses good J, and zero otherwise
 C = (u == max(u,[],2));
 
-% Get market shares using accumarray on each option
+% Get market shares by using accumarray on the choices for each option
 S = zeros(M,J);
 for i=1:J
     S(:,i) = accumarray(m,C(:,i),[],@mean);
 end
 
+eps_hat = zeros(M,J-1);
 for j=1:J-1
-    [theta_hat, Sigma_hat] = ivreg(log(S(:,j)) - log(S(:,J)),[ones(M,1),p(:,j)],[ones(M,1),Z(:,j)]);
+    [theta_hat,Sigma_hat,eps_hat(:,j)] = ivreg(log(S(:,j))-log(S(:,J)), ...
+        [ones(M,1),p(:,j)],[ones(M,1),Z(:,j)]);
     disp([theta_hat, sqrt(diag(Sigma_hat))])
 end
+
+Sigma_hat = eps_hat'*eps_hat;
+L = chol(Sigma_hat/1,'lower');
+Q = chol(Z*((Z'*Z)\Z'),'lower');
