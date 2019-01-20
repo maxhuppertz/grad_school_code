@@ -14,13 +14,8 @@ M = 100;
 m = ceil((1:n)' * (M/n));
 
 % Set up xi, where the [m,j] element of this vector equals xi_{mj} = xi_j
-%mu_xi = [10,20,15];  % Means of the quality distribution for each alternative
-%sigma2_xi = 10;  % Variance of the quality distribution
-mu_xi = [1,2,0];
+mu_xi = [11,12,10];
 xi = ones(M,1) * mu_xi;
-
-% Draw xi as N(mu_xi,sigma_xi)
-%xi = randn(M,J) * sqrt(sigma2_xi) + ones(M,1)*mu_xi;
 
 % Set up Z, where the mth element of this column vector equals Z_m
 mu_Z = 0;  % Mean of base distribution for Z
@@ -30,22 +25,22 @@ sigma2_Z = 1;  % Variance of base distribution for Z
 Z = randn(M,J) * sigma2_Z + mu_Z;
 
 % Set coefficient for pricing equation
-gamma_Z = .2;
+gamma_Z = 2;
 
 % Get prices as quality plus price times price coefficient plus disturbance
-p = xi + gamma_Z*Z;
+p = xi + gamma_Z*Z + randn(M,1)*sqrt(10);
 
 % Draw epsilon as Gumbel(0,1) i.i.d. random variables
 eps = evrnd(0,1,n,J);
 
 % Set price coefficient for utility function
-beta = -.2;
+beta = -.5;
 
 % Construct utility as u_{ij} = beta*p_{ij} + xi_{mj} + eps_{ij}
 % The Kronecker product repeats the [1,J] vectors p_j and xi_j exactly n/M
 % times for each market, i.e. exactly as many times as there are people in
 % the market
-u = kron(beta*p+xi,ones(n/M,1)) + eps;
+u = kron(p*beta+xi,ones(n/M,1)) + eps;
 
 % Get [n,J] indicator matrix of chosen goods, where the [i,J] element is 1
 % if individual i chooses good J, and zero otherwise
@@ -57,13 +52,31 @@ for i=1:J
     S(:,i) = accumarray(m,C(:,i),[],@mean);
 end
 
-eps_hat = zeros(M,J-1);
+% Calculate log shares
+lnS = log(S);
+
+% Set them to zero if the computer evaluates them as negative infinity
+lnS(lnS==-Inf) = 0;
+
+theta_hat = zeros(J-1,2);
+SE_a = zeros(J-1,2);
+D = cell((J-1)*2+1,3);
+% Go through all goods but the last, which is the outside good
 for j=1:J-1
-    [theta_hat,Sigma_hat,eps_hat(:,j)] = ivreg(log(S(:,j))-log(S(:,J)), ...
+    % Run 2SLS estimation on the different in log shares, store estimated
+    % coefficients
+    [theta_hat(j,:),V_hat,~,~] = ivreg(lnS(:,j)-lnS(:,J), ...
         [ones(M,1),p(:,j)],[ones(M,1),Z(:,j)]);
-    disp([theta_hat, sqrt(diag(Sigma_hat))])
+    
+    % Store standard errors
+    SE_a(j,:) = sqrt(diag(V_hat));
+    
+    % Store labels for results
+    D(j + 1,1) = cellstr(strcat('xi',num2str(j)));
+    D(j + J,1) = cellstr(strcat('beta',num2str(j)));
 end
 
-%Sigma_hat = eps_hat'*eps_hat;
-%L = chol(Sigma_hat/1,'lower');
-%Q = chol(Z*((Z'*Z)\Z'),'lower');
+% Display the results
+D(1,:) = {'Parameter', 'Estimate', 'SE'};
+D(2:(J-1)*2+1,2:3) = num2cell(reshape([theta_hat, SE_a],[4,2]));
+disp(D)
