@@ -16,31 +16,24 @@ m = ceil((1:n)' * (M/n));
 % Set up xi, where the [m,j] element of this vector equals xi_{mj} = xi_j
 %mu_xi = [10,20,15];  % Means of the quality distribution for each alternative
 %sigma2_xi = 10;  % Variance of the quality distribution
-mu_xi = [20,10,15];
+mu_xi = [1,2,0];
 xi = ones(M,1) * mu_xi;
 
 % Draw xi as N(mu_xi,sigma_xi)
 %xi = randn(M,J) * sqrt(sigma2_xi) + ones(M,1)*mu_xi;
 
-% Set mean and variance for price coefficient distribution across markets
-mu_beta = -.2;
-sigma2_beta = .5;
-
 % Set up Z, where the mth element of this column vector equals Z_m
-mu_Z = .3;  % Mean of base distribution for Z
-sigma_Z = .15;  % Standard deviation of base distribution for Z
+mu_Z = 0;  % Mean of base distribution for Z
+sigma2_Z = 1;  % Variance of base distribution for Z
 
 % Draw Z as lognormal random variable
-Z = lognrnd(mu_Z,sigma_Z,M,J);
-
-% Rescale Z to make sure it's below 1 (think e.g. tax rates)
-Z = ( Z./(1.2*ones(M,1)*max(Z,[],1)) ) * 100;
+Z = randn(M,J) * sigma2_Z + mu_Z;
 
 % Set coefficient for pricing equation
-gamma_Z = .5;
+gamma_Z = .2;
 
 % Get prices as quality plus price times price coefficient plus disturbance
-p = xi + gamma_Z*Z + randn(M,J)*sqrt(10);
+p = xi + gamma_Z*Z;
 
 % Draw epsilon as Gumbel(0,1) i.i.d. random variables
 eps = evrnd(0,1,n,J);
@@ -64,15 +57,7 @@ for i=1:J
     S(:,i) = accumarray(m,C(:,i),[],@mean);
 end
 
-% Set optimization options
-options = optimset('GradObj','off','HessFcn','off','Display','off', ...
-    'TolFun',1e-6,'TolX',1e-6); 
-
-delta_hat = zeros(M,J);
-for i=1:M
-   delta_hat(i,:) = ...
-       fminunc(@(delta)nls_shares(S(i,:),delta),[0,0,0],options); 
+for j=1:J-1
+    theta_hat = ivreg(log(S(:,j)) - log(S(:,J)),p(:,j),[ones(M,1),Z(:,j)],1);
+    disp(theta_hat)
 end
-
-theta_hat = ivreg(delta_hat(:,1),p(:,1),Z(:,1),1);
-disp(theta_hat)

@@ -15,4 +15,6 @@ end
 
 % Estimate second stage
 beta_hat = (X_hat'*X_hat)\(X_hat'*y);
+
+
 end
