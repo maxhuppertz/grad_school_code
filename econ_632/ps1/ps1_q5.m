@@ -16,7 +16,7 @@ m = ceil((1:n)' * (M/n));
 % Set up xi, where the [m,j] element of this vector equals xi_{mj} = xi_j
 %mu_xi = [10,20,15];  % Means of the quality distribution for each alternative
 %sigma2_xi = 10;  % Variance of the quality distribution
-mu_xi = [11,12,10];
+mu_xi = [20,10,15];
 xi = ones(M,1) * mu_xi;
 
 % Draw xi as N(mu_xi,sigma_xi)
@@ -46,7 +46,7 @@ p = xi + gamma_Z*Z + randn(M,J)*sqrt(10);
 eps = evrnd(0,1,n,J);
 
 % Set price coefficient for utility function
-beta = -.5;
+beta = -.2;
 
 % Construct utility as u_{ij} = beta*p_{ij} + xi_{mj} + eps_{ij}
 % The Kronecker product repeats the [1,J] vectors p_j and xi_j exactly n/M
@@ -64,4 +64,15 @@ for i=1:J
     S(:,i) = accumarray(m,C(:,i),[],@mean);
 end
 
-disp(ivreg(S(:,1),p(:,1),[ones(M,1),Z(:,1)]))
+% Set optimization options
+options = optimset('GradObj','off','HessFcn','off','Display','off', ...
+    'TolFun',1e-6,'TolX',1e-6); 
+
+delta_hat = zeros(M,J);
+for i=1:M
+   delta_hat(i,:) = ...
+       fminunc(@(delta)nls_shares(S(i,:),delta),[0,0,0],options); 
+end
+
+theta_hat = ivreg(delta_hat(:,1),p(:,1),Z(:,1),1);
+disp(theta_hat)
