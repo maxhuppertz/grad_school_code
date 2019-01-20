@@ -64,6 +64,6 @@ for j=1:J-1
     disp([theta_hat, sqrt(diag(Sigma_hat))])
 end
 
-Sigma_hat = eps_hat'*eps_hat;
-L = chol(Sigma_hat/1,'lower');
-Q = chol(Z*((Z'*Z)\Z'),'lower');
+%Sigma_hat = eps_hat'*eps_hat;
+%L = chol(Sigma_hat/1,'lower');
+%Q = chol(Z*((Z'*Z)\Z'),'lower');

@@ -1,9 +1,8 @@
 function [beta_hat,Sigma_hat,eps_hat] = ivreg(y,X,Z)
-% Get number of observationsn and coefficients k
 [n,k] = size(Z);
 
 % Get projector matrix of Z
-Pz = Z*((Z'*Z)\Z');
+Pz = (Z/(Z'*Z))*Z';
 
 % Get predicted values
 X_hat = Pz*X;
@@ -14,13 +13,11 @@ beta_hat = (X_hat'*X_hat)\(X_hat'*y);
 % Get residuals
 eps_hat = y - X*beta_hat;
 
-Qzz_hat = (Z'*Z)/n;
-Qxz_hat = (X'*Z)/n;
-Qzx_hat = (Z'*X)/n;
-Ze = Z.*(eps_hat*ones(1,k));
-Omega_hat = (Ze'*Ze)/n;
+% Get rescaled residuals (useful for variance/covariance estimator)
+u = eps_hat.*X_hat;
 
-Sigma_hat = ((Qxz_hat/Qzz_hat)*Qzx_hat)\ ...
-    ((Qxz_hat/Qzz_hat)*Omega_hat*(Qzz_hat\Qzx_hat)) ...
-    /((Qxz_hat/Qzz_hat)*Qzx_hat);
+% Get variance/covariance estimator
+H = ((X'*Z)/(Z'*Z))*(Z'*X);  % Bread for the sandwich
+V = u'*u;  % Filling for the sandwich
+Sigma_hat = (n/(n-k)) * H\V/H;  % Putting the sandwich together
 end
