@@ -56,8 +56,9 @@ end
 % Calculate log shares
 lnS = log(S);
 
-% Set them to zero if the computer evaluates them as negative infinity
-lnS(lnS==-Inf) = 0;
+% Set them to a very small number if the computer evaluates them as
+% negative infinity
+lnS(lnS==-Inf) = 10^(-14);
 
 % Set up matrices to store parameter estimates and standard errors
 theta_hat = zeros(J-1,2);
