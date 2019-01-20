@@ -28,7 +28,8 @@ Z = randn(M,J) * sigma2_Z + mu_Z;
 gamma_Z = 2;
 
 % Get prices as quality plus price times price coefficient plus disturbance
-p = xi + gamma_Z*Z + randn(M,1)*sqrt(10);
+sigma2_p = 10;  % Variance for additional price disturbances
+p = xi + gamma_Z*Z + randn(M,1)*sqrt(sigma2_p);
 
 % Draw epsilon as Gumbel(0,1) i.i.d. random variables
 eps = evrnd(0,1,n,J);
@@ -58,9 +59,13 @@ lnS = log(S);
 % Set them to zero if the computer evaluates them as negative infinity
 lnS(lnS==-Inf) = 0;
 
+% Set up matrices to store parameter estimates and standard errors
 theta_hat = zeros(J-1,2);
 SE_a = zeros(J-1,2);
+
+% Set up cell array which will be used to display results
 D = cell((J-1)*2+1,3);
+
 % Go through all goods but the last, which is the outside good
 for j=1:J-1
     % Run 2SLS estimation on the different in log shares, store estimated
@@ -72,8 +77,8 @@ for j=1:J-1
     SE_a(j,:) = sqrt(diag(V_hat));
     
     % Store labels for results
-    D(j + 1,1) = cellstr(strcat('xi',num2str(j)));
-    D(j + J,1) = cellstr(strcat('beta',num2str(j)));
+    D(j + 1,1) = cellstr(strcat('xi',{' '},num2str(j)));
+    D(j + J,1) = cellstr(strcat('beta',{' '},num2str(j)));
 end
 
 % Display the results
