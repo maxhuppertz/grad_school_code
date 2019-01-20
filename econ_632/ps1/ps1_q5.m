@@ -58,6 +58,6 @@ for i=1:J
 end
 
 for j=1:J-1
-    theta_hat = ivreg(log(S(:,j)) - log(S(:,J)),p(:,j),[ones(M,1),Z(:,j)],1);
-    disp(theta_hat)
+    [theta_hat, Sigma_hat] = ivreg(log(S(:,j)) - log(S(:,J)),[ones(M,1),p(:,j)],[ones(M,1),Z(:,j)]);
+    disp([theta_hat, sqrt(diag(Sigma_hat))])
 end
