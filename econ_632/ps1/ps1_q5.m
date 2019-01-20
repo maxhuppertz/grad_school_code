@@ -13,12 +13,14 @@ M = 100;
 % Get m = m(i) for each individual
 m = ceil((1:n)' * (M/n));
 
-% Set up xi, where the [m,j] element of this matrix equals xi_{mj}
-mu_xi = [10,20,15];  % Means of the quality distribution for each alternative
-sigma2_xi = 10;  % Variance of the quality distribution
+% Set up xi, where the [m,j] element of this vector equals xi_{mj} = xi_j
+%mu_xi = [10,20,15];  % Means of the quality distribution for each alternative
+%sigma2_xi = 10;  % Variance of the quality distribution
+mu_xi = [11,12,10];
+xi = ones(M,1) * mu_xi;
 
 % Draw xi as N(mu_xi,sigma_xi)
-xi = randn(M,J) * sqrt(sigma2_xi) + ones(M,1)*mu_xi;
+%xi = randn(M,J) * sqrt(sigma2_xi) + ones(M,1)*mu_xi;
 
 % Set mean and variance for price coefficient distribution across markets
 mu_beta = -.2;
@@ -37,7 +39,7 @@ Z = ( Z./(1.2*ones(M,1)*max(Z,[],1)) ) * 100;
 % Set coefficient for pricing equation
 gamma_Z = .5;
 
-% Get prices
+% Get prices as quality plus price times price coefficient plus disturbance
 p = xi + gamma_Z*Z + randn(M,J)*sqrt(10);
 
 % Draw epsilon as Gumbel(0,1) i.i.d. random variables
