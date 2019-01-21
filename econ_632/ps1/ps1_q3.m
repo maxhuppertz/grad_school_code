@@ -36,8 +36,8 @@ u = beta*p + ones(n,1)*xi + eps;
 % Set initial values for MLE. To be able to identify the xi later, I'll
 % normalize xi_J = 0. Therefore, the initial values for xi only include the
 % first J-1 elements of the vector
-beta0 = beta + randn();
-xi0 = xi(1,1:J-1) + randn(size(xi(1,1:J-1)));
+beta0 = 0;
+xi0 = zeros(1,J-1);
 
 % Set optimization options
 options = optimset('GradObj','on','HessFcn','on','Display','off', ...
@@ -57,7 +57,7 @@ V = inv(I);
 SE_a = sqrt(diag(V));
 
 % Specify number of bootstrap iterations
-B = 499;
+B = 4999;
 
 % Set up matrix of bootstrap estimates
 T = zeros(B,J);

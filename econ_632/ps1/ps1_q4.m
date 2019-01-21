@@ -20,7 +20,7 @@ mu_p = 1;
 sigma2_p = 1;
 
 % Draw prices as lognormal(mu_p,sigma_p) i.i.d. random variables
-p = logrndn(mu_p,sqrt(sigma2_p),n,J);
+p = lognrnd(mu_p,sqrt(sigma2_p),n,J);
 
 % Set up xi, where the jth element of this row vector equals xi_j
 xi = [1,2,0];
