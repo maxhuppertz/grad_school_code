@@ -12,11 +12,11 @@ J = 3;
 beta = -.2;
 
 % Set mean and variance for the price distribution
-mu = 10;
-sigma2 = 10;
+mu = 1;
+sigma2 = 1;
 
-% Draw prices as N(10,10) i.i.d. random variables
-p = randn(n,J) * sqrt(sigma2) + mu;
+% Draw prices as lognormal(mu,sigma) i.i.d. random variables
+p = lognrnd(mu,sqrt(sigma2),n,J);
 
 % Set up xi, where the jth element of this row vector equals xi_j
 xi = [1,2,0] + 10;

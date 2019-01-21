@@ -16,11 +16,11 @@ sigma2_beta = .5;
 beta = randn(n,1) * sqrt(sigma2_beta) + mu_beta;
 
 % Set mean and variance for the price distribution
-mu_p = 10;
-sigma2_p = 10;
+mu_p = 1;
+sigma2_p = 1;
 
-% Draw prices as N(10,10) i.i.d. random variables
-p = randn(n,J) * sqrt(sigma2_p) + mu_p;
+% Draw prices as lognormal(mu_p,sigma_p) i.i.d. random variables
+p = logrndn(mu_p,sqrt(sigma2_p),n,J);
 
 % Set up xi, where the jth element of this row vector equals xi_j
 xi = [1,2,0];

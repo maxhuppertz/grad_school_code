@@ -14,20 +14,19 @@ M = 100;
 m = ceil((1:n)' * (M/n));
 
 % Set up xi, where the [m,j] element of this vector equals xi_{mj} = xi_j
-xi = ones(M,1) * [1,2,0];
+xi = ones(M,1) * [11,12,10];
 
 % Set up Z, where the mth element of this column vector equals Z_m
 mu_Z = 0;  % Mean of base distribution for Z
-sigma2_Z = 2;  % Variance of base distribution for Z
+sigma2_Z = .3;  % Variance of base distribution for Z
 
-% Draw Z as lognormal random variable
-Z = randn(M,J) * sigma2_Z + mu_Z;
+% Draw Z as lognormal(mu_Z,sigma_Z) random variable
+Z = lognrnd(mu_Z,sqrt(sigma2_Z),M,J);
 
 % Set coefficient for pricing equation (how the instrument affects price)
-gamma_Z = .25;
+gamma_Z = 1;
 
-% Get prices as quality plus price times price coefficient plus disturbance
-sigma2_p = 2;  % Variance for additional price disturbances
+% Get prices as quality plus Z times price coefficient
 p = xi + gamma_Z*Z;
 
 % Draw epsilon as Gumbel(0,1) i.i.d. random variables
@@ -76,7 +75,7 @@ Dxi = zeros((J-1)*M,J-2);  % Matrix of dummies
 % Go through all such options
 for j=1:J-1
     % Check whether this is the first option
-    if j==1
+    if j==1 && 1==0  % I'm not sure I'd ever actually want to do this
         % If it is, make an intercept
         d = ones(J-1,1);
     else
