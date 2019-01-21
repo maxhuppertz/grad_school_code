@@ -38,9 +38,9 @@ u = beta.*p + ones(n,1)*xi + eps;
 [~,c] = max(u,[],2);
 
 % Set initial values for MLE
-beta_bar0 = mu_beta * randn();
-sigma2_beta0 = sigma2_beta * randn();
-xi0 = xi(1,1:J-1) + randn(size(xi(1,1:J-1)));
+beta_bar0 = -.5;
+sigma2_beta0 = 1;
+xi0 = zeros(1,J-1);
 
 % Set optimization options
 options = optimset('GradObj','off','HessFcn','off','Display','off', ...

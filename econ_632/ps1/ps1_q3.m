@@ -36,7 +36,7 @@ u = beta*p + ones(n,1)*xi + eps;
 % Set initial values for MLE. To be able to identify the xi later, I'll
 % normalize xi_J = 0. Therefore, the initial values for xi only include the
 % first J-1 elements of the vector
-beta0 = 0;
+beta0 = -.5;
 xi0 = zeros(1,J-1);
 
 % Set optimization options
