@@ -36,7 +36,7 @@ u = beta*p + ones(n,1)*xi + eps;
 % Set initial values for MLE. To be able to identify the xi later, I'll
 % normalize xi_J = 0. Therefore, the initial values for xi only include the
 % first J-1 elements of the vector
-beta0 = -.5;
+beta0 = -1;
 xi0 = zeros(1,J-1);
 
 % Set optimization options
@@ -83,10 +83,10 @@ for b=1:B
 end
 
 % Get the boostrapped standard errors
-SE_b = sqrt(sum((T - ones(B,1) * theta_hat).^2) / B);
+SE_b = sqrt(sum((T - ones(B,1) * theta_hat).^2,1) / B);
 
 % Display the results
 D = cell(J+1,4);
-D(1,:) = {'theta', 'theta_hat', 'SE_a', 'SE_b'};
+D(1,:) = {'theta', 'theta_hat', 'SE_a', strcat('SE_b (T=',num2str(B),')')};
 D(2:J+1,:) = num2cell([[beta, xi(1,1:J-1)]', theta_hat', SE_a, SE_b']);
 disp(D)
