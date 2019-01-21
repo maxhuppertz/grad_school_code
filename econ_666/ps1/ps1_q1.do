@@ -49,4 +49,8 @@ loc ITT = (`Nat'*`Yat' + `Nan'*`Yan')/`NA' - (`Nnt'*`Ynt' + `Nnn'*`Ynn')/`NN'
 
 // Display the result
 noi di _n "1b)" _n "ITT = `ITT'"
+
+// 1d)
+// Calculate CCM
+
 }
