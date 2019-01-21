@@ -14,8 +14,7 @@ M = 100;
 m = ceil((1:n)' * (M/n));
 
 % Set up xi, where the [m,j] element of this vector equals xi_{mj} = xi_j
-mu_xi = [0,1,2];
-xi = ones(M,1) * mu_xi;
+xi = ones(M,1) * [1,2,0];
 
 % Set up Z, where the mth element of this column vector equals Z_m
 mu_Z = 0;  % Mean of base distribution for Z
@@ -107,6 +106,6 @@ Zflat = reshape(Z(:,1:J-1),[M*(J-1),1]);
 SE_a = sqrt(diag(Sigma_hat));
 
 % Display the results
-D(2:J+1,2:4) = num2cell([[mu_xi(1:J-1), beta]', theta_hat, SE_a]);
+D(2:J+1,2:4) = num2cell([[xi(1,1:J-1), beta]', theta_hat, SE_a]);
 fprintf('\n2SLS estimates\n')
 disp(D)
