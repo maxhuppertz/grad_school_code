@@ -26,6 +26,13 @@ loc ITT = (`Nat'*`Yat' + `Nan'*`Yan')/`NA' - `YN'
 // Display the result
 noi di _n "1a)" _n "ITT = `ITT'"
 
+// 1b)
+// Calculate CCM
+loc CCM = (`YN' - (`Nan'/`NA')*`Yan')/(1 - (`Nan'/`NA'))
+
+// Display the result
+noi di _n "1b)" _n "CCM = `CCM'"
+
 // 1c)
 // Specify number of people assigned to control who end up being treated, and
 // their Y
