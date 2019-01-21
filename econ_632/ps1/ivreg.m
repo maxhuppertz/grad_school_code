@@ -15,7 +15,7 @@ beta_hat = (X_hat'*X_hat)\(X_hat'*y);
 eps_hat = y - X*beta_hat;
 
 % Calculate rescaled residuals (useful for variance/covariance estimator)
-u = eps_hat.*X_hat;
+u = (eps_hat*ones(1,k)).*X_hat;
 
 % Get variance/covariance estimator
 H = (X'*Pz*X);  % Bread for the sandwich

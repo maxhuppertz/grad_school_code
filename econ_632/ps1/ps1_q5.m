@@ -61,7 +61,7 @@ lnS(lnS==-Inf) = 10^(-14);
 
 % Set up cell array to display results
 D = cell(J+1,4);
-D(1,:) = {'', 'True value', 'Estimate', 'SE_a'};
+D(1,:) = {'Parameter', 'True value', 'Estimate', 'SE_a'};
 D(2,1) = {'xi_1'};
 D(J+1,1) = {'beta'};
 
