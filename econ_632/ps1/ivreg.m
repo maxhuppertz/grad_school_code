@@ -1,4 +1,4 @@
-function [beta_hat,Sigma_hat,X_hat,eps_hat] = ivreg(y,X,Z)
+function [beta_hat,Sigma_hat] = ivreg(y,X,Z)
 % Get number of observations and number of coefficients
 [n,k] = size(Z);
 

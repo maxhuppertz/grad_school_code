@@ -35,13 +35,13 @@ p = xi + gamma_Z*Z + randn(M,1)*sqrt(sigma2_p);
 eps = evrnd(0,1,n,J);
 
 % Set price coefficient for utility function
-beta = [-.2,-.3,-.1];
+beta = -.2;
 
 % Construct utility as u_{ij} = beta*p_{ij} + xi_{mj} + eps_{ij}
 % The Kronecker product repeats the [1,J] vectors p_j and xi_j exactly n/M
 % times for each market, i.e. exactly as many times as there are people in
 % the market
-u = kron(p.*(ones(M,1)*beta)+xi,ones(n/M,1)) + eps;
+u = kron(beta*p + xi,ones(n/M,1)) + eps;
 
 % Get [n,J] indicator matrix of chosen goods, where the [i,J] element is 1
 % if individual i chooses good J, and zero otherwise
@@ -60,38 +60,52 @@ lnS = log(S);
 % negative infinity
 lnS(lnS==-Inf) = 10^(-14);
 
-% Set up matrices to store parameter estimates and standard errors
-theta_hat = zeros(J-1,2);
-SE_a = zeros(J-1,2);
+% Set up cell array to display results
+D = cell(J+1,4);
+D(1,:) = {'', 'True value', 'Estimate', 'SE_a'};
+D(2,1) = {'xi_1'};
+D(J+1,1) = {'beta'};
 
-% Set up cell array which will be used to display results
-D = cell((J-1)*2+1,4);
+% Created vector of log share differences (option J is the outside good)
+DlnSflat = ...
+    reshape(lnS(:,1:J-1),[M*(J-1),1]) ...
+    - reshape(lnS(:,J)*ones(1,J-1),[M*(J-1),1]);
 
-% Go through all goods but the last, which is the outside good
+% Create dummies for all options other than J
+Dxi = zeros((J-1)*M,J-2);  % Matrix of dummies
+
+% Go through all such options
 for j=1:J-1
-    % Run 2SLS estimation on the different in log shares, store estimated
-    % coefficients
-    [theta_hat,Sigma_hat,~,~] = ivreg(lnS(:,j)-lnS(:,J), ...
-        [ones(M,1),p(:,j)],[ones(M,1),Z(:,j)]);
+    % Check whether this is the first option
+    if j==1
+        % If it is, make an intercept
+        d = ones(J-1,1);
+    else
+        % Otherwise, start with a vector of zeros
+        d = zeros(J-1,1);
+
+        % Make the jth element equal to one
+        d(j) = 1;
+    end
     
-    % Store labels for results
-    D(j + 1,1) = cellstr(strcat('xi',{' '},num2str(j)));
-    D(j + J,1) = cellstr(strcat('beta',{' '},num2str(j)));
+    % Put it in the matrix
+    Dxi(:,j) = repmat(d,M,1);
     
-    % Insert true parameter values into results array
-    D(j + 1,2) = num2cell(mu_xi(j));
-    D(j + J,2) = num2cell(beta(j));
-    
-    % Insert parameter estimates into results array
-    D(j + 1,3) = num2cell(theta_hat(1));
-    D(j + J,3) = num2cell(theta_hat(2));
-    
-    % Insert standard errors into results array
-    SE = sqrt(diag(Sigma_hat));
-    D(j + 1,4) = num2cell(SE(1));
-    D(j + J,4) = num2cell(SE(2));
+    % Add a label to the results matrix
+    D(j+1,1) = cellstr(strcat('xi_',num2str(j)));
 end
 
+% Create flattened version of price and instrument data
+pflat = reshape(p(:,1:J-1),[M*(J-1),1]);
+Zflat = reshape(Z(:,1:J-1),[M*(J-1),1]);
+
+% Run 2SLS on the flattened (pooled) data
+[theta_hat,Sigma_hat] = ivreg(DlnSflat, [Dxi,pflat], ...
+    [Dxi,Zflat]);
+
+% Calculate standard errors
+SE_a = sqrt(diag(Sigma_hat));
+
 % Display the results
-D(1,:) = {'Parameter', 'True value', 'Estimate', 'SE_a'};
+D(2:J+1,2:4) = num2cell([[mu_xi(1:J-1), beta]', theta_hat, SE_a]);
 disp(D)
