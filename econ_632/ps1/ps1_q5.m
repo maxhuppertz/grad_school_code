@@ -18,18 +18,18 @@ mu_xi = [0,1,2];
 xi = ones(M,1) * mu_xi;
 
 % Set up Z, where the mth element of this column vector equals Z_m
-mu_Z = 1;  % Mean of base distribution for Z
-sigma2_Z = 10;  % Variance of base distribution for Z
+mu_Z = 0;  % Mean of base distribution for Z
+sigma2_Z = 2;  % Variance of base distribution for Z
 
 % Draw Z as lognormal random variable
 Z = randn(M,J) * sigma2_Z + mu_Z;
 
-% Set coefficient for pricing equation
-gamma_Z = .3;
+% Set coefficient for pricing equation (how the instrument affects price)
+gamma_Z = .25;
 
 % Get prices as quality plus price times price coefficient plus disturbance
 sigma2_p = 2;  % Variance for additional price disturbances
-p = xi + gamma_Z*Z + randn(M,1)*sqrt(sigma2_p);
+p = xi + gamma_Z*Z;
 
 % Draw epsilon as Gumbel(0,1) i.i.d. random variables
 eps = evrnd(0,1,n,J);
@@ -108,4 +108,5 @@ SE_a = sqrt(diag(Sigma_hat));
 
 % Display the results
 D(2:J+1,2:4) = num2cell([[mu_xi(1:J-1), beta]', theta_hat, SE_a]);
+fprintf('\n2SLS estimates\n')
 disp(D)
