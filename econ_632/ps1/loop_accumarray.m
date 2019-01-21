@@ -1,5 +1,4 @@
-function B = loop_accumarray(subs,val,sz,fun,fillval,issparse)
-
+function A = loop_accumarray(subs,val,sz,fun,fillval,issparse)
 % Figure out the size of the subscript array
 [n,m] = size(subs);
 
@@ -11,7 +10,7 @@ if m>2
     disp('that dimensionality.')
     
     % Set output array to NaN
-    B = NaN;
+    A = NaN;
     
     % Abort
     return
@@ -26,12 +25,10 @@ end
 % Set up output array B as zeros, and set up an intermediate cell array A
 % which will collect elements of val as a vector so they can be accumulated
 % using fun
-if size(sz) ~= [0,0]
+if ~(size(sz,1)==0 && size(sz,2) ==0)
     A = cell(max(max(subs(:,1),sz(1))), max(max(subs(:,2)),sz(2)));
-    B = zeros(max(max(subs(:,1),sz(1))), max(max(subs(:,2)),sz(2)));
 else
     A = cell(max(subs(:,1)), max(subs(:,2)));
-    B = zeros(max(subs(:,1)), max(subs(:,2)));
 end
 
 % Go through all subscripts, add elements of val to the corresponding cell
@@ -40,20 +37,14 @@ for i=1:n
     A{subs(i,1), subs(i,2)} = [A{subs(i,1), subs(i,2)}, val(i)];
 end
 
-% Go through all elements of output array, apply function to elements; if
-% an element is empty, use fillval instead
-for i=1:size(B,1)
-    for j=1:size(B,2)
-        if ~isempty(A{i,j})
-            B(i,j) = fun(A{i,j});
-        else
-            B(i,j) = fillval;
-        end
-    end
-end
+% Apply function to all elements of A
+A = cellfun(fun,A);
+
+% Fill in missing values as NaN
+A(isnan(A)) = fillval;
 
 % Make B sparse if desired
 if issparse
-    B = sparse(B);
+    A = sparse(A);
 end
 end
