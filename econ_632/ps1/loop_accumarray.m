@@ -40,7 +40,7 @@ end
 % Apply function to all elements of A
 A = cellfun(fun,A);
 
-% Fill in missing values as NaN
+% Fill in NaN values as fillval
 A(isnan(A)) = fillval;
 
 % Make B sparse if desired
