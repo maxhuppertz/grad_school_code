@@ -13,8 +13,10 @@ function L = ll_multilogit_rc(beta_bar,sigma2,xi,p,c,method,tol,qp,w)
 %                 Matlab's intergral() function, or 'points' if you want
 %                 to provide quadrature points and weights instead
 % tol: scalar, tolerance for direct numerical integration
-% qp: either [1,K] vector or [n,K] matrix, quadrature points
-% w: [1,K] vector, quadrature weights
+% qp: either [1,K] vector or [n,K] matrix, quadrature points for an N(0,1)
+%                                          random variable
+% w: either [1,K] vector or [n,K] matrix, quadrature weights corresponding
+%                                         to the points in qp
 %
 % Output
 % L: scalar, log-likelihood
@@ -81,6 +83,11 @@ elseif strcmp(method,'points')
         qp = ones(n,1)*qp;
     end
     
+    % The same goes for the quadrature weights
+    if size(w,1) == 1
+        w = ones(n,1)*w;
+    end
+    
     % Evaluate exponential ratio at each point, for all individuals, which
     % will return a 1 x K cell array, where each cell contains an n x 1
     % vector of evaluated quadrature points
@@ -90,7 +97,7 @@ elseif strcmp(method,'points')
     % Convert the cell array into an n x 500 matrix using cell2mat, take
     % the weighted mean within rows using quadrature weights (this gives
     % the expected choice probabilities), then take the log and sum up
-    L = -sum(log(sum(cell2mat(L).*(ones(n,1)*w),2)));
+    L = -sum(log(sum(cell2mat(L).*w,2)));
 else
     % Display an error message
     disp('Method unknown')

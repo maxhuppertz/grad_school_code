@@ -106,6 +106,7 @@ disp(['Time elapsed: ', num2str(time), ' seconds'])
 k = 6;
 
 % Get sparse grid quadrature points L and weights w for N(0,1) variable
+% The nwspgr() function comes from http://sparse-grids.de/
 [sgqp,sgqw] = nwspgr('KPN',1,k);
 
 % Get the MLE using sparse grids (this uses sgqp', since ll_multilogit_rc
