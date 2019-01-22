@@ -57,7 +57,7 @@ V = inv(I);
 SE_a = sqrt(diag(V));
 
 % Specify number of bootstrap iterations
-B = 3;
+B = 4999;
 
 % Set up matrix of bootstrap estimates for the pairs bootstrap
 Tpairs = zeros(B,J);
@@ -107,6 +107,9 @@ end
 % also be used for a bias correction?
 SE_bparam = sqrt(sum((Tparam - ones(B,1) * mean(Tparam,1)).^2,1) / B);
 
+% Display the estimated bias, which is the difference between the original
+% coefficient estimante and the mean coefficient estimate from the
+% parametric bootstrap
 fprintf('\nEstimated bias:\n')
 disp(theta_hat - mean(Tparam,1))
 
@@ -117,4 +120,5 @@ D(1,:) = {'theta', 'theta_hat', 'SE_a', ...
     strcat('SE_bprm (T=',num2str(B),')')};
 D(2:J+1,:) = num2cell([[beta, xi(1,1:J-1)]', theta_hat', SE_a, ...
     SE_bpairs', SE_bparam']);
+disp('Estimation results:')
 disp(D)
