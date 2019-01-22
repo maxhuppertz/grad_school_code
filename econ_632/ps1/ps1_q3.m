@@ -70,14 +70,11 @@ parfor b=1:B
     % Draw bootstrap sample
     i = randi([1,n],n,1);
 
-    % Get prices and choices for the bootstrap sample
-    pstar = p(i,:);
-    cstar = c(i,:);
-
-    % Run MLE, add the results to the matrix of bootstrap estimates
+    % Run MLE on the bootstrap sample, add the results to the matrix of
+    % bootstrap estimates
     Tpairs(b,:) = fminunc( ...
-        @(theta)ll_multilogit_fc(theta(1),[theta(2:J),0],pstar,cstar,1),...
-        [beta0,xi0],options);
+        @(theta)ll_multilogit_fc(theta(1),[theta(2:J),0], ...
+        p(i,:),c(i,:),1),[beta0,xi0],options);
 end
 
 % Get the boostrapped standard errors for the pairs bootstrap
