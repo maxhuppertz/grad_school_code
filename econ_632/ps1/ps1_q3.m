@@ -63,7 +63,10 @@ B = 4999;
 Tpairs = zeros(B,J);
 
 % Go through all bootstrap iterations
-for b=1:B
+% Ideally, this would run in parallel, but that depends on whether you have
+% the parallel computing toolbox, I think. I don't have it, so I'm not sure
+% whether this does anything. But one can hope.
+parfor b=1:B
     % Draw bootstrap sample
     i = randi([1,n],n,1);
 
@@ -81,10 +84,10 @@ end
 SE_bpairs = sqrt(sum((Tpairs - ones(B,1) * theta_hat).^2,1) / B);
 
 % Set up matrix of bootstrap estimates for the parametric bootstrap
-Tpairs = zeros(B,J);
+Tparam = zeros(B,J);
 
 % Go through all bootstrap iterations
-for b=1:B
+parfor b=1:B
     % Draw innovations
     epsstar = evrnd(0,1,n,J);
 
