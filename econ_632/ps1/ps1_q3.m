@@ -46,6 +46,7 @@ options = optimset('GradObj','on','HessFcn','on','Display','off', ...
 % Get MLE estimate of theta = [beta, xi], as well as the Hessian of the log
 % likelihood function, which is the same as the (sample) Fisher information
 % for the estimator
+tic  % Start a timer
 [theta_hat,~,~,~,~,I] = fminunc( ...
     @(theta)ll_multilogit_fc(theta(1),[theta(2:J),0],p,c,1), ...
     [beta0,xi0],options);
@@ -57,16 +58,19 @@ V = inv(I);
 SE_a = sqrt(diag(V));
 
 % Specify number of bootstrap iterations
-B = 4999;
+B = 299;
 
 % Set up matrix of bootstrap estimates for the pairs bootstrap
 Tpairs = zeros(B,J);
 
-% Go through all bootstrap iterations
-% Ideally, this would run in parallel, but that depends on whether you have
-% the parallel computing toolbox, I think. I don't have it, so I'm not sure
-% whether this does anything. But one can hope.
+% Set up matrix of bootstrap estimates for the parametric bootstrap
+Tparam = zeros(B,J);
+
+% Go through all bootstrap iterations. This runs in parallel if the
+% parallel computing toolbox is available, and works just like a normal
+% for loop otherwise.
 parfor b=1:B
+    % Pair bootstrap
     % Draw bootstrap sample
     i = randi([1,n],n,1);
 
@@ -75,16 +79,8 @@ parfor b=1:B
     Tpairs(b,:) = fminunc( ...
         @(theta)ll_multilogit_fc(theta(1),[theta(2:J),0], ...
         p(i,:),c(i,:),1),[beta0,xi0],options);
-end
-
-% Get the boostrapped standard errors for the pairs bootstrap
-SE_bpairs = sqrt(sum((Tpairs - ones(B,1) * theta_hat).^2,1) / B);
-
-% Set up matrix of bootstrap estimates for the parametric bootstrap
-Tparam = zeros(B,J);
-
-% Go through all bootstrap iterations
-parfor b=1:B
+    
+    % Parametric bootstrap
     % Draw innovations
     epsstar = evrnd(0,1,n,J);
 
@@ -101,11 +97,17 @@ parfor b=1:B
         cstar,1),[theta_hat(1,1),theta_hat(1,2:J)],options);
 end
 
+% Get the boostrapped standard errors for the pairs bootstrap
+SE_bpairs = sqrt(sum((Tpairs - ones(B,1) * theta_hat).^2,1) / B);
+
 % Get the boostrapped standard errors for the parametric bootstrap
 % Since MLE is biased (but consistent), I need to use the mean of the
 % bootstrap estimates rather than the original estimate here. Couldn't this
 % also be used for a bias correction?
 SE_bparam = sqrt(sum((Tparam - ones(B,1) * mean(Tparam,1)).^2,1) / B);
+
+% Stop timer
+time = toc;
 
 % Display the estimated bias, which is the difference between the original
 % coefficient estimante and the mean coefficient estimate from the
@@ -122,3 +124,4 @@ D(2:J+1,:) = num2cell([[beta, xi(1,1:J-1)]', theta_hat', SE_a, ...
     SE_bpairs', SE_bparam']);
 disp('Estimation results:')
 disp(D)
+disp(['Time elapsed: ', num2str(time), ' seconds'])
