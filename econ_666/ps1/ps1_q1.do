@@ -48,9 +48,14 @@ loc Ynn = .15
 loc ITT = (`Nat'*`Yat' + `Nan'*`Yan')/`NA' - (`Nnt'*`Ynt' + `Nnn'*`Ynn')/`NN'
 
 // Display the result
-noi di _n "1b)" _n "ITT = `ITT'"
+noi di _n "1c)" _n "ITT = `ITT'"
 
 // 1d)
 // Calculate CCM
+loc CCM = ((`Nnn'*`Ynn' + `Nnt'*`Ynt')/`NN' ///
+	- (`Nnt'/`NN')*`Ynt' - (`Nan'/`NA')*`Yan') ///
+	/ (1 - (`Nnt'/`NN') - (`Nan'/`NA'))
 
+// Display the result
+noi di _n "1d)" _n "CCM = `CCM'"
 }
