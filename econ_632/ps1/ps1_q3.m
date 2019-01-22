@@ -57,7 +57,7 @@ V = inv(I);
 SE_a = sqrt(diag(V));
 
 % Specify number of bootstrap iterations
-B = 4999;
+B = 3;
 
 % Set up matrix of bootstrap estimates for the pairs bootstrap
 Tpairs = zeros(B,J);
@@ -102,7 +102,13 @@ parfor b=1:B
 end
 
 % Get the boostrapped standard errors for the parametric bootstrap
-SE_bparam = sqrt(sum((Tparam - ones(B,1) * theta_hat).^2,1) / B);
+% Since MLE is biased (but consistent), I need to use the mean of the
+% bootstrap estimates rather than the original estimate here. Couldn't this
+% also be used for a bias correction?
+SE_bparam = sqrt(sum((Tparam - ones(B,1) * mean(Tparam,1)).^2,1) / B);
+
+fprintf('\nEstimated bias:\n')
+disp(theta_hat - mean(Tparam,1))
 
 % Display the results
 D = cell(J+1,5);
