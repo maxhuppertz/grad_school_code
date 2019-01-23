@@ -107,12 +107,6 @@ end
 % Get the boostrapped standard errors for the pairs bootstrap
 SE_bpairs = sqrt(sum((Tpairs - ones(B,1) * theta_hat).^2,1) / B);
 
-% Get the estimated bias as the difference between the original coefficient
-% estimate and the mean coefficient estimate from the parametric bootstrap
-bias = mean(Tparam,1) - theta_hat;
-fprintf('\nEstimated bias:\n')
-disp(bias)
-
 % Get the boostrapped standard errors for the parametric bootstrap
 SE_bparam = sqrt(sum((Tparam - ones(B,1) * theta_hat).^2,1) / B);
 
@@ -126,6 +120,18 @@ D(1,:) = {'theta', 'theta_hat', 'SE_a', ...
     strcat('SE_bprm (T=',num2str(B),')')};
 D(2:J+1,:) = num2cell([[beta, xi(1,1:J-1)]', theta_hat', SE_a, ...
     SE_bpairs', SE_bparam']);
-disp('Estimation results:')
+fprintf('\nEstimation results:\n')
 disp(D)
+
+% Get the estimated bias as the difference between the original coefficient
+% estimate and the mean coefficient estimate from the parametric bootstrap
+bias = mean(Tparam,1) - theta_hat;
+fprintf('Estimated bias:\n')
+disp(bias)
+
+% Display bias-adjusted estimates
+fprintf('\nBias-adjusted point estimates:\n')
+disp(theta_hat - bias)
+
+% Display the time this took
 disp(['Time elapsed: ', num2str(time), ' seconds'])
