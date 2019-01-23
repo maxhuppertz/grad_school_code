@@ -60,7 +60,7 @@ lnS = log(S);
 % Markets with zero share for any good will cause a problem, since they
 % will cause the IV estimation to return NaNs. Select whether to add a tiny
 % amount to the share of the good in question for that market
-addtozeros = 1;
+addtozeros = 0;
 
 % Add to the shares of the goods in question, if desired
 if addtozeros
