@@ -76,9 +76,13 @@ parfor b=1:B
 
     % Run MLE on the bootstrap sample, add the results to the matrix of
     % bootstrap estimates
+    % The code snippet prevents a warning about p() and c() being broadcast
+    % variables, which I'd be worried about if this were code for a paper,
+    % since coming up with a way to change that might make running this
+    % faster. For a problem set, using the parfor should be enough.
     Tpairs(b,:) = fminunc( ...
         @(theta)ll_multilogit_fc(theta(1),[theta(2:J),0], ...
-        p(i,:),c(i,:),1),[beta0,xi0],options);
+        p(i,:),c(i,:),1),[beta0,xi0],options); %#ok<PFBNS>
     
     % Parametric bootstrap
     % Draw taste shocks
@@ -101,15 +105,13 @@ end
 % Get the boostrapped standard errors for the pairs bootstrap
 SE_bpairs = sqrt(sum((Tpairs - ones(B,1) * theta_hat).^2,1) / B);
 
-% Get the estimated bias, which is the difference between the original
-% coefficient estimate and the mean coefficient estimate from the
-% parametric bootstrap
+% Get the estimated bias as the difference between the original coefficient
+% estimate and the mean coefficient estimate from the parametric bootstrap
 bias = mean(Tparam,1) - theta_hat;
 fprintf('\nEstimated bias:\n')
 disp(bias)
 
-% Get the boostrapped standard errors for the parametric bootstrap, using
-% bias-corrected bootstrap estimates and the original theta_hat
+% Get the boostrapped standard errors for the parametric bootstrap
 SE_bparam = sqrt(sum((Tparam - ones(B,1) * theta_hat).^2,1) / B);
 
 % Stop timer
