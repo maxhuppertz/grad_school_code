@@ -90,8 +90,10 @@ parfor b=1:B
 
     % Calculate utility based on original estimate, data, and new taste
     % shocks
+    % Again, the same issue with broadcast variables
     ustar = ...
-        theta_hat(1,1)*p + ones(n,1)*[theta_hat(1,2:J),0] + epsstar;
+        theta_hat(1,1)*p ...
+        + ones(n,1)*[theta_hat(1,2:J),0] + epsstar; %#ok<PFBNS>
 
     % Get choices
     [~,cstar] = max(ustar,[],2);
