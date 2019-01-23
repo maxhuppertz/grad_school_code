@@ -70,7 +70,7 @@ Tparam = zeros(B,J);
 % parallel computing toolbox is available, and works just like a normal
 % for loop otherwise.
 parfor b=1:B
-    % Pair bootstrap
+    % Pairs bootstrap
     % Draw bootstrap sample
     i = randi([1,n],n,1);
 
