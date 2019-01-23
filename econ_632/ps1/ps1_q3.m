@@ -11,15 +11,15 @@ J = 3;
 % Set beta
 beta = -.2;
 
-% Set mean and variance for the price distribution
+% Set location and scale for the price distribution
 mu = 1;
-sigma2 = 1;
+sigma = 1;
 
 % Draw prices as lognormal(mu,sigma) i.i.d. random variables
-p = lognrnd(mu,sqrt(sigma2),n,J);
+p = lognrnd(mu,sigma,n,J);
 
 % Set up xi, where the jth element of this row vector equals xi_j
-xi = [1,2,0] + 10;
+xi = [1,2,0];
 
 % Draw epsilon as Gumbel(0,1) i.i.d. random variables
 eps = evrnd(0,1,n,J);
@@ -41,7 +41,7 @@ xi0 = zeros(1,J-1);
 
 % Set optimization options
 options = optimset('GradObj','on','HessFcn','on','Display','off', ...
-    'TolFun',1e-6,'TolX',1e-6); 
+    'TolFun',1e-14,'TolX',1e-14); 
 
 % Get MLE estimate of theta = [beta, xi], as well as the Hessian of the log
 % likelihood function, which is the same as the (sample) Fisher information
@@ -58,7 +58,7 @@ V = inv(I);
 SE_a = sqrt(diag(V));
 
 % Specify number of bootstrap iterations
-B = 299;
+B = 3;
 
 % Set up matrix of bootstrap estimates for the pairs bootstrap
 Tpairs = zeros(B,J);
@@ -81,10 +81,11 @@ parfor b=1:B
         p(i,:),c(i,:),1),[beta0,xi0],options);
     
     % Parametric bootstrap
-    % Draw innovations
+    % Draw taste shocks
     epsstar = evrnd(0,1,n,J);
 
-    % Calculate utility based on original estimate and new innovations
+    % Calculate utility based on original estimate, data, and new taste
+    % shocks
     ustar = ...
         theta_hat(1,1)*p + ones(n,1)*[theta_hat(1,2:J),0] + epsstar;
 
@@ -100,20 +101,19 @@ end
 % Get the boostrapped standard errors for the pairs bootstrap
 SE_bpairs = sqrt(sum((Tpairs - ones(B,1) * theta_hat).^2,1) / B);
 
-% Get the boostrapped standard errors for the parametric bootstrap
-% Since MLE is biased (but consistent), I need to use the mean of the
-% bootstrap estimates rather than the original estimate here. Couldn't this
-% also be used for a bias correction?
-SE_bparam = sqrt(sum((Tparam - ones(B,1) * mean(Tparam,1)).^2,1) / B);
+% Get the estimated bias, which is the difference between the original
+% coefficient estimate and the mean coefficient estimate from the
+% parametric bootstrap
+bias = mean(Tparam,1) - theta_hat;
+fprintf('\nEstimated bias:\n')
+disp(bias)
+
+% Get the boostrapped standard errors for the parametric bootstrap, using
+% bias-corrected bootstrap estimates and the original theta_hat
+SE_bparam = sqrt(sum((Tparam - ones(B,1) * theta_hat).^2,1) / B);
 
 % Stop timer
 time = toc;
-
-% Display the estimated bias, which is the difference between the original
-% coefficient estimante and the mean coefficient estimate from the
-% parametric bootstrap
-fprintf('\nEstimated bias:\n')
-disp(theta_hat - mean(Tparam,1))
 
 % Display the results
 D = cell(J+1,5);
