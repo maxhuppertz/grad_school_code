@@ -7,15 +7,15 @@ rng(632)
 % Set number of people n, number of and products per market J, and number
 % of markets M
 n = 10000;
-J = 3;
+J = 4;
 M = 100;
 
 % Get m = m(i) for each individual
 m = ceil((1:n)' * (M/n));
 
 % Set up xi, where the [m,j] element of this vector equals xi_{mj}
-mu_xi = [11,12,10];  % Mean of the quality for each product
-sigma2_xi = [1,.5,1.2];  % Variance for each product
+mu_xi = [11,12,10,11.5];  % Mean of the quality for each product
+sigma2_xi = [1,.5,1.2,.7];  % Variance for each product
 xi = randn(M,J) .* (ones(M,1) * sqrt(sigma2_xi)) + ones(M,1) * mu_xi;
 
 % Set up Z, where the [m,j] element of this [M,J] matrix equals Z_{mj}
