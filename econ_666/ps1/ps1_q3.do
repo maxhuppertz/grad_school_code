@@ -38,10 +38,9 @@ foreach corr of loc Corrs{
 	// Specify correlation matrix for the current iteration
 	mat C = (1, `corrXY0', `corrXtau' \ `corrXY0', 1, 0 \ `corrXtau', 0, 1)
 	
-	// Generate data for the current iteration
+	// Generate data for the current iteration, which will have the specified
+	// correlation structure
 	corr2data X Y0 tau, corr(C) clear
-	noi corr X Y0
-	noi corr X tau
 	
 	// Go through all combinations of sample sizes and treatment probabilities
 	foreach n of loc Ns{
