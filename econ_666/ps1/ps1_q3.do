@@ -11,10 +11,11 @@ loc T = 100
 // Set the number of observations equal to the number of tuples
 set obs `T'
 
-// Generate all variables, to make memory allocation easier
-gen X = .
-gen Y0 = .
-gen tau = .
+// Generate treatment dummy (missing for now)
+gen W = .
+
+// Generate partition of X, which can stay the same across iterations
+gen P = _n
 
 // Specify correlation pairs, where the first element is Corr(X,Y0), and the
 // second is Corr(X,tau). The two are connected by an ampersand
@@ -40,13 +41,17 @@ foreach corr of loc Corrs{
 	
 	// Generate data for the current iteration, which will have the specified
 	// correlation structure
-	corr2data X Y0 tau, corr(C) clear
+	corr2data X Y0 tau, corr(C)
 	
 	// Go through all combinations of sample sizes and treatment probabilities
 	foreach n of loc Ns{
 		foreach p of loc Ps{
-			di ""
+			// Replace the treatment dummy for the current iteration
+			
 		}
 	}
+	
+	// Drop data
+	drop X Y0 tau
 }
 }
