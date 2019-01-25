@@ -1,15 +1,20 @@
+################################################################################
+### Econ 666, PS1Q3: Simulation exercise
+################################################################################
+
+# Import necessary packages
 import multiprocessing as mp
 import numpy as np
 from os import chdir, path
 from linreg import ols
-from scipy.stats.stats import pearsonr
+from joblib import Parallel, delayed
 
 ################################################################################
 ### Part 1: Define necessary functions
 ################################################################################
 
 # Define how to run the simulation for a given correlation pair
-def run_simulation(corr, T, sampsi, tprobs)
+def run_simulation(corr, T, sampsi, tprobs, nparts):
     # Set up covariance matrix
     C = np.eye(len(corr)+1)
 
@@ -33,7 +38,12 @@ def run_simulation(corr, T, sampsi, tprobs)
     # equal to 1.
     P = np.ceil((X.argsort()+1)*nparts/T)
 
-    # Set up a set of dummies for each section of the partition
+    # Set up a set of dummies for each section of the partition. Since P is a
+    # list, each of the checks creates a list of ones and zeros which indicate
+    # whether an element of P is equal to the current i. When np.array() is
+    # applied to this list of lists, it stacks them as rows of a matrix. This
+    # creates an nparts - 1 by T matrix of indicator dummies. The transpose
+    # converts it into a more conventional format
     DP = np.array([P==i+1 for i in range(nparts-1)], ndmin=2).transpose()
 
     # Go through all sample sizes
@@ -51,6 +61,8 @@ def run_simulation(corr, T, sampsi, tprobs)
                 # and assign everyone at or below the treatment probability
                 # to treatment.
                 W[P==i+1] = ((W[P==i+1].argsort()+1) / sum(P==i+1)) <= p
+
+            # Go through all simulations for the current set of parameters
 
 ################################################################################
 ### Part 2: Run simulations
@@ -74,13 +86,19 @@ tprobs = [.3, .5]
 # Specify number of partitions for X
 nparts = 3
 
+# Specify number of simulations to run
+nsimul = 100
+
+# Specify maximum number of repetitions for randomization distribution
+nrdmax = 10000
+
 # Specify number of tuples
 T = 100
 
 # Make an intercept
 beta0 = np.ones(shape=(T,1))
 
-# Run simluations
-Parallel(n_jobs=mp.cpu_count() - 1)(
-    delayed(run_simulation)(corr, T=T, sampsi=sampsi, tprobs=tprobs)
+# Run simluations on all available cores in parallel
+Parallel(n_jobs=mp.cpu_count())(delayed(run_simulation)
+    (corr, T=T, sampsi=sampsi, tprobs=tprobs, nparts=nparts)
     for corr in corrs)
