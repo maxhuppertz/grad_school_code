@@ -19,7 +19,7 @@ def ols(y, X, get_cov=True, cov_est='hskd'):
         # Check which covariance estimator to use
         if cov_est == 'hskd':
             # For the homoskedastic estimator, just calculate the standard variance
-            V_hat = ( n / (n - k) ) * XXinv @ (U_hat.transpose() @ U_hat)
+            V_hat = ( n / (n - k) ) * XXinv * (U_hat.transpose() @ U_hat)
         elif cov_est == 'hc1':
             # Calculate component of middle part of EHW sandwich (S_i = X_i u_i, meaning that it's easy to calculate
             # sum_i X_i X_i' u_i^2 = S'S)
