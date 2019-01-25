@@ -1,6 +1,6 @@
 import numpy as np
 from os import chdir, mkdir, path, mkdir
-from myest import ols
+from linreg import ols
 
 # Specify name for main directory (just uses the file's directory)
 mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
