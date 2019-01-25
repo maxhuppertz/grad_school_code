@@ -1,33 +1,15 @@
+import multiprocessing as mp
 import numpy as np
 from os import chdir, path
 from linreg import ols
 from scipy.stats.stats import pearsonr
 
-# Specify name for main directory (just uses the file's directory)
-mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
+################################################################################
+### Part 1: Define necessary functions
+################################################################################
 
-# Change directory
-chdir(mdir)
-
-# Specify pairs of correlations
-corrs = [[0,0], [.1,.1], [.6,.1], [.1,.6]]
-
-# Set sample sizes
-sampsi = [10, 25, 100]
-
-# Set treatment probabilities
-tprobs = [.3, .5]
-
-# Specify number of partitions for X
-nparts = 3
-
-# Specify number of tuples
-T = 100
-
-# Make an intercept
-beta0 = np.ones(shape=(T,1))
-
-for corr in corrs:
+# Define how to run the simulation for a given correlation pair
+def run_simulation(corr, T, sampsi, tprobs)
     # Set up covariance matrix
     C = np.eye(len(corr)+1)
 
@@ -69,3 +51,36 @@ for corr in corrs:
                 # and assign everyone at or below the treatment probability
                 # to treatment.
                 W[P==i+1] = ((W[P==i+1].argsort()+1) / sum(P==i+1)) <= p
+
+################################################################################
+### Part 2: Run simulations
+################################################################################
+
+# Specify name for main directory (just uses the file's directory)
+mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
+
+# Change directory
+chdir(mdir)
+
+# Specify pairs of correlations
+corrs = [[0,0], [.1,.1], [.6,.1], [.1,.6]]
+
+# Set sample sizes
+sampsi = [10, 25, 100]
+
+# Set treatment probabilities
+tprobs = [.3, .5]
+
+# Specify number of partitions for X
+nparts = 3
+
+# Specify number of tuples
+T = 100
+
+# Make an intercept
+beta0 = np.ones(shape=(T,1))
+
+# Run simluations
+Parallel(n_jobs=mp.cpu_count() - 1)(
+    delayed(run_simulation)(corr, T=T, sampsi=sampsi, tprobs=tprobs)
+    for corr in corrs)
