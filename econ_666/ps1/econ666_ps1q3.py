@@ -18,6 +18,9 @@ sampsi = [10, 25, 100]
 # Set treatment probabilities
 tprobs = [.3, .5]
 
+# Specify number of partitions for X
+nparts = 3
+
 # Specify number of tuples
 T = 100
 
@@ -36,3 +39,12 @@ for corr in corrs:
     X = D[:,0]
     y = D[:,1]
     tau = D[:,2:]
+
+    # Get the partition of X. First, X.argsort() gets the ranks in the
+    # distribution of X. Then, nparts/T converts it into fractions of the
+    # length of X. Taking the ceil() makes sure that the groups are between 1
+    # and nparts.
+    P = np.ceil(X.argsort()*nparts/T)
+
+    # Get treatment status
+    W = np.random.normal(size=T).argsort()
