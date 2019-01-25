@@ -33,13 +33,13 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax, beta0):
     y = np.array(D[:,1], ndmin=2).transpose()
     tau = np.array(D[:,2:], ndmin=2).transpose()
 
-    # Get the partition of X. First, X.argsort() gets the ranks in the
+    # Get the partition of X. First, X[:,0].argsort() gets the ranks in the
     # distribution of X. Then, nparts/T converts it into fractions of the
     # length of X. Taking the ceil() makes sure that the groups are between 1
     # and nparts. The +1 is necessary because of Python's zero indexing, which
     # leads to the lowest rank being zero, and ceil(0) = 0 when it should be
     # equal to 1.
-    P = np.ceil((X.argsort()+1)*nparts/T)
+    P = np.ceil((X[:,0].argsort()+1)*nparts/T)
 
     # Set up a set of dummies for each section of the partition. Since P is a
     # list, each of the checks creates a list of ones and zeros which indicate
@@ -74,10 +74,9 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax, beta0):
 
             # Go through all simulations for the current set of parameters
             for i in range(nsimul):
-                beta_hat_simple = ols(y,K1)
-                beta_hat_dummy = ols(y,K2)
-                beta_hat_saturated = ols(y,K1)
-
+                beta_hat_simp, S_hat_simp = ols(y,K1)
+                beta_hat_dumm, S_hat_dumm = ols(y,K2)
+                beta_hat_satu, S_hat_satu = ols(y,K1)
 
 ################################################################################
 ### Part 2: Run simulations
@@ -113,8 +112,10 @@ T = 100
 # Make an intercept
 beta0 = np.ones(shape=(T,1))
 
-run_simulation(corrs[0], T=T, sampsi=sampsi, tprobs=tprobs, nparts=nparts,
-    nsimul=nsimul, nrdmax=nrdmax, beta0=beta0)
+# Run simulations for all correlation pairs
+for corr in corrs:
+    run_simulation(corr, T=T, sampsi=sampsi, tprobs=tprobs, nparts=nparts,
+        nsimul=nsimul, nrdmax=nrdmax, beta0=beta0)
 
 # Run simluations on all available cores in parallel
 #Parallel(n_jobs=mp.cpu_count())(delayed(run_simulation)

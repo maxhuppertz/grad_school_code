@@ -28,6 +28,9 @@ def ols(y, X, get_cov=True, cov_est='homoskedastic'):
             # Calculate EHW variance/covariance matrix
             V_hat = ( n / (n - k) ) * XXinv @ (S.transpose() @ S) @ XXinv
 
+        # Replace NaNs as zeros (happen if division by zero occurs)
+        V_hat[np.isnan(V_hat)] = 0
+
         # Return coefficients and EHW variance/covariance matrix
         return beta_hat, V_hat
     else:
