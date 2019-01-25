@@ -71,26 +71,25 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                 # starting at 1, divide by the number of people in the group,
                 # and assign everyone at or below the treatment probability
                 # to treatment.
-                W[P[I,:]==i+1,0] = (
-                    ((W[P[I,:]==i+1,0].argsort() + 1) / sum(P[I,:]==i+1))
+                W[P[I]==i+1,0] = (
+                    ((W[P[I]==i+1,0].argsort() + 1) / sum(P[I]==i+1))
                     <= p
                     )
 
             # Generate observed outcome for the simulation regressions
-            Yobs = Y0[I,:] + tau[I,:] * W[I,:]
+            Yobs = Y0[I,:] + tau[I,:] * W
 
             # Generate RHS data sets for the simulation regressions
             # The first data set is just an intercept and a treatment dummy
-            Z1 = np.concatenate((beta0,W[I,:]),axis=1)
+            Z1 = np.concatenate((beta0,W),axis=1)
 
             # The first data set also includes the partition dummies
-            Z2 = np.concatenate((beta0,W[I,:],D[I,:]),axis=1)
+            Z2 = np.concatenate((beta0,W,D[I,:]),axis=1)
 
             # The third data set also includes an interaction between the
             # treatment dummy and the partition dummies
             Z3 = np.concatenate(
-                (beta0,W[I,:],D[I,:],
-                (W[I,:] @ np.ones(shape=(1,nparts-1))) * D[I,:]),
+                (beta0,W,D[I,:],(W @ np.ones(shape=(1,nparts-1))) * D[I,:]),
                 axis=1)
 
             # Go through all simulations for the current set of parameters
