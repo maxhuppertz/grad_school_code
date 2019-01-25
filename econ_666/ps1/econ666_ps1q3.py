@@ -8,6 +8,7 @@ import numpy as np
 from os import chdir, path
 from linreg import ols
 from joblib import Parallel, delayed
+from scipy.misc import factorial as fac
 
 ################################################################################
 ### Part 1: Define necessary functions
@@ -50,11 +51,11 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
     D = np.array([P==i+1 for i in range(nparts-1)], ndmin=2).transpose()
 
     # Make a vector to store the estimated treatment effects tau_hat
-    
+
 
     # Go through all sample sizes
     for N in sampsi:
-        # Draw a random sample of units
+        # Draw a random sample of units for this sample size
         I = np.random.normal(size=T).argsort() + 1 <= N
 
         # Make an intercept for this sample size
@@ -62,42 +63,50 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
 
         # Go through all treatment probabilities
         for p in tprobs:
-            # Draw random variables as basis for treatment indicator
-            W = np.random.normal(size=(N,1))
-
-            # Go through all groups in the partition
-            for i in range(nparts):
-                # Get the treatment indicator for the current group. Get the
-                # rank within group from .argsort(), add +1 to get ranks
-                # starting at 1, divide by the number of people in the group,
-                # and assign everyone at or below the treatment probability
-                # to treatment.
-                W[P[I]==i+1,0] = (
-                    ((W[P[I]==i+1,0].argsort() + 1) / sum(P[I]==i+1))
-                    <= p
-                    )
-
-            # Generate observed outcome for the simulation regressions
-            Yobs = Y0[I,:] + tau[I,:] * W
-
-            # Generate RHS data sets for the simulation regressions
-            # The first data set is just an intercept and a treatment dummy
-            Z1 = np.concatenate((beta0,W),axis=1)
-
-            # The first data set also includes the partition dummies
-            Z2 = np.concatenate((beta0,W,D[I,:]),axis=1)
-
-            # The third data set also includes an interaction between the
-            # treatment dummy and the partition dummies
-            Z3 = np.concatenate(
-                (beta0,W,D[I,:],(W @ np.ones(shape=(1,nparts-1))) * D[I,:]),
-                axis=1)
-
             # Go through all simulations for the current set of parameters
             for i in range(nsimul):
+                # Draw random variables as basis for treatment indicator
+                W = np.random.normal(size=(N,1))
+
+                # Go through all groups in the partition
+                for i in range(nparts):
+                    # Get the treatment indicator for the current group. Get the
+                    # rank within group from .argsort(), add +1 to get ranks
+                    # starting at 1, divide by the number of people in the
+                    # group, and assign everyone at or below the treatment
+                    # probability to treatment.
+                    W[P[I]==i+1,0] = (
+                        ((W[P[I]==i+1,0].argsort() + 1) / sum(P[I]==i+1))
+                        <= p
+                        )
+                
+                # Generate observed outcome for the simulation regressions
+                Yobs = Y0[I,:] + tau[I,:] * W
+
+                # Generate RHS data sets for the simulation regressions
+                # The first data set is just an intercept and a treatment dummy
+                Z1 = np.concatenate((beta0,W),axis=1)
+
+                # The first data set also includes the partition dummies
+                Z2 = np.concatenate((beta0,W,D[I,:]),axis=1)
+
+                # The third data set also includes an interaction between the
+                # treatment dummy and the partition dummies
+                Z3 = np.concatenate(
+                    (beta0,W,D[I,:],(W @ np.ones(shape=(1,nparts-1))) * D[I,:]),
+                    axis=1)
+
+                # Estimate the regression models
                 beta_hat_simp, S_hat_simp = ols(Yobs,Z1)
                 beta_hat_dumm, S_hat_dumm = ols(Yobs,Z2)
                 beta_hat_satu, S_hat_satu = ols(Yobs,Z1)
+
+            # Calculate how many draws would be needed to get the exact
+            # randomization distribution, given how many units are assigned to
+            # treatment for the given sample size. (Since p*N might not be an
+            # integer, it's safest to simply check how many people are
+            # currently assigned to treatment.)
+            nrdexact = fac(N) / (fac(sum(W)) * fac(N - sum(W)))
 
 ################################################################################
 ### Part 2: Run simulations
