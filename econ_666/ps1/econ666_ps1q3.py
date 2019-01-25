@@ -14,7 +14,7 @@ from joblib import Parallel, delayed
 ################################################################################
 
 # Define how to run the simulation for a given correlation pair
-def run_simulation(corr, T, sampsi, tprobs, nparts):
+def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax, beta0):
     # Set up covariance matrix
     C = np.eye(len(corr)+1)
 
@@ -25,10 +25,13 @@ def run_simulation(corr, T, sampsi, tprobs, nparts):
     # Get data
     D = np.random.multivariate_normal(np.zeros(len(corr)+1), C, size=T)
 
-    # Split them up into X, y, and tau
-    X = D[:,0]
-    y = D[:,1]
-    tau = D[:,2:]
+    # Split them up into X, y, and tau. I'd like these to be Numpy arrays, i.e.
+    # (for all practical purposes) vectors. By default, np.array() likes to
+    # create row vectors, which I find unintuitive. The tranpose() changes these
+    # into column vectors.
+    X = np.array(D[:,0], ndmin=2).transpose()
+    y = np.array(D[:,1], ndmin=2).transpose()
+    tau = np.array(D[:,2:], ndmin=2).transpose()
 
     # Get the partition of X. First, X.argsort() gets the ranks in the
     # distribution of X. Then, nparts/T converts it into fractions of the
@@ -44,7 +47,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts):
     # applied to this list of lists, it stacks them as rows of a matrix. This
     # creates an nparts - 1 by T matrix of indicator dummies. The transpose
     # converts it into a more conventional format
-    DP = np.array([P==i+1 for i in range(nparts-1)], ndmin=2).transpose()
+    D = np.array([P==i+1 for i in range(nparts-1)], ndmin=2).transpose()
 
     # Go through all sample sizes
     for N in sampsi:
@@ -62,7 +65,19 @@ def run_simulation(corr, T, sampsi, tprobs, nparts):
                 # to treatment.
                 W[P==i+1] = ((W[P==i+1].argsort()+1) / sum(P==i+1)) <= p
 
+            # Generate data sets for the simulation regressions
+            K1 = np.concatenate((beta0,X),axis=1)
+            K2 = np.concatenate((beta0,X,D),axis=1)
+            K3 = np.concatenate(
+                (beta0,X,D,(X @ np.ones(shape=(1,nparts-1))) * D),
+                axis=1)
+
             # Go through all simulations for the current set of parameters
+            for i in range(nsimul):
+                beta_hat_simple = ols(y,K1)
+                beta_hat_dummy = ols(y,K2)
+                beta_hat_saturated = ols(y,K1)
+
 
 ################################################################################
 ### Part 2: Run simulations
@@ -98,7 +113,11 @@ T = 100
 # Make an intercept
 beta0 = np.ones(shape=(T,1))
 
+run_simulation(corrs[0], T=T, sampsi=sampsi, tprobs=tprobs, nparts=nparts,
+    nsimul=nsimul, nrdmax=nrdmax, beta0=beta0)
+
 # Run simluations on all available cores in parallel
-Parallel(n_jobs=mp.cpu_count())(delayed(run_simulation)
-    (corr, T=T, sampsi=sampsi, tprobs=tprobs, nparts=nparts)
-    for corr in corrs)
+#Parallel(n_jobs=mp.cpu_count())(delayed(run_simulation)
+#    (corr, T=T, sampsi=sampsi, tprobs=tprobs, nparts=nparts, nsimul=nsimul,
+#    nrdmax=nrdmax, beta0=beta0)
+#    for corr in corrs)
