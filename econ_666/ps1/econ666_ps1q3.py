@@ -24,6 +24,9 @@ nparts = 3
 # Specify number of tuples
 T = 100
 
+# Make an intercept
+beta0 = np.ones(shape=(T,1))
+
 for corr in corrs:
     # Set up covariance matrix
     C = np.eye(len(corr)+1)
@@ -48,12 +51,24 @@ for corr in corrs:
     # equal to 1.
     P = np.ceil((X.argsort()+1)*nparts/T)
 
+    # Set up a set of dummies for each section of the partition
+    DP = np.zeros(T,nparts-1)
+
+    for i in range(nparts-1):
+        DP[P==i+1] = 1
+
     # Go through all sample sizes
     for N in sampsi:
         # Go through all treatment probabilities
         for p in tprobs:
-            # Get treatment status
-            W = np.random.uniform(size=T)
+            # Draw random variables as basis for treatment indicator
+            W = np.random.normal(size=T)
 
+            # Go through all groups in the partition
             for i in range(nparts):
-                print(len(W[P==i+1]))
+                # Get the treatment indicator for the current group. Get the
+                # rank within group from .argsort(), add +1 to get ranks
+                # starting at 1, divide by the number of people in the group,
+                # and assign everyone at or below the treatment probability
+                # to treatment.
+                W[P==i+1] = ((W[P==i+1].argsort()+1) / sum(P==i+1)) <= p
