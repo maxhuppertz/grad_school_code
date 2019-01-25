@@ -6,10 +6,11 @@
 import multiprocessing as mp
 import numpy as np
 from os import chdir, path
+from itertools import combinations, product
 from linreg import ols
 from joblib import Parallel, delayed
 from scipy.misc import factorial as fac
-from sympy.utilities.iterables import variations
+from sympy.utilities.iterables import cartes, permutations, variations
 
 ################################################################################
 ### Part 1: Define necessary functions
@@ -234,14 +235,15 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
             # currently assigned to treatment.) The np.int() is important,
             # because if this is going to be used as the maximum index for the
             # loop below, it has to be an index.
-            nrdexact = np.int(fac(N) / (fac(sum(W)) * fac(N - sum(W))))
-
+            nrdexact = (np.int(fac(N)
+                / (fac(np.floor(p*N)) * fac(N - np.floor(p*N)))))
+            print(nrdexact)
             # Go through either the number of iterations required to get the
             # exact randomization distribution, or the maximum number of
             # iterations specified for this simulation.
             if nrdexact <= nrdmax:
-                pass
-                # list(variations(W,10))
+                for i in range(nparts):
+                    pass
             else:
                 pass
 
