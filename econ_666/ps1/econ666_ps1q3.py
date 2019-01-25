@@ -69,4 +69,3 @@ for corr in corrs:
                 # and assign everyone at or below the treatment probability
                 # to treatment.
                 W[P==i+1] = ((W[P==i+1].argsort()+1) / sum(P==i+1)) <= p
-            
