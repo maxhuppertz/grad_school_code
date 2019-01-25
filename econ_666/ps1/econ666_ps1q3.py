@@ -50,6 +50,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
     D = np.array([P==i+1 for i in range(nparts-1)], ndmin=2).transpose()
 
     # Make a vector to store the estimated treatment effects tau_hat
+    
 
     # Go through all sample sizes
     for N in sampsi:
