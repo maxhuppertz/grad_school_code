@@ -55,8 +55,30 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
 
     # Go through all sample sizes
     for N in sampsi:
-        # Draw a random sample of units for this sample size
-        I = np.random.normal(size=T).argsort() + 1 <= N
+        # Draw random variables as the basis for a random sample of units
+        I = np.random.normal(size=T)
+
+        # Go through all groups in the partition
+        for i in range(nparts):
+            # Get the treatment indicator for the current group. Get the
+            # rank within group from .argsort(), add +1 to get ranks
+            # starting at 1, divide by the number of people in the
+            # group, and assign everyone at or below the treatment
+            # probability to treatment.
+            I[P==i+1] = (
+                ((I[P==i+1].argsort()  + 1) / sum(P==i+1))
+                <= N/T
+                )
+
+        for rando in range(np.int(np.abs(N - sum(I)))):
+            temp = I[I==0]
+            temp[np.random.randint(0,sum(I==0))] = 1
+            I[I==0] = temp
+
+        # Annoyingly, the data type of I will now be float. To be used as an
+        # index, it has to be boolean or integer. I find it easiest to convert
+        # it to boolean by just check where it isn't zero.
+        I = (I != 0)
 
         # Make an intercept for this sample size
         beta0 = np.ones(shape=(N,1))
@@ -79,7 +101,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                         ((W[P[I]==i+1,0].argsort() + 1) / sum(P[I]==i+1))
                         <= p
                         )
-                
+
                 # Generate observed outcome for the simulation regressions
                 Yobs = Y0[I,:] + tau[I,:] * W
 
