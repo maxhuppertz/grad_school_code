@@ -76,9 +76,17 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
         for i, excess in enumerate(range(np.int(np.abs(N - sum(I))))):
             if N > sum(I):
                 # If there are too few units assigned, randomly pick a unit
-                # and add it to the sample
+                # and add it to the sample. First, make a temporary vector
+                # containing all units not in the sample
                 temp = I[I==0]
+
+                # Then, pick a random integer index in that vector, and assign
+                # that unit to the sample
                 temp[np.random.randint(0,len(temp))] = 1
+
+                # Replace the sample assignment vector with the temporary one,
+                # which means one more unit has now been assigned to treatment
+                # at random.
                 I[I==0] = temp
             else:
                 # If there are too many units assigned, remove one unit at
@@ -87,9 +95,9 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                 # the second iteration from the second group, the third from the
                 # third group, and then back to the first, etc., although there
                 # really shouldn't be that many excess assignments.)
-                temp = I[I==0 and P[I==0]=i+1-np.floor(i/nparts)]
+                temp = I[(I==0) and (P[I==0]==i+1-np.floor(i/nparts))]
                 temp[np.random.randint(0,len(temp))] = 1
-                I[I==0 and P[I==0]=i+1-np.floor(i/nparts)] = 0
+                I[(I==0) and (P[I==0]==i+1-np.floor(i/nparts))] = 0
 
         # Annoyingly, the data type of I will now be float. To be used as an
         # index, it has to be boolean or integer. I find it easiest to convert
@@ -143,8 +151,14 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
             # randomization distribution, given how many units are assigned to
             # treatment for the given sample size. (Since p*N might not be an
             # integer, it's safest to simply check how many people are
-            # currently assigned to treatment.)
-            nrdexact = fac(N) / (fac(sum(W)) * fac(N - sum(W)))
+            # currently assigned to treatment.) The np.int() is important,
+            # because if this is going to be used as the maximum index for the
+            # loop below, it has to be an index.
+            nrdexact = np.int(fac(N) / (fac(sum(W)) * fac(N - sum(W))))
+
+            
+            for i in range(min(nrdexact,nrdmax)):
+                pass
 
 ################################################################################
 ### Part 2: Run simulations
