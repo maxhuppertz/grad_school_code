@@ -23,3 +23,7 @@ for corr in corrs:
         C[0,i+1] = C[i+1,0] = c
 
     D = np.random.multivariate_normal(np.zeros(len(corr)+1), C, size=T)
+
+    X = D[:,0]
+    y = D[:,1]
+    tau = D[:,2:]
