@@ -70,13 +70,23 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                 <= N/T
                 )
 
-        #
+        # The above mechanism could assign too few or too many units to
+        # the sample. This loop iterates over the number of such units, no
+        # matter whether there are too many or too few.
         for i, excess in enumerate(range(np.int(np.abs(N - sum(I))))):
             if N > sum(I):
+                # If there are too few units assigned, randomly pick a unit
+                # and add it to the sample
                 temp = I[I==0]
                 temp[np.random.randint(0,len(temp))] = 1
                 I[I==0] = temp
             else:
+                # If there are too many units assigned, remove one unit at
+                # random, but be sure to do it group by group. (The first
+                # iteration deletes one unit from the first group at random,
+                # the second iteration from the second group, the third from the
+                # third group, and then back to the first, etc., although there
+                # really shouldn't be that many excess assignments.)
                 temp = I[I==0 and P[I==0]=i+1-np.floor(i/nparts)]
                 temp[np.random.randint(0,len(temp))] = 1
                 I[I==0 and P[I==0]=i+1-np.floor(i/nparts)] = 0
