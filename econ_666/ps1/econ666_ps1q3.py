@@ -1,22 +1,25 @@
 import numpy as np
-from os import chdir, mkdir, path, mkdir
+from os import chdir, path
 from linreg import ols
+from scipy.stats.stats import pearsonr
 
 # Specify name for main directory (just uses the file's directory)
 mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
 
 # Change directory
 chdir(mdir)
-n = 100000
-X = np.random.normal(size=(n,1))
-y = .5*X + np.random.normal(size=(n,1)) * 5
 
-[beta_hat,Sigma_hat] = ols(y,np.concatenate((np.ones(shape=(n,1)),X),axis=1))
-print(beta_hat.flatten())
-print(np.sqrt(np.diag(Sigma_hat)))
-print()
+# Specify pairs of correlations
+corrs = [[0,0], [.1,.1], [.6,.1], [.1,.6]]
 
-[beta_hat,Sigma_hat] = ols(y,np.concatenate((np.ones(shape=(n,1)),X),axis=1),cov_est='hc1')
-print(beta_hat.flatten())
-print(np.sqrt(np.diag(Sigma_hat)))
-print()
+# Specify number of tuples
+T = 100
+
+for corr in corrs:
+    # Set up covariance matrix
+    C = np.eye(len(corr)+1)
+
+    for i, c in enumerate(corr):
+        C[0,i+1] = C[i+1,0] = c
+
+    D = np.random.multivariate_normal(np.zeros(len(corr)+1), C, size=T)
