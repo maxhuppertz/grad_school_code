@@ -134,6 +134,58 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                         temp[np.random.randint(0,len(temp))] = 1
                         W[P[I]==i+1,0] = temp
 
+                    # Obviously, it will very rarely happen that the number
+                    # of units assigned to treatment from this group divided
+                    # by the number of units in the group will be exactly
+                    # equal to p. This statement checks whether p is larger or
+                    # smaller than the ratio of assigned units in this group,
+                    # which is sum(W[P[I]==i+1,0]), to the number of units in
+                    # the group, which is sum(P[I]==i+1).
+                    if ( (p > sum(W[P[I]==i+1,0])/sum(P[I]==i+1))
+                    and (sum(W[P[I]==i+1,0]) < sum(P[I]==i+1)-1) ):
+                        # If p is larger, and if assigning one more unit to
+                        # treatment wouldn't mean the whole group is assigned,
+                        # I arrive here.
+                        # Get the treatment assignment vector for the group, put
+                        # it in a temporary object
+                        temp1 = W[P[I]==i+1,0]
+
+                        # Make another temporary object, which gets only units
+                        # which weren't assigned to treatment
+                        temp2 = temp1[W[P[I]==i+1,0] == 0]
+
+                        # Pick one of those units at random using randint().
+                        # Replace the treatment indicator with a Bernoulli
+                        # trial (Binomial distribution with only 1 trial,which
+                        # is the first argument in binomial()) that succeeds
+                        # with a probability which is equal to the distance
+                        # between p and the assigned number of units in the
+                        # group, divided by the size of the group. In
+                        # expectation, the number of units assigned will now be
+                        # exactly p.
+                        temp2[np.random.randint(0,len(temp2))] = (
+                            np.random.binomial(
+                                1,p*sum(P[I]==i+1)-sum(W[P[I]==i+1,0]))
+                            )
+
+                        # Replace the temporary version of the group's treatment
+                        # indicator with the new version including the
+                        # potentially changed assignment
+                        temp1[W[P[I]==i+1,0] == 0] = temp2
+
+                        # Replace the actual treatment vector for the group
+                        W[P[I]==i+1,0] = temp1
+                    elif ( (p < sum(W[P[I]==i+1,0])/sum(P[I]==i+1))
+                    and (sum(W[P[I]==i+1,0]) > 1) ):
+                        temp1 = W[P[I]==i+1,0]
+                        temp2 = temp1[W[P[I]==i+1,0] == 1]
+                        temp2[np.random.randint(0,len(temp2))] = (
+                            np.random.binomial(
+                                1,sum(W[P[I]==i+1,0])-p*sum(P[I]==i+1))
+                            )
+                        temp1[W[P[I]==i+1,0] == 1] = temp2
+                        W[P[I]==i+1,0] = temp1
+
                 # Generate observed outcome for the simulation regressions
                 Yobs = Y0[I,:] + tau[I,:] * W
 
@@ -163,7 +215,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
             # because if this is going to be used as the maximum index for the
             # loop below, it has to be an index.
             nrdexact = np.int(fac(N) / (fac(sum(W)) * fac(N - sum(W))))
-
+            print(sum(W))
             # Go through either the number of iterations required to get the
             # exact randomization distribution, or the maximum number of
             # iterations specified for this simulation.
