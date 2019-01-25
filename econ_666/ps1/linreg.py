@@ -10,7 +10,7 @@ def ols(y, X, get_cov=True, cov_est='homoskedastic'):
     # Calculate OLS coefficients
     XXinv = solve(X.transpose() @ X, np.eye(k))  # (X'X)^(-1)
     beta_hat = XXinv @ (X.transpose() @ y)
-
+    
     # Check whether covariance is needed
     if get_cov:
         # Get residuals

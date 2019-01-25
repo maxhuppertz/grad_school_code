@@ -25,13 +25,13 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax, beta0):
     # Get data
     D = np.random.multivariate_normal(np.zeros(len(corr)+1), C, size=T)
 
-    # Split them up into X, y, and tau. I'd like these to be Numpy arrays, i.e.
+    # Split them up into X, Y0, and tau. I'd like these to be Numpy arrays, i.e.
     # (for all practical purposes) vectors. By default, np.array() likes to
     # create row vectors, which I find unintuitive. The tranpose() changes these
     # into column vectors.
     X = np.array(D[:,0], ndmin=2).transpose()
-    y = np.array(D[:,1], ndmin=2).transpose()
-    tau = np.array(D[:,2:], ndmin=2).transpose()
+    Y0 = np.array(D[:,1], ndmin=2).transpose()
+    tau = np.array(D[:,len(corr)], ndmin=2).transpose()
 
     # Get the partition of X. First, X[:,0].argsort() gets the ranks in the
     # distribution of X. Then, nparts/T converts it into fractions of the
@@ -49,12 +49,20 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax, beta0):
     # converts it into a more conventional format
     D = np.array([P==i+1 for i in range(nparts-1)], ndmin=2).transpose()
 
+    # Make a vector to store the estimated treatment effects tau_hat
+
     # Go through all sample sizes
     for N in sampsi:
+        # Draw a random sample of units
+        I = np.random.normal(size=T).argsort() + 1 <= N
+
+        # Make an intercept for this sample size
+        beta0 = np.ones(shape=(N,1))
+
         # Go through all treatment probabilities
         for p in tprobs:
             # Draw random variables as basis for treatment indicator
-            W = np.random.normal(size=T)
+            W = np.random.normal(size=(N,1))
 
             # Go through all groups in the partition
             for i in range(nparts):
@@ -63,20 +71,33 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax, beta0):
                 # starting at 1, divide by the number of people in the group,
                 # and assign everyone at or below the treatment probability
                 # to treatment.
-                W[P==i+1] = ((W[P==i+1].argsort()+1) / sum(P==i+1)) <= p
+                W[P[I,:]==i+1,0] = (
+                    ((W[P[I,:]==i+1,0].argsort() + 1) / sum(P[I,:]==i+1))
+                    <= p
+                    )
 
-            # Generate data sets for the simulation regressions
-            K1 = np.concatenate((beta0,X),axis=1)
-            K2 = np.concatenate((beta0,X,D),axis=1)
-            K3 = np.concatenate(
-                (beta0,X,D,(X @ np.ones(shape=(1,nparts-1))) * D),
+            # Generate observed outcome for the simulation regressions
+            Yobs = Y0[I,:] + tau[I,:] * W[I,:]
+
+            # Generate RHS data sets for the simulation regressions
+            # The first data set is just an intercept and a treatment dummy
+            Z1 = np.concatenate((beta0,W[I,:]),axis=1)
+
+            # The first data set also includes the partition dummies
+            Z2 = np.concatenate((beta0,W[I,:],D[I,:]),axis=1)
+
+            # The third data set also includes an interaction between the
+            # treatment dummy and the partition dummies
+            Z3 = np.concatenate(
+                (beta0,W[I,:],D[I,:],
+                (W[I,:] @ np.ones(shape=(1,nparts-1))) * D[I,:]),
                 axis=1)
 
             # Go through all simulations for the current set of parameters
             for i in range(nsimul):
-                beta_hat_simp, S_hat_simp = ols(y,K1)
-                beta_hat_dumm, S_hat_dumm = ols(y,K2)
-                beta_hat_satu, S_hat_satu = ols(y,K1)
+                beta_hat_simp, S_hat_simp = ols(Yobs,Z1)
+                beta_hat_dumm, S_hat_dumm = ols(Yobs,Z2)
+                beta_hat_satu, S_hat_satu = ols(Yobs,Z1)
 
 ################################################################################
 ### Part 2: Run simulations
@@ -109,13 +130,10 @@ nrdmax = 10000
 # Specify number of tuples
 T = 100
 
-# Make an intercept
-beta0 = np.ones(shape=(T,1))
-
 # Run simulations for all correlation pairs
 for corr in corrs:
     run_simulation(corr, T=T, sampsi=sampsi, tprobs=tprobs, nparts=nparts,
-        nsimul=nsimul, nrdmax=nrdmax, beta0=beta0)
+        nsimul=nsimul, nrdmax=nrdmax)
 
 # Run simluations on all available cores in parallel
 #Parallel(n_jobs=mp.cpu_count())(delayed(run_simulation)
