@@ -126,6 +126,14 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                         <= p
                         )
 
+                    # For very small sample sizes and small treatment
+                    # probabilities, this can result in no units being assigned
+                    # to treatment. In that case, assign at least one.
+                    if sum(W[P[I]==i+1,0]) == 0:
+                        temp = W[P[I]==i+1,0]
+                        temp[np.random.randint(0,len(temp))] = 1
+                        W[P[I]==i+1,0] = temp
+
                 # Generate observed outcome for the simulation regressions
                 Yobs = Y0[I,:] + tau[I,:] * W
 
@@ -156,7 +164,9 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
             # loop below, it has to be an index.
             nrdexact = np.int(fac(N) / (fac(sum(W)) * fac(N - sum(W))))
 
-            
+            # Go through either the number of iterations required to get the
+            # exact randomization distribution, or the maximum number of
+            # iterations specified for this simulation.
             for i in range(min(nrdexact,nrdmax)):
                 pass
 
