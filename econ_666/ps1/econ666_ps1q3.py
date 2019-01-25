@@ -14,7 +14,7 @@ from joblib import Parallel, delayed
 ################################################################################
 
 # Define how to run the simulation for a given correlation pair
-def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax, beta0):
+def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
     # Set up covariance matrix
     C = np.eye(len(corr)+1)
 
