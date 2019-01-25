@@ -43,8 +43,17 @@ for corr in corrs:
     # Get the partition of X. First, X.argsort() gets the ranks in the
     # distribution of X. Then, nparts/T converts it into fractions of the
     # length of X. Taking the ceil() makes sure that the groups are between 1
-    # and nparts.
-    P = np.ceil(X.argsort()*nparts/T)
+    # and nparts. The +1 is necessary because of Python's zero indexing, which
+    # leads to the lowest rank being zero, and ceil(0) = 0 when it should be
+    # equal to 1.
+    P = np.ceil((X.argsort()+1)*nparts/T)
 
-    # Get treatment status
-    W = np.random.normal(size=T).argsort()
+    # Go through all sample sizes
+    for N in sampsi:
+        # Go through all treatment probabilities
+        for p in tprobs:
+            # Get treatment status
+            W = np.random.uniform(size=T)
+
+            for i in range(nparts):
+                print(len(W[P==i+1]))
