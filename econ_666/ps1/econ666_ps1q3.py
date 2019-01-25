@@ -235,9 +235,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
             # currently assigned to treatment.) The np.int() is important,
             # because if this is going to be used as the maximum index for the
             # loop below, it has to be an index.
-            nrdexact = (np.int(fac(N)
-                / (fac(np.floor(p*N)) * fac(N - np.floor(p*N)))))
-            print(nrdexact)
+            
             # Go through either the number of iterations required to get the
             # exact randomization distribution, or the maximum number of
             # iterations specified for this simulation.
