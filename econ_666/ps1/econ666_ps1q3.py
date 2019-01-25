@@ -52,10 +52,7 @@ for corr in corrs:
     P = np.ceil((X.argsort()+1)*nparts/T)
 
     # Set up a set of dummies for each section of the partition
-    DP = np.zeros(T,nparts-1)
-
-    for i in range(nparts-1):
-        DP[P==i+1] = 1
+    DP = np.array([P==i+1 for i in range(nparts-1)], ndmin=2).transpose()
 
     # Go through all sample sizes
     for N in sampsi:
@@ -72,3 +69,4 @@ for corr in corrs:
                 # and assign everyone at or below the treatment probability
                 # to treatment.
                 W[P==i+1] = ((W[P==i+1].argsort()+1) / sum(P==i+1)) <= p
+            
