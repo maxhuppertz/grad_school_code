@@ -70,10 +70,16 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                 <= N/T
                 )
 
-        for rando in range(np.int(np.abs(N - sum(I)))):
-            temp = I[I==0]
-            temp[np.random.randint(0,sum(I==0))] = 1
-            I[I==0] = temp
+        #
+        for i, excess in enumerate(range(np.int(np.abs(N - sum(I))))):
+            if N > sum(I):
+                temp = I[I==0]
+                temp[np.random.randint(0,len(temp))] = 1
+                I[I==0] = temp
+            else:
+                temp = I[I==0 and P[I==0]=i+1-np.floor(i/nparts)]
+                temp[np.random.randint(0,len(temp))] = 1
+                I[I==0 and P[I==0]=i+1-np.floor(i/nparts)] = 0
 
         # Annoyingly, the data type of I will now be float. To be used as an
         # index, it has to be boolean or integer. I find it easiest to convert
