@@ -9,6 +9,7 @@ from os import chdir, path
 from linreg import ols
 from joblib import Parallel, delayed
 from scipy.misc import factorial as fac
+from sympy.utilities.iterables import variations
 
 ################################################################################
 ### Part 1: Define necessary functions
@@ -110,7 +111,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
         # Go through all treatment probabilities
         for p in tprobs:
             # Go through all simulations for the current set of parameters
-            for i in range(nsimul):
+            for s in range(nsimul):
                 # Draw random variables as basis for treatment indicator
                 W = np.random.normal(size=(N,1))
 
@@ -177,13 +178,32 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                         W[P[I]==i+1,0] = temp1
                     elif ( (p < sum(W[P[I]==i+1,0])/sum(P[I]==i+1))
                     and (sum(W[P[I]==i+1,0]) > 1) ):
+                        # If p is lower, and removing one unit doesn't assign
+                        # everyone to the control group, I will end up here.
+                        # Again, get the treatment assignement vector for this
+                        # group.
                         temp1 = W[P[I]==i+1,0]
+
+                        # Get only units assigned to the treatment group
                         temp2 = temp1[W[P[I]==i+1,0] == 1]
+
+                        # Pick a random unit and replace their treatment status
+                        # as zero using another Bernoulli trial. The probability
+                        # of success is equal to the distance between the number
+                        # of units assigned to treatment in the group divided
+                        # by group size and p, divided by 1 over the group
+                        # size.
                         temp2[np.random.randint(0,len(temp2))] = (
                             np.random.binomial(
                                 1,sum(W[P[I]==i+1,0])-p*sum(P[I]==i+1))
                             )
+
+                        # Replace the temporary version of the treatment vector
+                        # with the new one
                         temp1[W[P[I]==i+1,0] == 1] = temp2
+
+                        # Replace the actual treatment assignment vector for the
+                        # group
                         W[P[I]==i+1,0] = temp1
 
                 # Generate observed outcome for the simulation regressions
@@ -215,11 +235,14 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
             # because if this is going to be used as the maximum index for the
             # loop below, it has to be an index.
             nrdexact = np.int(fac(N) / (fac(sum(W)) * fac(N - sum(W))))
-            print(sum(W))
+
             # Go through either the number of iterations required to get the
             # exact randomization distribution, or the maximum number of
             # iterations specified for this simulation.
-            for i in range(min(nrdexact,nrdmax)):
+            if nrdexact <= nrdmax:
+                pass
+                # list(variations(W,10))
+            else:
                 pass
 
 ################################################################################
