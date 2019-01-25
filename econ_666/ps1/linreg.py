@@ -1,5 +1,5 @@
 # This function just runs a standard linear regression of y on X
-def ols(y, X, get_cov=True, cov_est='hskd'):
+def ols(y, X, get_cov=True, cov_est='homoskedastic'):
     # Import necessary packages
     import numpy as np
     from numpy.linalg import solve
@@ -17,7 +17,7 @@ def ols(y, X, get_cov=True, cov_est='hskd'):
         U_hat = y - X @ beta_hat
 
         # Check which covariance estimator to use
-        if cov_est == 'hskd':
+        if cov_est == 'homoskedastic':
             # For the homoskedastic estimator, just calculate the standard variance
             V_hat = ( n / (n - k) ) * XXinv * (U_hat.transpose() @ U_hat)
         elif cov_est == 'hc1':

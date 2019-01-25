@@ -9,9 +9,9 @@ mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
 chdir(mdir)
 
 D = np.random.normal(size=(1000,1))
-Y = .5*D + np.random.normal(size=(1000,1))
+Y = .5*D + np.random.normal(size=(1000,1)) * 5
 
-[beta_hat,Sigma_hat] = ols(Y,np.concatenate((np.ones(shape=(1000,1)),D),axis=1),cov_est='hskd')
+[beta_hat,Sigma_hat] = ols(Y,np.concatenate((np.ones(shape=(1000,1)),D),axis=1))
 print(beta_hat.flatten())
 print(np.sqrt(np.diag(Sigma_hat)))
 print()
