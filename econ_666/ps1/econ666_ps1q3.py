@@ -336,7 +336,8 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
 # Set seed
 np.random.seed(666)
 
-# Set display options
+# Set display options (four decimal points, no scientific notation, and a
+# maximum of 100 characters before a linebreak)
 np.set_printoptions(precision=4,suppress=True,linewidth=100)
 
 # Specify name for main directory (just uses the file's directory)
