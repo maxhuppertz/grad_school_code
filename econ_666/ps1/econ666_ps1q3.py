@@ -371,7 +371,7 @@ nsimul = 100
 nest = 3
 
 # Specify maximum number of repetitions for randomization distribution
-nrdmax = 10
+nrdmax = 10000
 
 # Check how many cores are available
 ncores = cpu_count()
