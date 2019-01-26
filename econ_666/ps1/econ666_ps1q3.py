@@ -184,9 +184,16 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                     axis=1)
 
                 # Estimate the regression models
-                beta_hat_simp, S_hat_simp = ols(Yobs,Z1)
-                beta_hat_dumm, S_hat_dumm = ols(Yobs,Z2)
-                beta_hat_satu, S_hat_satu = ols(Yobs,Z1)
+                for i, Z in enumerate([Z1, Z2, Z3]):
+                    # Replace the corresponding entry in the tau_hats array. The
+                    # row index is just s. For the columns, remembering Python's
+                    # zero indexing is important. For example, for three
+                    # estimations, this maps i to the column indices as
+                    #
+                    # 0 -> [0,1], 1 -> [2,3], 2 -> [4,5]
+                    #
+                    # which is exactly what I need
+                    tau_hat[s,i*2:i*2+1] = ols(Yobs,Z)
 
             # Make sure this is an integer
             nrdexact = np.int(nrdexact)
