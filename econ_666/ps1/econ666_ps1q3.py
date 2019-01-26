@@ -197,7 +197,8 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                     #
                     # and for any given index [j,k], Python will try to assign
                     # contents to the elements j,j+1,...,k-1, but not to k
-                    # itself. Therefore, this does exactly what it should do.
+                    # itself. Therefore, this gets me the right indices for a
+                    # two element assignment.
                     tau_hats[s,2*i:2*i+2] = (
                         beta_hat[1,0], np.sqrt(S_hat[1,1])
                         )
