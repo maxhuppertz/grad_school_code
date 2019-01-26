@@ -208,6 +208,11 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                 # effect. First, estimate the model.
                 beta_hat, S_hat = ols(Yobs,Z1)
 
+            # Set up an array to store the randomization distribution of tau_hat
+            # (or the maximum number of simulation draws used to approximate it,
+            # if getting the exact distribution is not feasible.)
+            tau_true = np.zeros(shape=(np.int(np.minimum(nrdexact, nrdmax)),1))
+
             # Check whether the number of iterations required to get the exact
             # randomization distribution exceeds the maximum allowable number
             # of iterations
@@ -240,7 +245,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                 A = product(*A)
 
                 # Go through all possible assignment vectors
-                for a in list(A):
+                for s, a in enumerate(list(A)):
                     # Set up treatment assignment as a vector of zeros
                     W = np.zeros(shape=(N,1))
 
@@ -263,6 +268,9 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
 
                     # Run the regression
                     beta_hat_simp = ols(Yobs,Z1,get_cov=False)
+
+                    # Store the result
+                    tau_true[s,0] = beta_hat_simp[1,0]
             else:
                 # If getting the exact randomization distribution is too
                 # computationally intensive, go through the maximum number of
@@ -295,6 +303,9 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                     # Run the regression
                     beta_hat_simp = ols(Yobs,Z1,get_cov=False)
 
+                    # Store the result
+                    tau_true[s,0] = beta_hat_simp[1,0]
+
 ################################################################################
 ### Part 2: Run simulations
 ################################################################################
@@ -324,7 +335,7 @@ tprobs = [.3, .5]
 nparts = 3
 
 # Specify number of simulations to run
-nsimul = 100
+nsimul = 10000
 
 # Tell the program how many estimations will be run for each simulation. (For
 # example, if there is a simply regression of Y on a treament dummy, another
