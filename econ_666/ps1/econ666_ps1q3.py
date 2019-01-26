@@ -126,7 +126,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
             # standard error for each of the three models for each of the
             # simulations. (Each row is a given simulation, and each two
             # columns are for a given tau_hat and its standard error.)
-            tau_hats = np.zeros(n_simul,nest*2)
+            tau_hats = np.zeros(shape=(nsimul,nest*2))
 
             # Go through all simulations for the current set of parameters
             for s in range(nsimul):
@@ -183,17 +183,26 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                     (beta0,W,D[I,:],(W @ np.ones(shape=(1,nparts-1))) * D[I,:]),
                     axis=1)
 
-                # Estimate the regression models
-                for i, Z in enumerate([Z1, Z2, Z3]):
-                    # Replace the corresponding entry in the tau_hats array. The
-                    # row index is just s. For the columns, remembering Python's
-                    # zero indexing is important. For example, for three
-                    # estimations, this maps i to the column indices as
+                # Estimate the first two regression models and store the
+                # estimates in the tau_hats array, in row s
+                for i, Z in enumerate([Z1, Z2]):
+                    # Estimate the model
+                    beta_hat, S_hat = ols(Yobs,Z)
+
+                    # Store the estimates. The row index is easy. For the column
+                    # index, it's important to remember Python's zero indexing.
+                    # This maps counter i to index [j,k] as
                     #
-                    # 0 -> [0,1], 1 -> [2,3], 2 -> [4,5]
+                    # 0 -> [0,2], 1 -> [2,4]
                     #
-                    # which is exactly what I need
-                    tau_hat[s,i*2:i*2+1] = ols(Yobs,Z)
+                    # and for any given index [j,k], Python will try to assign
+                    # contents to the elements j,j+1,...,k-1, but not to k
+                    # itself. Therefore, this does exactly what it should do.
+                    tau_hats[s,2*i:2*i+2] = (
+                        beta_hat[1,0], np.sqrt(S_hat[1,1])
+                        )
+
+                beta_hat_satu, S_hat_satu = ols(Yobs,Z1)
 
             # Make sure this is an integer
             nrdexact = np.int(nrdexact)
@@ -323,7 +332,7 @@ nsimul = 100
 nest = 3
 
 # Specify maximum number of repetitions for randomization distribution
-nrdmax = 10000
+nrdmax = 10
 
 # Check how many cores are available
 ncores = mp.cpu_count()
