@@ -241,8 +241,36 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                     # Run the regression
                     beta_hat_simp = ols(Yobs,Z1,get_cov=False)
             else:
-                for i in range(nrdmax):
-                    pass
+                # If getting the exact randomization distribution is too
+                # computationally intensive, go through the maximum number of
+                # allowable iterations
+                for s in range(nrdmax):
+                    # Here, the treatment assignment is just as for the
+                    # simulations above
+                    # Draw random variables as basis for treatment indicator
+                    W = np.random.normal(size=(N,1))
+
+                    # Go through all groups in the partition
+                    for i in range(nparts):
+                        # Get number of people in the group n
+                        ngroup = sum(P[I]==i+1)
+
+                        # Get number of treated units k
+                        ntreat = max(np.floor(p*ngroup),1)
+
+                        # Get the treatment indicator for the current group.
+                        # Get the rank within group from .argsort(), add +1 to
+                        # get ranks starting at 1.
+                        W[P[I]==i+1,0] = W[P[I]==i+1,0].argsort() + 1 <= ntreat
+
+                    # Generate observed outcome for this assignment
+                    Yobs = Y0[I,:] + tau[I,:] * W
+
+                    # Put together the RHS variables
+                    Z1 = np.concatenate((beta0,W),axis=1)
+
+                    # Run the regression
+                    beta_hat_simp = ols(Yobs,Z1,get_cov=False)
 
 ################################################################################
 ### Part 2: Run simulations
