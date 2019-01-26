@@ -230,24 +230,64 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
 
             # Calculate how many draws would be needed to get the exact
             # randomization distribution, given how many units are assigned to
-            # treatment for the given sample size. (Since p*N might not be an
-            # integer, it's safest to simply check how many people are
-            # currently assigned to treatment.) The np.int() is important,
-            # because if this is going to be used as the maximum index for the
-            # loop below, it has to be an index.
-            
+            # treatment for the given sample size.
+            nrdexact = 1
+
+            # GO through all groups in the partition
+            for i in range(nparts):
+                # Get number of people in the group n
+                ngroup = sum(P[I]==i+1)
+
+                # Get number of treated units k
+                ntreat = max(np.floor(p*sum(P[I]==i+1)),1)
+
+
+                # Check whether this is the first group
+                if i+1 == 1:
+                    # If this is the first group, calculate n choose k for this
+                    # group, and save the result
+                    nrdexact = fac(ngroup) / (fac(ngroup-ntreat)*fac(ntreat))
+                else:
+                    # If this isn't the first group, calculate n choose k for
+                    # this group, multiply it by the number of possible
+                    # assignments of all other groups calculated so far
+                    nrdexact = (
+                        nrdexact *
+                        (fac(ngroup) / (fac(ngroup-ntreat)*fac(ntreat)))
+                        )
+
+            # Make sure this is an integer
+            nrdexact = np.int(nrdexact)
+
             # Go through either the number of iterations required to get the
             # exact randomization distribution, or the maximum number of
             # iterations specified for this simulation.
             if nrdexact <= nrdmax:
+                # Go through all groups in the partition
                 for i in range(nparts):
-                    pass
+                    # Get number of people in the group n
+                    ngroup = sum(P[I]==i+1)
+
+                    # Get number of treated units k
+                    ntreat = np.int(max(np.floor(p*sum(P[I]==i+1)),1))
+
+                    # Check whether this is the first group
+                    if i+1 == 1:
+                        A = list(combinations(range(ngroup),ntreat))
+                    else:
+                        A = list(product(A,
+                            list(combinations(range(ngroup),ntreat))))
+
+
             else:
                 pass
 
 ################################################################################
 ### Part 2: Run simulations
 ################################################################################
+
+# Set seed
+np.random.seed(666)
 
 # Specify name for main directory (just uses the file's directory)
 mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
