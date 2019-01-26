@@ -122,6 +122,8 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
             # as 1.
             nrdexact = 1
 
+            tau_hats = np.zeros(n_simul,)
+
             # Go through all simulations for the current set of parameters
             for s in range(nsimul):
                 # Draw random variables as basis for treatment indicator
@@ -288,6 +290,9 @@ chdir(mdir)
 # Specify pairs of correlations
 corrs = [[0,0], [.1,.1], [.6,.1], [.1,.6]]
 
+# Specify number of tuples
+T = 100
+
 # Set sample sizes
 sampsi = [10, 25, 100]
 
@@ -300,11 +305,14 @@ nparts = 3
 # Specify number of simulations to run
 nsimul = 100
 
+# Tell the program how many estimations will be run for each simulation. (For
+# example, if there is a simply regression of Y on a treament dummy, another
+# regression of Y on a treatment dummy and partition indicators, and then a
+# third regression for the saturated model, that's three estimations.)
+nest = 3
+
 # Specify maximum number of repetitions for randomization distribution
 nrdmax = 10000
-
-# Specify number of tuples
-T = 100
 
 # Check how many cores are available
 ncores = mp.cpu_count()
