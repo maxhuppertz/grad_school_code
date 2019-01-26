@@ -136,7 +136,10 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                     W[P[I]==i+1,0] = W[P[I]==i+1,0].argsort() + 1 <= ntreat
 
                     # Check whether this is the first group and the first
-                    # simulation
+                    # simulation. If so, do the calculations required for the
+                    # number of draws in the randomization distribution. It's
+                    # convenient to do this now, since it saves some loops later
+                    # on.
                     if s==0 and i == 0:
                         # If so, calculate n choose k for this group, and save
                         # the result
@@ -152,77 +155,6 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                             nrdexact *
                             (fac(ngroup) / (fac(ngroup-ntreat)*fac(ntreat)))
                             )
-
-                    # Obviously, it will very rarely happen that the number
-                    # of units assigned to treatment from this group divided
-                    # by the number of units in the group will be exactly
-                    # equal to p. This statement checks whether p is larger or
-                    # smaller than the ratio of assigned units in this group,
-                    # which is sum(W[P[I]==i+1,0]), to the number of units in
-                    # the group, which is sum(P[I]==i+1).
-                    #if ( (p > sum(W[P[I]==i+1,0])/sum(P[I]==i+1))
-                    #and (sum(W[P[I]==i+1,0]) < sum(P[I]==i+1)-1) ):
-                        # If p is larger, and if assigning one more unit to
-                        # treatment wouldn't mean the whole group is assigned,
-                        # I arrive here.
-                        # Get the treatment assignment vector for the group, put
-                        # it in a temporary object
-                        #temp1 = W[P[I]==i+1,0]
-
-                        # Make another temporary object, which gets only units
-                        # which weren't assigned to treatment
-                        #temp2 = temp1[W[P[I]==i+1,0] == 0]
-
-                        # Pick one of those units at random using randint().
-                        # Replace the treatment indicator with a Bernoulli
-                        # trial (Binomial distribution with only 1 trial,which
-                        # is the first argument in binomial()) that succeeds
-                        # with a probability which is equal to the distance
-                        # between p and the assigned number of units in the
-                        # group, divided by the size of the group. In
-                        # expectation, the number of units assigned will now be
-                        # exactly p.
-                        #temp2[np.random.randint(0,len(temp2))] = (
-                        #    np.random.binomial(
-                        #        1,p*sum(P[I]==i+1)-sum(W[P[I]==i+1,0]))
-                        #    )
-
-                        # Replace the temporary version of the group's treatment
-                        # indicator with the new version including the
-                        # potentially changed assignment
-                        #temp1[W[P[I]==i+1,0] == 0] = temp2
-
-                        # Replace the actual treatment vector for the group
-                        #W[P[I]==i+1,0] = temp1
-                    #elif ( (p < sum(W[P[I]==i+1,0])/sum(P[I]==i+1))
-                    #and (sum(W[P[I]==i+1,0]) > 1) ):
-                        # If p is lower, and removing one unit doesn't assign
-                        # everyone to the control group, I will end up here.
-                        # Again, get the treatment assignement vector for this
-                        # group.
-                        #temp1 = W[P[I]==i+1,0]
-
-                        # Get only units assigned to the treatment group
-                        #temp2 = temp1[W[P[I]==i+1,0] == 1]
-
-                        # Pick a random unit and replace their treatment status
-                        # as zero using another Bernoulli trial. The probability
-                        # of success is equal to the distance between the number
-                        # of units assigned to treatment in the group divided
-                        # by group size and p, divided by 1 over the group
-                        # size.
-                        #temp2[np.random.randint(0,len(temp2))] = (
-                        #    np.random.binomial(
-                        #        1,sum(W[P[I]==i+1,0])-p*sum(P[I]==i+1))
-                        #    )
-
-                        # Replace the temporary version of the treatment vector
-                        # with the new one
-                        #temp1[W[P[I]==i+1,0] == 1] = temp2
-
-                        # Replace the actual treatment assignment vector for the
-                        # group
-                        #W[P[I]==i+1,0] = temp1
 
                 # Generate observed outcome for the simulation regressions
                 Yobs = Y0[I,:] + tau[I,:] * W
