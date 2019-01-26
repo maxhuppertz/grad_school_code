@@ -111,6 +111,12 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
 
         # Go through all treatment probabilities
         for p in tprobs:
+            # I'll need to know how many draws of treatment vectors would be
+            # needed to get the exact randomization distribution for this
+            # treatment probabilty and sample size. For now, just set that up
+            # as 1.
+            nrdexact = 1
+
             # Go through all simulations for the current set of parameters
             for s in range(nsimul):
                 # Draw random variables as basis for treatment indicator
@@ -118,23 +124,34 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
 
                 # Go through all groups in the partition
                 for i in range(nparts):
+                    # Get number of people in the group n
+                    ngroup = sum(P[I]==i+1)
+
+                    # Get number of treated units k
+                    ntreat = max(np.floor(p*ngroup),1)
+
                     # Get the treatment indicator for the current group. Get the
                     # rank within group from .argsort(), add +1 to get ranks
-                    # starting at 1, divide by the number of people in the
-                    # group, and assign everyone at or below the treatment
-                    # probability to treatment.
-                    W[P[I]==i+1,0] = (
-                        ((W[P[I]==i+1,0].argsort() + 1) / sum(P[I]==i+1))
-                        <= p
-                        )
+                    # starting at 1.
+                    W[P[I]==i+1,0] = W[P[I]==i+1,0].argsort() + 1 <= ntreat
 
-                    # For very small sample sizes and small treatment
-                    # probabilities, this can result in no units being assigned
-                    # to treatment. In that case, assign at least one.
-                    if sum(W[P[I]==i+1,0]) == 0:
-                        temp = W[P[I]==i+1,0]
-                        temp[np.random.randint(0,len(temp))] = 1
-                        W[P[I]==i+1,0] = temp
+                    # Check whether this is the first group and the first
+                    # simulation
+                    if s==0 and i == 0:
+                        # If so, calculate n choose k for this group, and save
+                        # the result
+                        nrdexact = (
+                            fac(ngroup) / (fac(ngroup-ntreat)*fac(ntreat))
+                            )
+                    else if s==0:
+                        # If it's the first sumlation but not the first group,
+                        # get n choose k, and multiply it by the number of
+                        # possible assignments of all other groups calculated
+                        # so far
+                        nrdexact = (
+                            nrdexact *
+                            (fac(ngroup) / (fac(ngroup-ntreat)*fac(ntreat)))
+                            )
 
                     # Obviously, it will very rarely happen that the number
                     # of units assigned to treatment from this group divided
@@ -143,18 +160,18 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                     # smaller than the ratio of assigned units in this group,
                     # which is sum(W[P[I]==i+1,0]), to the number of units in
                     # the group, which is sum(P[I]==i+1).
-                    if ( (p > sum(W[P[I]==i+1,0])/sum(P[I]==i+1))
-                    and (sum(W[P[I]==i+1,0]) < sum(P[I]==i+1)-1) ):
+                    #if ( (p > sum(W[P[I]==i+1,0])/sum(P[I]==i+1))
+                    #and (sum(W[P[I]==i+1,0]) < sum(P[I]==i+1)-1) ):
                         # If p is larger, and if assigning one more unit to
                         # treatment wouldn't mean the whole group is assigned,
                         # I arrive here.
                         # Get the treatment assignment vector for the group, put
                         # it in a temporary object
-                        temp1 = W[P[I]==i+1,0]
+                        #temp1 = W[P[I]==i+1,0]
 
                         # Make another temporary object, which gets only units
                         # which weren't assigned to treatment
-                        temp2 = temp1[W[P[I]==i+1,0] == 0]
+                        #temp2 = temp1[W[P[I]==i+1,0] == 0]
 
                         # Pick one of those units at random using randint().
                         # Replace the treatment indicator with a Bernoulli
@@ -165,28 +182,28 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                         # group, divided by the size of the group. In
                         # expectation, the number of units assigned will now be
                         # exactly p.
-                        temp2[np.random.randint(0,len(temp2))] = (
-                            np.random.binomial(
-                                1,p*sum(P[I]==i+1)-sum(W[P[I]==i+1,0]))
-                            )
+                        #temp2[np.random.randint(0,len(temp2))] = (
+                        #    np.random.binomial(
+                        #        1,p*sum(P[I]==i+1)-sum(W[P[I]==i+1,0]))
+                        #    )
 
                         # Replace the temporary version of the group's treatment
                         # indicator with the new version including the
                         # potentially changed assignment
-                        temp1[W[P[I]==i+1,0] == 0] = temp2
+                        #temp1[W[P[I]==i+1,0] == 0] = temp2
 
                         # Replace the actual treatment vector for the group
-                        W[P[I]==i+1,0] = temp1
-                    elif ( (p < sum(W[P[I]==i+1,0])/sum(P[I]==i+1))
-                    and (sum(W[P[I]==i+1,0]) > 1) ):
+                        #W[P[I]==i+1,0] = temp1
+                    #elif ( (p < sum(W[P[I]==i+1,0])/sum(P[I]==i+1))
+                    #and (sum(W[P[I]==i+1,0]) > 1) ):
                         # If p is lower, and removing one unit doesn't assign
                         # everyone to the control group, I will end up here.
                         # Again, get the treatment assignement vector for this
                         # group.
-                        temp1 = W[P[I]==i+1,0]
+                        #temp1 = W[P[I]==i+1,0]
 
                         # Get only units assigned to the treatment group
-                        temp2 = temp1[W[P[I]==i+1,0] == 1]
+                        #temp2 = temp1[W[P[I]==i+1,0] == 1]
 
                         # Pick a random unit and replace their treatment status
                         # as zero using another Bernoulli trial. The probability
@@ -194,18 +211,18 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                         # of units assigned to treatment in the group divided
                         # by group size and p, divided by 1 over the group
                         # size.
-                        temp2[np.random.randint(0,len(temp2))] = (
-                            np.random.binomial(
-                                1,sum(W[P[I]==i+1,0])-p*sum(P[I]==i+1))
-                            )
+                        #temp2[np.random.randint(0,len(temp2))] = (
+                        #    np.random.binomial(
+                        #        1,sum(W[P[I]==i+1,0])-p*sum(P[I]==i+1))
+                        #    )
 
                         # Replace the temporary version of the treatment vector
                         # with the new one
-                        temp1[W[P[I]==i+1,0] == 1] = temp2
+                        #temp1[W[P[I]==i+1,0] == 1] = temp2
 
                         # Replace the actual treatment assignment vector for the
                         # group
-                        W[P[I]==i+1,0] = temp1
+                        #W[P[I]==i+1,0] = temp1
 
                 # Generate observed outcome for the simulation regressions
                 Yobs = Y0[I,:] + tau[I,:] * W
@@ -228,41 +245,16 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                 beta_hat_dumm, S_hat_dumm = ols(Yobs,Z2)
                 beta_hat_satu, S_hat_satu = ols(Yobs,Z1)
 
-            # Calculate how many draws would be needed to get the exact
-            # randomization distribution, given how many units are assigned to
-            # treatment for the given sample size.
-            nrdexact = 1
-
-            # GO through all groups in the partition
-            for i in range(nparts):
-                # Get number of people in the group n
-                ngroup = sum(P[I]==i+1)
-
-                # Get number of treated units k
-                ntreat = max(np.floor(p*sum(P[I]==i+1)),1)
-
-                # Check whether this is the first group
-                if i+1 == 1:
-                    # If this is the first group, calculate n choose k for this
-                    # group, and save the result
-                    nrdexact = fac(ngroup) / (fac(ngroup-ntreat)*fac(ntreat))
-                else:
-                    # If this isn't the first group, calculate n choose k for
-                    # this group, multiply it by the number of possible
-                    # assignments of all other groups calculated so far
-                    nrdexact = (
-                        nrdexact *
-                        (fac(ngroup) / (fac(ngroup-ntreat)*fac(ntreat)))
-                        )
-
             # Make sure this is an integer
             nrdexact = np.int(nrdexact)
 
             # Check whether the number of iterations required to get the exact
             # randomization distribution exceeds the maximum allowable number
             # of iterations
-            A = []
             if nrdexact <= nrdmax:
+                # If so, set up an empty list
+                A = []
+
                 # Go through all groups in the partition
                 for i in range(nparts):
                     # Get number of people in the group n
@@ -270,33 +262,47 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
 
                     # Get number of treated units k
                     ntreat = np.int(max(np.floor(p*sum(P[I]==i+1)),1))
+                    # If not, get all assignment vectors for this group,
+                    # and store the Cartesian product of all assignment
+                    # vectors for this group and all assignments calculated
+                    # so far
+                    #A = product(A,
+                    #    (combinations(range(ngroup),ntreat)))
+                    A.append(combinations(range(ngroup),ntreat))
 
-                    # Check whether this is the first group
-                    if i+1 == 1 and 0==1:
-                        # If so, get all assignment vectors for this group
-                        # and store them. (The combinations() function doesn't
-                        # produce whole vectors. Rather, it produces indices.)
-                        A = combinations(range(ngroup),ntreat)
-                    else:
-                        # If not, get all assignment vectors for this group,
-                        # and store the Cartesian product of all assignment
-                        # vectors for this group and all assignments calculated
-                        # so far
-                        #A = product(A,
-                        #    (combinations(range(ngroup),ntreat)))
-                        A.append(combinations(range(ngroup),ntreat))
+                # Get the Cartesian product of the assignment vector of all
+                # lists. Note that the asterisk matters, because that unpacks
+                # A, which is a list of lists, before getting the product.
+                # (Otherwise, this will just return the same three lists, since
+                # A itself has size one: It is a single list of lists. So
+                # without unpacking it first, product() gets the Cartesian
+                # product of A with itself, which is just A.)
                 A = product(*A)
 
+                # Go through all possible assignment vectors
                 for a in list(A):
+                    # Set up treatment assignment as a vector of zeros
                     W = np.zeros(shape=(N,1))
 
+                    # Go through all groups in the partition
                     for i in range(nparts):
+                        # Get the assignment vector for that group
                         temp = W[P[I]==i+1]
+
+                        # Replace is as one as appropriate
                         temp[a[i],0] = 1
+
+                        # Replace the assignment vector
                         W[P[I]==i+1] = temp
 
+                    # Generate observed outcome for this assignment
+                    Yobs = Y0[I,:] + tau[I,:] * W
+
+                    # Put together the RHS variables
                     Z1 = np.concatenate((beta0,W),axis=1)
-                    beta_hat_simp, S_hat_simp = ols(Yobs,Z1)
+
+                    # Run the regression
+                    beta_hat_simp = ols(Yobs,Z1,get_cov=False)
             else:
                 for i in range(nrdmax):
                     pass
