@@ -219,7 +219,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
 
             # Store the average estimates and standard errors for all three
             # models, for the current sample size and treatment probability
-            tau_hats_avg[nsampsi*2+nprob,2:] = np.mean(tau_hats, axis=1)
+            tau_hats_avg[nsampsi*2+nprob,2:] = np.mean(tau_hats, axis=0)
 
             # Set up an array to store the randomization distribution of tau_hat
             # (or the maximum number of simulation draws used to approximate it,
@@ -319,6 +319,9 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                     # Store the result
                     tau_true[s,0] = beta_hat_simp[1,0]
 
+    # Display the results
+    print(tau_hats_avg)
+
 ################################################################################
 ### Part 2: Run simulations
 ################################################################################
@@ -348,7 +351,7 @@ tprobs = [.3, .5]
 nparts = 3
 
 # Specify number of simulations to run
-nsimul = 10000
+nsimul = 100
 
 # Tell the program how many estimations will be run for each simulation. (For
 # example, if there is a simply regression of Y on a treament dummy, another
