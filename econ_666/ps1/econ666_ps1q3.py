@@ -190,10 +190,11 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                     beta_hat, S_hat = ols(Yobs,Z)
 
                     # Store the estimates. The row index is easy. For the column
-                    # index, it's important to remember Python's zero indexing.
-                    # This maps counter i to index [j,k] as
+                    # index, it's important to remember Python's zero indexing,
+                    # and how it assigns elements to indices. This maps counter
+                    # i to index [j,k] as
                     #
-                    # 0 -> [0,2], 1 -> [2,4]
+                    # 0 -> [0,2], 1 -> [2,4], ...
                     #
                     # and for any given index [j,k], Python will try to assign
                     # contents to the elements j,j+1,...,k-1, but not to k
@@ -203,10 +204,9 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                         beta_hat[1,0], np.sqrt(S_hat[1,1])
                         )
 
-                beta_hat_satu, S_hat_satu = ols(Yobs,Z1)
-
-            # Make sure this is an integer
-            nrdexact = np.int(nrdexact)
+                # For the saturated model, I need to get the average treatment
+                # effect. First, estimate the model.
+                beta_hat, S_hat = ols(Yobs,Z1)
 
             # Check whether the number of iterations required to get the exact
             # randomization distribution exceeds the maximum allowable number
