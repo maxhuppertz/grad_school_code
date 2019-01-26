@@ -60,8 +60,9 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
 
     # Go through all sample sizes
     for nsampsi, N in enumerate(sampsi):
-        # Replace sample size indicator in the mean estimate array
+        # Record sample size indicator in the mean estimate array
         tau_hats_avg[nsampsi*2:nsampsi*2+1,0] = N
+
         # Draw random variables as the basis for a random sample of units
         I = np.random.normal(size=T)
 
@@ -120,7 +121,10 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
         beta0 = np.ones(shape=(N,1))
 
         # Go through all treatment probabilities
-        for p in tprobs:
+        for nprob, p in enumerate(tprobs):
+            # Record treatment probability in the mean estimate array
+            tau_hats_avg[nsampsi*2+nprob,1] = N
+
             # I'll need to know how many draws of treatment vectors would be
             # needed to get the exact randomization distribution for this
             # treatment probabilty and sample size. For now, just set that up
@@ -213,7 +217,9 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                 # effect. First, estimate the model.
                 beta_hat, S_hat = ols(Yobs,Z1)
 
-
+            # Store the average estimates and standard errors for all three
+            # models, for the current sample size and treatment probability
+            tau_hats_avg[nsampsi*2+nprob,2:] = np.mean(tau_hats, axis=1)
 
             # Set up an array to store the randomization distribution of tau_hat
             # (or the maximum number of simulation draws used to approximate it,
