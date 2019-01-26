@@ -51,11 +51,17 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
     # converts it into a more conventional format
     D = np.array([P==i+1 for i in range(nparts-1)], ndmin=2).transpose()
 
-    # Make a vector to store the estimated treatment effects tau_hat
-
+    # Make a vector to store the mean treatment effect estimates and mean
+    # standard errors. This needs one row for each sample size and each
+    # treatment probability, two columns for each estimations, and an extra
+    # two columns for the sample size and treatment probability. (That makes it
+    # easiert to print the results later.)
+    tau_hats_avg = np.zeros(shape=(len(sampsi)+len(tprobs),2+nest*2))
 
     # Go through all sample sizes
-    for N in sampsi:
+    for nsampsi, N in enumerate(sampsi):
+        # Replace sample size indicator in the mean estimate array
+        tau_hats_avg[nsampsi*2:nsampsi*2+1,0] = N
         # Draw random variables as the basis for a random sample of units
         I = np.random.normal(size=T)
 
@@ -206,6 +212,8 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                 # For the saturated model, I need to get the average treatment
                 # effect. First, estimate the model.
                 beta_hat, S_hat = ols(Yobs,Z1)
+
+
 
             # Set up an array to store the randomization distribution of tau_hat
             # (or the maximum number of simulation draws used to approximate it,
