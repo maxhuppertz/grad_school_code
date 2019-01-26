@@ -3,14 +3,13 @@
 ################################################################################
 
 # Import necessary packages
-import multiprocessing as mp
 import numpy as np
-from os import chdir, path
 from itertools import combinations, product
-from linreg import ols
 from joblib import Parallel, delayed
+from linreg import ols
+from multiprocessing import cpu_count
+from os import chdir, path
 from scipy.misc import factorial as fac
-from sympy.utilities.iterables import cartes, permutations, variations
 
 ################################################################################
 ### Part 1: Define necessary functions
@@ -347,7 +346,7 @@ nest = 3
 nrdmax = 10
 
 # Check how many cores are available
-ncores = mp.cpu_count()
+ncores = cpu_count()
 
 # Run simluations on all but one of the available cores in parallel
 Parallel(n_jobs=ncores-1)(delayed(run_simulation)
