@@ -306,11 +306,6 @@ nrdmax = 10000
 # Specify number of tuples
 T = 100
 
-# Run simulations for all correlation pairs
-#for corr in corrs:
-#    run_simulation(corr, T=T, sampsi=sampsi, tprobs=tprobs, nparts=nparts,
-#        nsimul=nsimul, nrdmax=nrdmax)
-
 # Check how many cores are available
 ncores = mp.cpu_count()
 
