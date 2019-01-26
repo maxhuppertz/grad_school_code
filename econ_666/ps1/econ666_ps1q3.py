@@ -62,44 +62,49 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
 
         # Go through all groups in the partition
         for i in range(nparts):
+            # Get the number of people in the group
+            ngroup = sum(P==i+1)
+
+            # Figure out how many people to sample in this group (at least 2,
+            # otherwise the treatment assignment by group will fail)
+            nsamp = max(np.floor(ngroup * N/T),2)
+
             # Get the treatment indicator for the current group. Get the
             # rank within group from .argsort(), add +1 to get ranks
             # starting at 1, divide by the number of people in the
             # group, and assign everyone at or below the treatment
             # probability to treatment.
-            I[P==i+1] = (
-                ((I[P==i+1].argsort()  + 1) / sum(P==i+1))
-                <= N/T
-                )
+            I[P==i+1] = (I[P==i+1].argsort()  + 1) <= nsamp
 
         # The above mechanism could assign too few or too many units to
-        # the sample. This loop iterates over the number of such units, no
-        # matter whether there are too many or too few.
-        for i, excess in enumerate(range(np.int(np.abs(N - sum(I))))):
-            if N > sum(I):
-                # If there are too few units assigned, randomly pick a unit
-                # and add it to the sample. First, make a temporary vector
-                # containing all units not in the sample
+        # the sample. Calculate that discrepancy, as an integer.
+        discrepancy = np.int(N - sum(I))
+
+        # Check whether the discrepancy is positive
+        if discrepancy >= 0:
+            # If so, iterate over all 'missing' units
+            for i range(discrepancy):
+                # Make a temporary vector containing all units not in the sample
                 temp = I[I==0]
 
-                # Then, pick a random integer index in that vector, and assign
-                # that unit to the sample
+                # Pick a random integer index in that vector, and assign that
+                # unit to the sample
                 temp[np.random.randint(0,len(temp))] = 1
 
                 # Replace the sample assignment vector with the temporary one,
                 # which means one more unit has now been assigned to treatment
                 # at random.
                 I[I==0] = temp
-            else:
-                # If there are too many units assigned, remove one unit at
-                # random, but be sure to do it group by group. (The first
-                # iteration deletes one unit from the first group at random,
-                # the second iteration from the second group, the third from the
-                # third group, and then back to the first, etc., although there
-                # really shouldn't be that many excess assignments.)
-                temp = I[(I==0) and (P[I==0]==i+1-np.floor(i/nparts))]
-                temp[np.random.randint(0,len(temp))] = 1
-                I[(I==0) and (P[I==0]==i+1-np.floor(i/nparts))] = 0
+        else:
+            # If too many units were assigned, then the parameters for this
+            # problem are badly set. Just print an error message.
+            print(
+            'Error: Between the number of tuples, the number of groups in ',
+            'the partition, and the sample sizes, it is impossible to ',
+            'assign at least two units from each group to the sample. ',
+            'Please adjust the parameters. (This occured at N = ', N, '.)',
+            sep=''
+            )
 
         # Annoyingly, the data type of I will now be float. To be used as an
         # index, it has to be boolean or integer. I find it easiest to convert
@@ -146,7 +151,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                         nrdexact = (
                             fac(ngroup) / (fac(ngroup-ntreat)*fac(ntreat))
                             )
-                    else if s==0:
+                    elif s==0:
                         # If it's the first sumlation but not the first group,
                         # get n choose k, and multiply it by the number of
                         # possible assignments of all other groups calculated
