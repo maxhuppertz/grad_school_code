@@ -53,15 +53,16 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
 
     # Make a vector to store the mean treatment effect estimates and mean
     # standard errors. This needs one row for each sample size and each
-    # treatment probability, two columns for each estimations, and an extra
-    # two columns for the sample size and treatment probability. (That makes it
-    # easiert to print the results later.)
-    tau_hats_avg = np.zeros(shape=(len(sampsi)+len(tprobs),2+nest*2))
+    # treatment probability, two columns for each estimation, two columns for
+    # the true tau and its standard deviations, and an extra two columns for
+    # the sample size and treatment probability. (That makes it easiert to
+    # print the results later.)
+    tau_hats_avg = np.zeros(shape=(len(sampsi)*len(tprobs),4+nest*2))
 
     # Go through all sample sizes
     for nsampsi, N in enumerate(sampsi):
         # Record sample size indicator in the mean estimate array
-        tau_hats_avg[nsampsi*2:nsampsi*2+1,0] = N
+        tau_hats_avg[nsampsi*2:nsampsi*2+2,0] = N
 
         # Draw random variables as the basis for a random sample of units
         I = np.random.normal(size=T)
@@ -123,7 +124,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
         # Go through all treatment probabilities
         for nprob, p in enumerate(tprobs):
             # Record treatment probability in the mean estimate array
-            tau_hats_avg[nsampsi*2+nprob,1] = N
+            tau_hats_avg[nsampsi*2+nprob,1] = p
 
             # I'll need to know how many draws of treatment vectors would be
             # needed to get the exact randomization distribution for this
@@ -219,7 +220,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
 
             # Store the average estimates and standard errors for all three
             # models, for the current sample size and treatment probability
-            tau_hats_avg[nsampsi*2+nprob,2:] = np.mean(tau_hats, axis=0)
+            tau_hats_avg[nsampsi*2+nprob,4:] = np.mean(tau_hats, axis=0)
 
             # Set up an array to store the randomization distribution of tau_hat
             # (or the maximum number of simulation draws used to approximate it,
@@ -319,6 +320,12 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                     # Store the result
                     tau_true[s,0] = beta_hat_simp[1,0]
 
+            # Store the expected value of tau
+            tau_hats_avg[nsampsi*2+nprob,2] = np.mean(tau_true, axis=0)
+
+            # Store the standard deviation of tau
+            tau_hats_avg[nsampsi*2+nprob,3] = np.std(tau_true, axis=0)
+
     # Display the results
     print(tau_hats_avg)
 
@@ -328,6 +335,9 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
 
 # Set seed
 np.random.seed(666)
+
+# Set display options
+np.set_printoptions(precision=4,suppress=True,linewidth=100)
 
 # Specify name for main directory (just uses the file's directory)
 mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
