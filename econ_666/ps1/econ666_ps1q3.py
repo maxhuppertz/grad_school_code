@@ -122,7 +122,11 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
             # as 1.
             nrdexact = 1
 
-            tau_hats = np.zeros(n_simul,)
+            # Set up an empty array to store the estimated tau_hat and its
+            # standard error for each of the three models for each of the
+            # simulations. (Each row is a given simulation, and each two
+            # columns are for a given tau_hat and its standard error.)
+            tau_hats = np.zeros(n_simul,nest*2)
 
             # Go through all simulations for the current set of parameters
             for s in range(nsimul):
