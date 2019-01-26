@@ -2,7 +2,7 @@
 ### Econ 666, PS1Q3: Simulation exercise
 ################################################################################
 
-# Import necessary packages
+# Import necessary packages and functions
 import numpy as np
 from itertools import combinations, product
 from joblib import Parallel, delayed
