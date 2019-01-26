@@ -83,7 +83,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
         # Check whether the discrepancy is positive
         if discrepancy >= 0:
             # If so, iterate over all 'missing' units
-            for i range(discrepancy):
+            for i in range(discrepancy):
                 # Make a temporary vector containing all units not in the sample
                 temp = I[I==0]
 
@@ -307,12 +307,14 @@ nrdmax = 10000
 T = 100
 
 # Run simulations for all correlation pairs
-for corr in corrs:
-    run_simulation(corr, T=T, sampsi=sampsi, tprobs=tprobs, nparts=nparts,
-        nsimul=nsimul, nrdmax=nrdmax)
+#for corr in corrs:
+#    run_simulation(corr, T=T, sampsi=sampsi, tprobs=tprobs, nparts=nparts,
+#        nsimul=nsimul, nrdmax=nrdmax)
+
+# Check how many cores are available
+ncores = mp.cpu_count()
 
 # Run simluations on all available cores in parallel
-#Parallel(n_jobs=mp.cpu_count())(delayed(run_simulation)
-#    (corr, T=T, sampsi=sampsi, tprobs=tprobs, nparts=nparts, nsimul=nsimul,
-#    nrdmax=nrdmax, beta0=beta0)
-#    for corr in corrs)
+Parallel(n_jobs=ncores)(delayed(run_simulation)
+    (corr, T=T, sampsi=sampsi, tprobs=tprobs, nparts=nparts, nsimul=nsimul,
+    nrdmax=nrdmax) for corr in corrs)
