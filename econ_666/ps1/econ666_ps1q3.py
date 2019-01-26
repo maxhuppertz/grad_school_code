@@ -241,7 +241,6 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                 # Get number of treated units k
                 ntreat = max(np.floor(p*sum(P[I]==i+1)),1)
 
-
                 # Check whether this is the first group
                 if i+1 == 1:
                     # If this is the first group, calculate n choose k for this
@@ -259,9 +258,10 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
             # Make sure this is an integer
             nrdexact = np.int(nrdexact)
 
-            # Go through either the number of iterations required to get the
-            # exact randomization distribution, or the maximum number of
-            # iterations specified for this simulation.
+            # Check whether the number of iterations required to get the exact
+            # randomization distribution exceeds the maximum allowable number
+            # of iterations
+            A = []
             if nrdexact <= nrdmax:
                 # Go through all groups in the partition
                 for i in range(nparts):
@@ -272,15 +272,34 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
                     ntreat = np.int(max(np.floor(p*sum(P[I]==i+1)),1))
 
                     # Check whether this is the first group
-                    if i+1 == 1:
-                        A = list(combinations(range(ngroup),ntreat))
+                    if i+1 == 1 and 0==1:
+                        # If so, get all assignment vectors for this group
+                        # and store them. (The combinations() function doesn't
+                        # produce whole vectors. Rather, it produces indices.)
+                        A = combinations(range(ngroup),ntreat)
                     else:
-                        A = list(product(A,
-                            list(combinations(range(ngroup),ntreat))))
+                        # If not, get all assignment vectors for this group,
+                        # and store the Cartesian product of all assignment
+                        # vectors for this group and all assignments calculated
+                        # so far
+                        #A = product(A,
+                        #    (combinations(range(ngroup),ntreat)))
+                        A.append(combinations(range(ngroup),ntreat))
+                A = product(*A)
 
+                for a in list(A):
+                    W = np.zeros(shape=(N,1))
 
+                    for i in range(nparts):
+                        temp = W[P[I]==i+1]
+                        temp[a[i],0] = 1
+                        W[P[I]==i+1] = temp
+
+                    Z1 = np.concatenate((beta0,W),axis=1)
+                    beta_hat_simp, S_hat_simp = ols(Yobs,Z1)
             else:
-                pass
+                for i in range(nrdmax):
+                    pass
 
 ################################################################################
 ### Part 2: Run simulations
