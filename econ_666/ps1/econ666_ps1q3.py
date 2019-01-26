@@ -314,7 +314,7 @@ T = 100
 # Check how many cores are available
 ncores = mp.cpu_count()
 
-# Run simluations on all available cores in parallel
-Parallel(n_jobs=ncores)(delayed(run_simulation)
+# Run simluations on all but one of the available cores in parallel
+Parallel(n_jobs=ncores-1)(delayed(run_simulation)
     (corr, T=T, sampsi=sampsi, tprobs=tprobs, nparts=nparts, nsimul=nsimul,
     nrdmax=nrdmax) for corr in corrs)
