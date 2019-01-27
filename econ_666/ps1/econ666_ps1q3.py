@@ -73,6 +73,11 @@ def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax,
     # print the results later.)
     tau_hats_avg = np.zeros(shape=(len(sampsis)*len(tprobs),4+nest*2))
 
+    # Get the position of tau_hat in the vector of estimates. Since only beta0
+    # is before tau_hat, that's simply the number of columns in beta0. I could
+    # hard code the 1 here, but why not let Python do some more work?
+    postau = beta0.shape[1]
+
     # Go through all sample sizes
     for nsampsi, N in enumerate(sampsis):
         # Record sample size indicator in the mean estimate array
@@ -213,12 +218,6 @@ def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax,
                     # Estimate the model
                     beta_hat, S_hat = ols(Yobs,Z)
 
-                    # Get the position of tau_hat in the vector of estimates.
-                    # Since only beta0 is before tau_hat, that's simply the
-                    # number of columns in beta0. I could hard code the 1 here,
-                    # but why not let Python do some more work?
-                    pos = beta0.shape[1]
-
                     # Store the estimates. The row index is easy. For the column
                     # index, it's important to remember Python's zero indexing,
                     # and how it assigns elements to indices. This maps counter
@@ -231,14 +230,14 @@ def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax,
                     # itself. Therefore, this gets me the right indices for a
                     # two element assignment.
                     tau_hats[s,2*i:2*i+2] = (
-                        beta_hat[pos,0], np.sqrt(S_hat[pos,pos])
+                        beta_hat[postau,0], np.sqrt(S_hat[postau,postau])
                         )
 
                 # For the saturated model, I need to get the average treatment
                 # effect. First, estimate the model.
                 beta_hat, S_hat = ols(Yobs,Z3)
 
-                L = np.zeros_like(beta_hat)
+                L = np.zeros(shape=(beta_hat.shape))
 
                 L[1,0] = 1
 
@@ -437,7 +436,7 @@ nsimul = 100
 nest = 3
 
 # Specify maximum number of repetitions for randomization distribution
-nrdmax = 10000
+nrdmax = 10
 
 # Check how many cores are available
 ncores = cpu_count()
