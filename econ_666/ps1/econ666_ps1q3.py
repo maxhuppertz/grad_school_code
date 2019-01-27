@@ -463,7 +463,7 @@ if not path.isdir(mdir+fdir):
 chdir(mdir+fdir)
 
 # Specify pairs of correlations, in the order [corr(X,Y0), corr(X,tau)]
-corrs = [[0.0,0.0], [.1,.1], [.6,.1], [.1,.6]]
+corrs = [[.0,.0], [.1,.1], [.6,.1], [.1,.6]]
 
 # Specify means for the three variables, in the order
 # [mean_X, mean_Y0, mean_tau]
