@@ -229,7 +229,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax,
 
                 # For the saturated model, I need to get the average treatment
                 # effect. First, estimate the model.
-                beta_hat, S_hat = ols(Yobs,Z1)
+                beta_hat, S_hat = ols(Yobs,Z3)
 
             # Store the average estimates and standard errors for all three
             # models, for the current sample size and treatment probability
