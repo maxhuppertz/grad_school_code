@@ -10,7 +10,7 @@ from joblib import Parallel, delayed
 from linreg import ols
 from multiprocessing import cpu_count
 from os import chdir, mkdir, path
-from scipy.misc import factorial as fac
+from scipy.special import binom
 
 ################################################################################
 ### Part 1: Define necessary functions
@@ -202,18 +202,13 @@ def run_simulation(corr, means, T, sampsis, tprobs, nparts, nsimul, nrdmax,
                     if s==0 and i == 0:
                         # If so, calculate n choose k for this group, and save
                         # the result
-                        nrdexact = (
-                            fac(ngroup) / (fac(ngroup-ntreat)*fac(ntreat))
-                            )
+                        nrdexact = binom(ngroup,ntreat)
                     elif s==0:
                         # If it's the first sumlation but not the first group,
                         # get n choose k, and multiply it by the number of
                         # possible assignments of all other groups calculated
                         # so far
-                        nrdexact = (
-                            nrdexact *
-                            (fac(ngroup) / (fac(ngroup-ntreat)*fac(ntreat)))
-                            )
+                        nrdexact = nrdexact * binom(ngroup,ntreat)
 
                 # Generate observed outcome for the simulation regressions
                 Yobs = Y0[I,:] + tau[I,:] * W
