@@ -37,7 +37,11 @@ def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax, postau=1,
     #       selected printing precision will be printed as zero
     # mlw: integer, maximum line width for printing results
     # tex: boolean, if true, saves results as tex tables
-    # fnamepref: string, prefix for file names, only matters if tex is true
+    # fnamepref: string, prefix for file names for tex tables (only matters if
+    #            tex is true)
+    #
+    # Outputs
+    # None
 
     # Set seed (since this will be run in parallel, it's actually important to
     # set the seed within the function, rather than outside)
