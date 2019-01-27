@@ -39,6 +39,11 @@ Pz = (Z/(Z'*Z))*Z';
 % Calculate first stage predicted values
 X_hat = Pz*X;
 
+% Calcuate (X_hat'X_hat)^(-1) (useful because it's necessary for the
+% coefficient estimate, and it also provides the bread for sandwich
+% variance estimator below
+XXinv = (X_hat'*X_hat) \ eye(k);
+
 % Estimate second stage coefficient
 beta_hat = (X_hat'*X_hat)\(X_hat'*y);
 
@@ -49,7 +54,6 @@ eps_hat = y - X*beta_hat;
 u = (eps_hat*ones(1,k)).*X_hat;
 
 % Get heteroskedasticity-robust variance/covariance estimator
-H = (X'*Pz*X) \ eye(k);  % Bread for the sandwich
 V = u'*u;  % Filling for the sandwich
-Sigma_hat = (n/(n-k)) * H * V * H;  % Putting the sandwich together
+Sigma_hat = (n/(n-k)) * XXinv * V * XXinv;  % Putting the sandwich together
 end
