@@ -73,11 +73,6 @@ def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax, postau=1,
     # print the results later.)
     tau_hats_avg = np.zeros(shape=(len(sampsis)*len(tprobs),4+nest*2))
 
-    # Get the position of tau_hat in the vector of estimates. Since only beta0
-    # is before tau_hat, that's simply the number of columns in beta0. I could
-    # hard code the 1 here, but why not let Python do some more work?
-    postau = 1
-
     # Go through all sample sizes
     for nsampsi, N in enumerate(sampsis):
         # Record sample size indicator in the mean estimate array
