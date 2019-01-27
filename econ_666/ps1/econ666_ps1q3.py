@@ -45,7 +45,7 @@ def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax, postau=1,
     #            tex is true)
     #
     # Outputs
-    # None
+    # results: DataFrame, contains the results
 
     # Set seed (since this will be run in parallel, it's actually important to
     # set the seed within the function, rather than outside)
