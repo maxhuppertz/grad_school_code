@@ -3,14 +3,14 @@ import numpy as np
 from numpy.linalg import solve
 
 # This function just runs a standard linear regression of y on X
-def ols(y, X, get_cov=True, cov_est='homoskedastic'):
+def ols(y, X, get_cov=True, cov_est='hc1'):
     # Get number of observations n and number of coefficients k
     n, k = X.shape[0], X.shape[1]
 
     # Calculate OLS coefficients
     XXinv = solve(X.transpose() @ X, np.eye(k))  # (X'X)^(-1)
     beta_hat = XXinv @ (X.transpose() @ y)
-    
+
     # Check whether covariance is needed
     if get_cov:
         # Get residuals

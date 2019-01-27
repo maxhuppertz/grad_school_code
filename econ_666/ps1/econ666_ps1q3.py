@@ -18,8 +18,8 @@ from scipy.misc import factorial as fac
 
 # Define how to run the simulation for a given correlation pair
 def run_simulation(corr, means, T, sampsis, tprobs, nparts, nsimul, nrdmax,
-    postau=1, nmod=3, cnum=0, prec=4, sups=True, mlw=100, getresults=False,
-    tex=True, fnamepref='results_'):
+    cov_est = 'hc1', postau=1, nmod=3, cnum=0, prec=4, sups=True,
+    mlw=100, getresults=False, tex=True, fnamepref='results_'):
     # Inputs
     # corr: 2-element tuple, specified correlation between X and Y0, and X and
     #       tau
@@ -31,6 +31,8 @@ def run_simulation(corr, means, T, sampsis, tprobs, nparts, nsimul, nrdmax,
     # nsimul: scalar, number of simulations to run
     # nrdmax: scalar, maximum number of iterations to use for randomization
     #         distributions
+    # cov_est: string, specifies the covariance estimator to use for the OLS
+    #          estimation
     # postau: integer, position of the estimate of tau (the coefficient on the
     #         treatment dummy) in all models to be estimated
     # nmod: integer, number of models to be estimated
@@ -233,7 +235,7 @@ def run_simulation(corr, means, T, sampsis, tprobs, nparts, nsimul, nrdmax,
                 # estimates in the tau_hats array, in row s
                 for i, Z in enumerate([Z1, Z2]):
                     # Estimate the model
-                    beta_hat, S_hat = ols(Yobs,Z)
+                    beta_hat, S_hat = ols(Yobs,Z,cov_est=cov_est)
 
                     # Store the estimates. The row index is easy. For the column
                     # index, it's important to remember Python's zero indexing,
@@ -252,7 +254,7 @@ def run_simulation(corr, means, T, sampsis, tprobs, nparts, nsimul, nrdmax,
 
                 # For the saturated model, I need to get the average treatment
                 # effect. First, estimate the model.
-                beta_hat, S_hat = ols(Yobs,Z3)
+                beta_hat, S_hat = ols(Yobs,Z3,cov_est=cov_est)
 
                 # Set up a vector of linear constraints on tau
                 L = np.zeros(shape=(beta_hat.shape))
