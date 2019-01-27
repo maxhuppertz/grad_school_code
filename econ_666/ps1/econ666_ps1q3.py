@@ -495,5 +495,5 @@ ncores = cpu_count()
 
 # Run simluations on all but one of the available cores in parallel
 Parallel(n_jobs=ncores)(delayed(run_simulation)
-    (corr=corr, T=T, sampsis=sampsis, tprobs=tprobs, nparts=nparts,
+    (corr=corr, means=means T=T, sampsis=sampsis, tprobs=tprobs, nparts=nparts,
     nsimul=nsimul, nrdmax=nrdmax, cnum=cnum) for cnum, corr in enumerate(corrs))
