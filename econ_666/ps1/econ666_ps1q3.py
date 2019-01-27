@@ -17,7 +17,7 @@ from scipy.misc import factorial as fac
 ################################################################################
 
 # Define how to run the simulation for a given correlation pair
-def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax,
+def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax, postau=1,
     cnum=0, prec=4, sups=True, mlw=100, tex=True, fnamepref='results_'):
     # Inputs
     # corr: 2-element tuple, specified correlation between X and Y, and X and
@@ -76,7 +76,7 @@ def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax,
     # Get the position of tau_hat in the vector of estimates. Since only beta0
     # is before tau_hat, that's simply the number of columns in beta0. I could
     # hard code the 1 here, but why not let Python do some more work?
-    postau = beta0.shape[1]
+    postau = 1
 
     # Go through all sample sizes
     for nsampsi, N in enumerate(sampsis):
@@ -473,5 +473,5 @@ ncores = cpu_count()
 
 # Run simluations on all but one of the available cores in parallel
 Parallel(n_jobs=ncores-1)(delayed(run_simulation)
-    (corr, T=T, sampsis=sampsis, tprobs=tprobs, nparts=nparts,
+    (corr=corr, T=T, sampsis=sampsis, tprobs=tprobs, nparts=nparts,
     nsimul=nsimul, nrdmax=nrdmax, cnum=cnum) for cnum, corr in enumerate(corrs))
