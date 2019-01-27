@@ -18,7 +18,8 @@ from scipy.misc import factorial as fac
 
 # Define how to run the simulation for a given correlation pair
 def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax, postau=1,
-    nmod=3,cnum=0, prec=4, sups=True, mlw=100, tex=True, fnamepref='results_'):
+    nmod=3,cnum=0, prec=4, sups=True, mlw=100, getresults=False, tex=True,
+    fnamepref='results_'):
     # Inputs
     # corr: 2-element tuple, specified correlation between X and Y, and X and
     #       tau
@@ -36,6 +37,9 @@ def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax, postau=1,
     # sups: boolean, if true, number which are too small to be printed using the
     #       selected printing precision will be printed as zero
     # mlw: integer, maximum line width for printing results
+    # getresults: boolean, if true, the function returns the results as a pandas
+    #             DataFrame (usually unnecessary, since it also prints them and
+    #             can provide tex tables, see below)
     # tex: boolean, if true, saves results as tex tables
     # fnamepref: string, prefix for file names for tex tables (only matters if
     #            tex is true)
@@ -432,6 +436,10 @@ def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax, postau=1,
     if tex:
         # Save the results as a tex table
         results.to_latex(fnamepref+str(cnum)+'.tex', index=False)
+
+    # If desired, return results DataFrame
+    if getresults:
+        return results
 
 ################################################################################
 ### Part 2: Run simulations
