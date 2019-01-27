@@ -17,13 +17,13 @@ from scipy.misc import factorial as fac
 ################################################################################
 
 # Define how to run the simulation for a given correlation pair
-def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax,
+def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax,
     cnum=0, prec=4, sups=True, mlw=100, tex=True, fnamepref='results_'):
     # Inputs
     # corr: 2-element tuple, specified correlation between X and Y, and X and
     #       tau
     # T: scalar, number of tuples in the simulated data
-    # sampsi: vector, different sizes for random samples to draw
+    # sampsis: vector, different sizes for random samples to draw
     # tprobs: vector, different treatment probabilities for each sample size
     # nparts: scalar, number of partitions on X
     # nsimul: scalar, number of simulations to run
@@ -47,7 +47,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax,
     X = np.array(D[:,0], ndmin=2).transpose()
     Y0 = np.array(D[:,1], ndmin=2).transpose()
     tau = np.array(D[:,len(corr)], ndmin=2).transpose()
-    
+
     # Get the partition of X. First, X[:,0].argsort() gets the ranks in the
     # distribution of X. Then, nparts/T converts it into fractions of the
     # length of X. Taking the ceil() makes sure that the groups are between 1
@@ -70,10 +70,10 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax,
     # the true tau and its standard deviations, and an extra two columns for
     # the sample size and treatment probability. (That makes it easiert to
     # print the results later.)
-    tau_hats_avg = np.zeros(shape=(len(sampsi)*len(tprobs),4+nest*2))
+    tau_hats_avg = np.zeros(shape=(len(sampsis)*len(tprobs),4+nest*2))
 
     # Go through all sample sizes
-    for nsampsi, N in enumerate(sampsi):
+    for nsampsi, N in enumerate(sampsis):
         # Record sample size indicator in the mean estimate array
         tau_hats_avg[nsampsi*2:nsampsi*2+2,0] = N
 
@@ -386,10 +386,10 @@ chdir(mdir+fdir)
 corrs = [[0,0], [.1,.1], [.6,.1], [.1,.6]]
 
 # Specify number of tuples
-T = 100
+T = 1000
 
 # Set sample sizes
-sampsi = [10, 25, 100]
+sampsis = [10, 25, 100]
 
 # Set treatment probabilities
 tprobs = [.3, .5]
@@ -414,5 +414,5 @@ ncores = cpu_count()
 
 # Run simluations on all but one of the available cores in parallel
 Parallel(n_jobs=ncores-1)(delayed(run_simulation)
-    (corr, T=T, sampsi=sampsi, tprobs=tprobs, nparts=nparts,
+    (corr, T=T, sampsis=sampsis, tprobs=tprobs, nparts=nparts,
     nsimul=nsimul, nrdmax=nrdmax, cnum=cnum) for cnum, corr in enumerate(corrs))
