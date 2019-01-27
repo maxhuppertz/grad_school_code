@@ -189,7 +189,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax,
                             nrdexact *
                             (fac(ngroup) / (fac(ngroup-ntreat)*fac(ntreat)))
                             )
-                
+
                 # Generate observed outcome for the simulation regressions
                 Yobs = Y0[I,:] + tau[I,:] * W
 
@@ -278,7 +278,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax,
                     for i in range(nparts):
                         # Get the assignment vector for that group
                         temp = W[P[I]==i+1]
-
+                        print(temp[a[i],0])
                         # Replace is as one as appropriate
                         temp[a[i],0] = 1
 
