@@ -17,9 +17,9 @@ from scipy.misc import factorial as fac
 ################################################################################
 
 # Define how to run the simulation for a given correlation pair
-def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax, postau=1,
-    nmod=3,cnum=0, prec=4, sups=True, mlw=100, getresults=False, tex=True,
-    fnamepref='results_'):
+def run_simulation(corr, means, T, sampsis, tprobs, nparts, nsimul, nrdmax,
+    postau=1, nmod=3, cnum=0, prec=4, sups=True, mlw=100, getresults=False,
+    tex=True, fnamepref='results_'):
     # Inputs
     # corr: 2-element tuple, specified correlation between X and Y, and X and
     #       tau
@@ -458,8 +458,12 @@ if not path.isdir(mdir+fdir):
 # Change directory to figures
 chdir(mdir+fdir)
 
-# Specify pairs of correlations
+# Specify pairs of correlations, in the order [corr(X,Y0), corr(X,tau)]
 corrs = [[0,0], [.1,.1], [.6,.1], [.1,.6]]
+
+# Specify means for the three variables, in the order
+# [mean_X, mean_Y0, mean_tau]
+means = [0, 0, 2]
 
 # Specify number of tuples
 T = 100
