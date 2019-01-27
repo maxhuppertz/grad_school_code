@@ -21,8 +21,9 @@ def run_simulation(corr, means, T, sampsis, tprobs, nparts, nsimul, nrdmax,
     postau=1, nmod=3, cnum=0, prec=4, sups=True, mlw=100, getresults=False,
     tex=True, fnamepref='results_'):
     # Inputs
-    # corr: 2-element tuple, specified correlation between X and Y, and X and
+    # corr: 2-element tuple, specified correlation between X and Y0, and X and
     #       tau
+    # means: 3-element vector, specified means for X, Y0, and tau
     # T: scalar, number of tuples in the simulated data
     # sampsis: vector, different sizes for random samples to draw
     # tprobs: vector, different treatment probabilities for each sample size
