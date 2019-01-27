@@ -69,7 +69,7 @@ def run_simulation(corr, means, T, sampsis, tprobs, nparts, nsimul, nrdmax,
     X = np.array(D[:,0], ndmin=2).transpose()
     Y0 = np.array(D[:,1], ndmin=2).transpose()
     tau = np.array(D[:,len(corr)], ndmin=2).transpose()
-    
+
     # Get the partition of X. First, X[:,0].argsort() gets the ranks in the
     # distribution of X. Then, nparts/T converts it into fractions of the
     # length of X. Taking the ceil() makes sure that the groups are between 1
@@ -465,7 +465,12 @@ corrs = [[0,0], [.1,.1], [.6,.1], [.1,.6]]
 
 # Specify means for the three variables, in the order
 # [mean_X, mean_Y0, mean_tau]
-means = [0, 0, 2]
+# Note that the marginal variances of X, Y0, and tau are all equal to 1.
+# So the mean of tau directly specifies the treatment effect in units of the
+# control group's standard deviation. (Which means that a large mean for tau
+# will lead to all models doing fairly well, because even for a small sample
+# size, power will be sufficient if the effect size is large.)
+means = [0, 0, .2]
 
 # Specify number of tuples
 T = 100
