@@ -47,7 +47,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax,
     X = np.array(D[:,0], ndmin=2).transpose()
     Y0 = np.array(D[:,1], ndmin=2).transpose()
     tau = np.array(D[:,len(corr)], ndmin=2).transpose()
-    tau = 0*tau + 2
+    
     # Get the partition of X. First, X[:,0].argsort() gets the ranks in the
     # distribution of X. Then, nparts/T converts it into fractions of the
     # length of X. Taking the ceil() makes sure that the groups are between 1
@@ -278,7 +278,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax,
                     for i in range(nparts):
                         # Get the assignment vector for that group
                         temp = W[P[I]==i+1]
-                        print(temp[a[i],0])
+
                         # Replace is as one as appropriate
                         temp[a[i],0] = 1
 
