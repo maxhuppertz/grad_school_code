@@ -5,6 +5,7 @@
 # Import necessary packages and functions
 import numpy as np
 import pandas as pd
+from random import seed
 from itertools import combinations, product
 from joblib import Parallel, delayed
 from linreg import ols
@@ -18,7 +19,7 @@ from scipy.misc import factorial as fac
 
 # Define how to run the simulation for a given correlation pair
 def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax, postau=1,
-    cnum=0, prec=4, sups=True, mlw=100, tex=True, fnamepref='results_'):
+    nmod=3,cnum=0, prec=4, sups=True, mlw=100, tex=True, fnamepref='results_'):
     # Inputs
     # corr: 2-element tuple, specified correlation between X and Y, and X and
     #       tau
@@ -244,10 +245,10 @@ def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax, postau=1,
                 # dummies in D
                 for i in range(nparts-1):
                     # Get the number of treated units
-                    ntreat = sum(W)
+                    ntreat = sum(W[:,0])
 
                     # Get the number of treated units in this group
-                    ntreatgroup = sum(P[I]==i+1 and W==1)
+                    ntreatgroup = sum((P[I]==i+1) * (W[:,0]==1))
 
                     # Replace the corresponding element of L with the
                     # probability of being in this group, conditional on being
@@ -256,12 +257,12 @@ def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax, postau=1,
                     # partition minus one plus the number of the group under
                     # consideration. That is
                     #
-                    # beta_hat.shape[0]-(nparts-1)+i+1
-                    # = beta_hat.shape[0]-nparts+i+2
+                    # beta_hat.shape[0]-(nparts-1)+i
+                    # = beta_hat.shape[0]-nparts+i+1
                     #
                     # remembering that due to Python's zero indexing, the number
                     # of the group is i+1, not i.
-                    L[beta_hat.shape[0]-nparts+i+2,0] = ntreatgroup/ntreat
+                    L[beta_hat.shape[0]-nparts+i+1,0] = ntreatgroup/ntreat
 
                 # Calculate the average treatment effect for the saturated
                 # model
@@ -271,7 +272,7 @@ def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax, postau=1,
                 S_hat_satu = L.transpose() @ S_hat @ L
 
                 # Store the estimate and its standard error
-                tau_hats[s,2*i:2*i+2] = (
+                tau_hats[s,2*(nmod-1):] = (
                     tau_hat_avg_satu, np.sqrt(S_hat_satu)
                     )
 
@@ -422,6 +423,7 @@ def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax, postau=1,
 
 # Set seed
 np.random.seed(666)
+seed(666)
 
 # Specify name for main directory (just uses the file's directory)
 mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
