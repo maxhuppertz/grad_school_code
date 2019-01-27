@@ -49,7 +49,7 @@ eps_hat = y - X*beta_hat;
 u = (eps_hat*ones(1,k)).*X_hat;
 
 % Get heteroskedasticity-robust variance/covariance estimator
-H = (X'*Pz*X);  % Bread for the sandwich
+H = (X'*Pz*X) \ eye(k);  % Bread for the sandwich
 V = u'*u;  % Filling for the sandwich
-Sigma_hat = (n/(n-k)) * H\V/H;  % Putting the sandwich together
+Sigma_hat = (n/(n-k)) * H * V * H;  % Putting the sandwich together
 end
