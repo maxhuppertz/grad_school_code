@@ -56,12 +56,13 @@ def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax,
     # equal to 1.
     P = np.ceil((X[:,0].argsort()+1)*nparts/T)
 
-    # Set up a set of dummies for each section of the partition. Since P is a
-    # list, each of the checks creates a list of ones and zeros which indicate
-    # whether an element of P is equal to the current i. When np.array() is
-    # applied to this list of lists, it stacks them as rows of a matrix. This
-    # creates an nparts - 1 by T matrix of indicator dummies. The transpose
-    # converts it into a more conventional format
+    # Set up a set of dummies for each but one group in the partition. Since P
+    # is a list, each of the checks creates a list of ones and zeros which
+    # indicate whether an element of P is equal to the current i. When
+    # np.array() is applied to this list of lists, it stacks them as rows of a
+    # matrix. This creates an nparts - 1 by T matrix of indicator dummies. The
+    # transpose converts it into a more conventional format. The last group in
+    # the partition is omitted.
     D = np.array([P==i+1 for i in range(nparts-1)], ndmin=2).transpose()
 
     # Make a vector to store the mean treatment effect estimates and mean
@@ -212,6 +213,12 @@ def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax,
                     # Estimate the model
                     beta_hat, S_hat = ols(Yobs,Z)
 
+                    # Get the position of tau_hat in the vector of estimates.
+                    # Since only beta0 is before tau_hat, that's simply the
+                    # number of columns in beta0. I could hard code the 1 here,
+                    # but why not let Python do some more work?
+                    pos = beta0.shape[1]
+
                     # Store the estimates. The row index is easy. For the column
                     # index, it's important to remember Python's zero indexing,
                     # and how it assigns elements to indices. This maps counter
@@ -224,16 +231,39 @@ def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax,
                     # itself. Therefore, this gets me the right indices for a
                     # two element assignment.
                     tau_hats[s,2*i:2*i+2] = (
-                        beta_hat[1,0], np.sqrt(S_hat[1,1])
+                        beta_hat[pos,0], np.sqrt(S_hat[pos,pos])
                         )
 
                 # For the saturated model, I need to get the average treatment
                 # effect. First, estimate the model.
                 beta_hat, S_hat = ols(Yobs,Z3)
 
+                L = np.zeros_like(beta_hat)
+
+                L[1,0] = 1
+
+                for i in range(nparts):
+                    # Get number of people in the group n
+                    ngroup = sum(P[I]==i+1)
+
+                    # Get number of treated units k
+                    ntreat = sum(P[I]==i+1 and W==1)
+
+                    L[,0] = ntreat/ngroup
+
             # Store the average estimates and standard errors for all three
             # models, for the current sample size and treatment probability
             tau_hats_avg[nsampsi*2+nprob,4:] = np.mean(tau_hats, axis=0)
+
+            # For large sample sizes, nrdexact can be too large. Unfortunately,
+            # that results in it being counted as Nan. But NaN is evaluated to
+            # be smaller than any number. That, in turn, will results in the
+            # program trying to create a vector with NaN number of rows in the
+            # next step, which will fail. If nrdexact came out as NaN, set it to
+            # positive infinity instead, which is a) more accurate, and will b)
+            # fix that problem.
+            if np.isnan(nrdexact):
+                nrdexact = np.inf
 
             # Set up an array to store the randomization distribution of tau_hat
             # (or the maximum number of simulation draws used to approximate it,
@@ -386,7 +416,7 @@ chdir(mdir+fdir)
 corrs = [[0,0], [.1,.1], [.6,.1], [.1,.6]]
 
 # Specify number of tuples
-T = 1000
+T = 100
 
 # Set sample sizes
 sampsis = [10, 25, 100]
