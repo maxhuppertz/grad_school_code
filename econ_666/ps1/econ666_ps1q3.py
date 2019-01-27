@@ -346,7 +346,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax,
     results = pd.DataFrame(data=tau_hats_avg, columns=firstline)
 
     # Print the results
-    print('\n',results)
+    print('\nCorrelation pair: ',corr,'\n',results)
 
     # Check whether to export to latex
     if tex:
