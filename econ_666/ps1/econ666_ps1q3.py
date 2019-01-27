@@ -60,7 +60,7 @@ def run_simulation(corr, means, T, sampsis, tprobs, nparts, nsimul, nrdmax,
         C[0,i+1] = C[i+1,0] = c
 
     # Get data
-    D = np.random.multivariate_normal(np.zeros(len(corr)+1), C, size=T)
+    D = np.random.multivariate_normal(means, C, size=T)
 
     # Split them up into X, Y0, and tau. I'd like these to be Numpy arrays, i.e.
     # (for all practical purposes) vectors. By default, np.array() likes to
@@ -69,7 +69,7 @@ def run_simulation(corr, means, T, sampsis, tprobs, nparts, nsimul, nrdmax,
     X = np.array(D[:,0], ndmin=2).transpose()
     Y0 = np.array(D[:,1], ndmin=2).transpose()
     tau = np.array(D[:,len(corr)], ndmin=2).transpose()
-
+    
     # Get the partition of X. First, X[:,0].argsort() gets the ranks in the
     # distribution of X. Then, nparts/T converts it into fractions of the
     # length of X. Taking the ceil() makes sure that the groups are between 1
@@ -431,7 +431,8 @@ def run_simulation(corr, means, T, sampsis, tprobs, nparts, nsimul, nrdmax,
     results = pd.DataFrame(data=tau_hats_avg, columns=firstline)
 
     # Print the results
-    print('Correlation pair: ',corr,'\n',results,'\n')
+    print('Correlations: corr(X,Y0) = ', corr[0], ', corr(X,tau) = ', corr[1],
+        '\n', results, '\n', sep='')
 
     # Check whether to export to latex
     if tex:
