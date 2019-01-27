@@ -201,7 +201,12 @@ def run_simulation(corr, means, T, sampsis, tprobs, nparts, nsimul, nrdmax,
                     # on.
                     if s==0 and i == 0:
                         # If so, calculate n choose k for this group, and save
-                        # the result
+                        # the result. (I originally did this by hand using
+                        # factorials, but using this has the nice side effect
+                        # of being evaluated as np.inf (positive infinity) in
+                        # case this runs into overflow issues, whereas my code
+                        # would result in a NaN, which I would then manually
+                        # have to change into an Inf.)
                         nrdexact = binomial(ngroup,ntreat)
                     elif s==0:
                         # If it's the first sumlation but not the first group,
