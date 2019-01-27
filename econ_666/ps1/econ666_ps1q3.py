@@ -298,16 +298,6 @@ def run_simulation(corr, means, T, sampsis, tprobs, nparts, nsimul, nrdmax,
             # models, for the current sample size and treatment probability
             tau_hats_avg[nsampsi*2+nprob,4:] = np.mean(tau_hats, axis=0)
 
-            # For large sample sizes, nrdexact can be too large. Unfortunately,
-            # that results in it being counted as Nan. But NaN is evaluated to
-            # be smaller than any number. That, in turn, will results in the
-            # program trying to create a vector with NaN number of rows in the
-            # next step, which will fail. If nrdexact came out as NaN, set it to
-            # positive infinity instead, which is a) more accurate, and will b)
-            # fix that problem.
-            if np.isnan(nrdexact):
-                nrdexact = np.inf
-
             # Set up an array to store the randomization distribution of tau_hat
             # (or the maximum number of simulation draws used to approximate it,
             # if getting the exact distribution is not feasible.)
