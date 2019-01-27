@@ -21,7 +21,8 @@ def ols(y, X, get_cov=True, cov_est='hc1'):
             # For the homoskedastic estimator, just calculate the standard variance
             V_hat = ( 1 / (n - k) ) * XXinv * (U_hat.transpose() @ U_hat)
         elif cov_est == 'hc1':
-            # Calculate component of middle part of EHW sandwich (S_i = X_i u_i, meaning that it's easy to calculate
+            # Calculate component of middle part of EHW sandwich,
+            # S_i = X_i u_i, meaning that it's easy to calculate
             # sum_i X_i X_i' u_i^2 = S'S)
             S = ( U_hat @ np.ones(shape=(1,k)) ) * X
 
