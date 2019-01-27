@@ -19,6 +19,17 @@ from scipy.misc import factorial as fac
 # Define how to run the simulation for a given correlation pair
 def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax,
     cnum=0, prec=4, sups=True, mlw=100, tex=True, fnamepref='results_'):
+    # Inputs
+    # corr: 2-element tuple, specified correlation between X and Y, and X and
+    #       tau
+    # T: scalar, number of tuples in the simulated data
+    # sampsi: vector, different sizes for random samples to draw
+    # tprobs: vector, different treatment probabilities for each sample size
+    # nparts: scalar, number of partitions on X
+    # nsimul: scalar, number of simulations to run
+    # nrdmax: scalar, maximum number of iterations to use for randomization
+    #         distributions
+
     # Set up covariance matrix
     C = np.eye(len(corr)+1)
 
@@ -346,7 +357,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax,
     results = pd.DataFrame(data=tau_hats_avg, columns=firstline)
 
     # Print the results
-    print('\nCorrelation pair: ',corr,'\n',results)
+    print('Correlation pair: ',corr,'\n',results,'\n')
 
     # Check whether to export to latex
     if tex:
