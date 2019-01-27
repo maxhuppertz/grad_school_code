@@ -4,11 +4,12 @@
 
 # Import necessary packages and functions
 import numpy as np
+import pandas as pd
 from itertools import combinations, product
 from joblib import Parallel, delayed
 from linreg import ols
 from multiprocessing import cpu_count
-from os import chdir, path
+from os import chdir, mkdir, path
 from scipy.misc import factorial as fac
 
 ################################################################################
@@ -16,7 +17,8 @@ from scipy.misc import factorial as fac
 ################################################################################
 
 # Define how to run the simulation for a given correlation pair
-def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
+def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax,
+    cnum=0, prec=4, sups=True, mlw=100, tex=True, fnamepref='results_'):
     # Set up covariance matrix
     C = np.eye(len(corr)+1)
 
@@ -326,8 +328,30 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
             # Store the standard deviation of tau
             tau_hats_avg[nsampsi*2+nprob,3] = np.std(tau_true, axis=0)
 
-    # Display the results
-    print(tau_hats_avg)
+    # Set display options (has to be done within each function if this runs in
+    # parallel)
+    pd.set_option('display.max_columns', tau_hats_avg.shape[1])
+    pd.set_option('display.width', mlw)
+    pd.set_option('display.precision', prec)
+
+    # Make a header line for the results, starting with the basic parameters
+    firstline = ['N', 'p', 'tau', 'SD']
+
+    # Use Python's amazing list comprehension to make a list that goes,
+    # [tau_hat 1, SE 1, tau_hat 2, SE 2, ...]
+    firstline.extend(
+        x for i in range(nest) for x in ['tau_hat '+str(i+1), 'SE '+str(i+1)])
+
+    # Put the results in a pandas DataFrame
+    results = pd.DataFrame(data=tau_hats_avg, columns=firstline)
+
+    # Print the results
+    print('\n',results)
+
+    # Check whether to export to latex
+    if tex:
+        # Save the results as a tex table
+        results.to_latex(fnamepref+str(cnum)+'.tex', index=False)
 
 ################################################################################
 ### Part 2: Run simulations
@@ -336,15 +360,18 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax):
 # Set seed
 np.random.seed(666)
 
-# Set display options (four decimal points, no scientific notation, and a
-# maximum of 100 characters before a linebreak)
-np.set_printoptions(precision=4,suppress=True,linewidth=100)
-
 # Specify name for main directory (just uses the file's directory)
 mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
 
-# Change directory
-chdir(mdir)
+# Set figures/tables directory (doesn't need to exist)
+fdir = '/figures'
+
+# Create it if it doesn't exist
+if not path.isdir(mdir+fdir):
+    mkdir(mdir+fdir)
+
+# Change directory to figures
+chdir(mdir+fdir)
 
 # Specify pairs of correlations
 corrs = [[0,0], [.1,.1], [.6,.1], [.1,.6]]
@@ -371,12 +398,12 @@ nsimul = 100
 nest = 3
 
 # Specify maximum number of repetitions for randomization distribution
-nrdmax = 10000
+nrdmax = 10
 
 # Check how many cores are available
 ncores = cpu_count()
 
 # Run simluations on all but one of the available cores in parallel
 Parallel(n_jobs=ncores-1)(delayed(run_simulation)
-    (corr, T=T, sampsi=sampsi, tprobs=tprobs, nparts=nparts, nsimul=nsimul,
-    nrdmax=nrdmax) for corr in corrs)
+    (corr, T=T, sampsi=sampsi, tprobs=tprobs, nparts=nparts,
+    nsimul=nsimul, nrdmax=nrdmax, cnum=cnum) for cnum, corr in enumerate(corrs))
