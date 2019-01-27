@@ -237,16 +237,22 @@ def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax,
                 # effect. First, estimate the model.
                 beta_hat, S_hat = ols(Yobs,Z3)
 
+                # Set up a vector of linear constraints on tau
                 L = np.zeros(shape=(beta_hat.shape))
 
-                L[1,0] = 1
+                # Replace the element corresponding to the base effect as one,
+                # since every group in the partition has this as part of their
+                # estimated effect
+                L[postau,0] = 1
 
+                # Go through all groups in the partition for which there are
+                # dummies in D
                 for i in range(nparts-1):
-                    # Get number of people in the group n
-                    ngroup = sum(P[I]==i+1)
+                    # Get the number of treated units
+                    ntreat = sum(W)
 
-                    # Get number of treated units k
-                    ntreat = sum(P[I]==i+1 and W==1)
+                    # Get the number of treated units in this group
+                    ntreatgroup = sum(P[I]==i+1 and W==1)
 
                     # Replace the corresponding element of L with the
                     # probability of being in this group, conditional on being
@@ -260,7 +266,19 @@ def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax,
                     #
                     # remembering that due to Python's zero indexing, the number
                     # of the group is i+1, not i.
-                    L[beta_hat.shape[0]-nparts+i+2,0] = ntreat/ngroup
+                    L[beta_hat.shape[0]-nparts+i+2,0] = ntreatgroup/ntreat
+
+                # Calculate the average treatment effect for the saturated
+                # model
+                tau_hat_avg_satu = L.transpose() @ beta_hat
+
+                # Calculate the estimated variance
+                S_hat_satu = L.transpose() @ S_hat @ L
+
+                # Store the estimate and its standard error
+                tau_hats[s,2*i:2*i+2] = (
+                    tau_hat_avg_satu, np.sqrt(S_hat_satu)
+                    )
 
             # Store the average estimates and standard errors for all three
             # models, for the current sample size and treatment probability
