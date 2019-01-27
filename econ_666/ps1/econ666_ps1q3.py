@@ -5,7 +5,6 @@
 # Import necessary packages and functions
 import numpy as np
 import pandas as pd
-from random import seed
 from itertools import combinations, product
 from joblib import Parallel, delayed
 from linreg import ols
@@ -30,6 +29,19 @@ def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax, postau=1,
     # nsimul: scalar, number of simulations to run
     # nrdmax: scalar, maximum number of iterations to use for randomization
     #         distributions
+    # postau: integer, position of the estimate of tau (the coefficient on the
+    #         treatment dummy) in all models to be estimated
+    # nmod: integer, number of models to be estimated
+    # prec: integer, precision for floating point number printing in results
+    # sups: boolean, if true, number which are too small to be printed using the
+    #       selected printing precision will be printed as zero
+    # mlw: integer, maximum line width for printing results
+    # tex: boolean, if true, saves results as tex tables
+    # fnamepref: string, prefix for file names, only matters if tex is true
+
+    # Set seed (since this will be run in parallel, it's actually important to
+    # set the seed within the function, rather than outside)
+    np.random.seed(666+cnum)
 
     # Set up covariance matrix
     C = np.eye(len(corr)+1)
@@ -420,10 +432,6 @@ def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax, postau=1,
 ################################################################################
 ### Part 2: Run simulations
 ################################################################################
-
-# Set seed
-np.random.seed(666)
-seed(666)
 
 # Specify name for main directory (just uses the file's directory)
 mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
