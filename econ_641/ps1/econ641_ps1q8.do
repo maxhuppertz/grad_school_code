@@ -9,6 +9,7 @@ qui{
 // How to clean everything
 clear*
 
+// Change maximum number of variables and maximum matrix size
 set maxvar 32767
 set matsize 11000
 
