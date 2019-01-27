@@ -82,4 +82,16 @@ loc v_insample = "ittsample4"
 
 // Keep only units in the main sample
 keep if `v_insample' == 1
+
+// Define independent variables for the RHS, other than the treatment dummy (I
+// copied and pasted this from AFL's code)
+loc indep = "a16_3_ageinyrs hus3_3_ageinyears school hus1_highestschool step3_numchildren diffht_wtchild e1_ideal hus12_ideal step7_injectables step7_pill step7_usingany monthlyinc husmonthlyinc fertdesdiff2 mostfertile age40 timesincelastbirth"
+
+// Define more independent variables for the RHS, coded as dummies (again, this
+// was lifted straight from AFL's code)
+loc dummy = "flag_survey d_a16_3_ageinyrs d_hus3_3_ageinyears d_school d_hus1_highestschool d_step3_numchildren d_diffht_wtchild d_e1_ideal d_hus12_ideal d_monthlyinc d_husmonthlyinc d_fertdesdiff2 d_mostfert d_age40 d_flag_s d_compound_num d_step7* d_times"
+
+// Run the main regression (note that, like AFL, this uses homoskedastic
+// standard errors)
+noi reg usedvoucher Icouples `indep' `dummy'
 }
