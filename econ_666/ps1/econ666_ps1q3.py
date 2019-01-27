@@ -47,7 +47,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax,
     X = np.array(D[:,0], ndmin=2).transpose()
     Y0 = np.array(D[:,1], ndmin=2).transpose()
     tau = np.array(D[:,len(corr)], ndmin=2).transpose()
-
+    tau = 0*tau + 2
     # Get the partition of X. First, X[:,0].argsort() gets the ranks in the
     # distribution of X. Then, nparts/T converts it into fractions of the
     # length of X. Taking the ceil() makes sure that the groups are between 1
@@ -189,7 +189,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax,
                             nrdexact *
                             (fac(ngroup) / (fac(ngroup-ntreat)*fac(ntreat)))
                             )
-
+                
                 # Generate observed outcome for the simulation regressions
                 Yobs = Y0[I,:] + tau[I,:] * W
 
@@ -254,16 +254,13 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax,
 
                     # Get number of treated units k
                     ntreat = np.int(max(np.floor(p*sum(P[I]==i+1)),1))
-                    # If not, get all assignment vectors for this group,
-                    # and store the Cartesian product of all assignment
-                    # vectors for this group and all assignments calculated
-                    # so far
-                    #A = product(A,
-                    #    (combinations(range(ngroup),ntreat)))
+
+                    # Get all assignment vectors for this group, and add them
+                    # to the list
                     A.append(combinations(range(ngroup),ntreat))
 
-                # Get the Cartesian product of the assignment vector of all
-                # lists. Note that the asterisk matters, because that unpacks
+                # Get the Cartesian product of the assignment vectors for all
+                # groups. Note that the asterisk matters, because that unpacks
                 # A, which is a list of lists, before getting the product.
                 # (Otherwise, this will just return the same three lists, since
                 # A itself has size one: It is a single list of lists. So
@@ -273,6 +270,7 @@ def run_simulation(corr, T, sampsi, tprobs, nparts, nsimul, nrdmax,
 
                 # Go through all possible assignment vectors
                 for s, a in enumerate(list(A)):
+
                     # Set up treatment assignment as a vector of zeros
                     W = np.zeros(shape=(N,1))
 
