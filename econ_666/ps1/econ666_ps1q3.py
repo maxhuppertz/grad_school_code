@@ -241,14 +241,26 @@ def run_simulation(corr, T, sampsis, tprobs, nparts, nsimul, nrdmax,
 
                 L[1,0] = 1
 
-                for i in range(nparts):
+                for i in range(nparts-1):
                     # Get number of people in the group n
                     ngroup = sum(P[I]==i+1)
 
                     # Get number of treated units k
                     ntreat = sum(P[I]==i+1 and W==1)
 
-                    L[,0] = ntreat/ngroup
+                    # Replace the corresponding element of L with the
+                    # probability of being in this group, conditional on being
+                    # a treated unit. The position of that element is equal to
+                    # the length of beta_hat minus the number of groups in the
+                    # partition minus one plus the number of the group under
+                    # consideration. That is
+                    #
+                    # beta_hat.shape[0]-(nparts-1)+i+1
+                    # = beta_hat.shape[0]-nparts+i+2
+                    #
+                    # remembering that due to Python's zero indexing, the number
+                    # of the group is i+1, not i.
+                    L[beta_hat.shape[0]-nparts+i+2,0] = ntreat/ngroup
 
             # Store the average estimates and standard errors for all three
             # models, for the current sample size and treatment probability
