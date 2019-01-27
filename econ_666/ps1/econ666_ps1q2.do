@@ -83,6 +83,15 @@ loc v_insample = "ittsample4"
 // Keep only units in the main sample
 keep if `v_insample' == 1
 
+// Specify outcome of interest
+loc v_usedvoucher = "usedvoucher"
+
+// Specify couples treatment variable
+loc v_coupletreatment = "Icouples"
+
+// Specify individual treatment variable
+loc v_indivtreatment = "Iindividual"
+
 // Define independent variables for the RHS, other than the treatment dummy (I
 // copied and pasted this from AFL's code)
 loc indep = "a16_3_ageinyrs hus3_3_ageinyears school hus1_highestschool step3_numchildren diffht_wtchild e1_ideal hus12_ideal step7_injectables step7_pill step7_usingany monthlyinc husmonthlyinc fertdesdiff2 mostfertile age40 timesincelastbirth"
@@ -91,7 +100,40 @@ loc indep = "a16_3_ageinyrs hus3_3_ageinyears school hus1_highestschool step3_nu
 // was lifted straight from AFL's code)
 loc dummy = "flag_survey d_a16_3_ageinyrs d_hus3_3_ageinyears d_school d_hus1_highestschool d_step3_numchildren d_diffht_wtchild d_e1_ideal d_hus12_ideal d_monthlyinc d_husmonthlyinc d_fertdesdiff2 d_mostfert d_age40 d_flag_s d_compound_num d_step7* d_times"
 
+// Specify name for main results
+loc res_main = "main_results"
+
 // Run the main regression (note that, like AFL, this uses homoskedastic
 // standard errors)
-noi reg usedvoucher Icouples `indep' `dummy'
+reg `v_usedvoucher' `v_coupletreatment' `indep' `dummy'
+
+// Store the estimates
+est sto `res_main'
+
+// Get mean outcome for individual treatment recipients
+su `v_usedvoucher' if `v_indivtreatment' == 1  
+
+// Add the individual treatment mean
+estadd r(mean)
+
+// Display the result using esttab. (This requires the estout package. If you
+// don't have it, type ssc install estout, which should download and install it
+// automatically.)
+noi di "Results for main regression:"
+noi esttab `res_main', keep(`v_coupletreatment') b(%8.3f) se /// 
+	mtitles("Used voucher") star(* .1 ** .05 *** .01) stats(N mean, ///
+	label("N" "Mean of Outcome Variable among Individual Treatment") ///
+	fmt(0 3)) coeflabel(`v_coupletreatment' "Assigned to couple treatment") ///
+	varwidth(51)
+
+// To get the p-value, display the same thing again, but with the p-value
+// instead of the standard error. (This is a little lazy, but I don't want to
+// spend too much time getting to know estout right now, which could display
+// both at once.)
+noi di _n "Results for main regression, showing the p-value instead of SE:"
+noi esttab `res_main', keep(`v_coupletreatment') b(%8.3f) p /// 
+	mtitles("Used voucher") star(* .1 ** .05 *** .01) stats(N mean, ///
+	label("N" "Mean of Outcome Variable among Individual Treatment") ///
+	fmt(0 3)) coeflabel(`v_coupletreatment' "Assigned to couple treatment") ///
+	varwidth(51)
 }
