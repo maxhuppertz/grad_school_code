@@ -432,6 +432,9 @@ def run_simulation(corr, means, T, sampsis, tprobs, nparts, nsimul, nrdmax,
     # Put the results in a pandas DataFrame
     results = pd.DataFrame(data=tau_hats_avg, columns=firstline)
 
+    # Make sure sample sizes are stored as integers
+    results['N'] = results['N'].astype(int)
+
     # Print the results
     print('Correlations: corr(X,Y0) = ', corr[0], ', corr(X,tau) = ', corr[1],
         '\n', results, '\n', sep='')
