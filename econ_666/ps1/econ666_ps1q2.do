@@ -86,7 +86,7 @@ keep if `v_insample' == 1
 // Specify outcome of interest
 loc v_usedvoucher = "usedvoucher"
 
-// Specify couples treatment variable
+// Specify couple treatment variable
 loc v_coupletreatment = "Icouples"
 
 // Specify individual treatment variable
@@ -103,6 +103,9 @@ loc dummy = "flag_survey d_a16_3_ageinyrs d_hus3_3_ageinyears d_school d_hus1_hi
 // Specify name for main results
 loc res_main = "main_results"
 
+// Specify name for main results without covariates
+loc res_main_nocov = "main_results_nocov"
+
 // Run the main regression (note that, like AFL, this uses homoskedastic
 // standard errors)
 reg `v_usedvoucher' `v_coupletreatment' `indep' `dummy'
@@ -116,24 +119,25 @@ su `v_usedvoucher' if `v_indivtreatment' == 1
 // Add the individual treatment mean
 estadd r(mean)
 
+// Run the regression using only the treatment dummy, without covariates
+reg `v_usedvoucher' `v_coupletreatment'
+
+// Store the estimates
+est sto `res_main_nocov'
+
+// Get mean outcome for individual treatment recipients
+su `v_usedvoucher' if `v_indivtreatment' == 1
+
+// Add the individual treatment mean to this regression as well
+estadd r(mean)
+
 // Display the result using esttab. (This requires the estout package. If you
 // don't have it, type ssc install estout, which should download and install it
 // automatically.)
-noi di "Results for main regression:"
-noi esttab `res_main', keep(`v_coupletreatment') b(%8.3f) se /// 
-	mtitles("Used voucher") star(* .1 ** .05 *** .01) stats(N mean, ///
-	label("N" "Mean of Outcome Variable among Individual Treatment") ///
-	fmt(0 3)) coeflabel(`v_coupletreatment' "Assigned to couple treatment") ///
-	varwidth(51)
-
-// To get the p-value, display the same thing again, but with the p-value
-// instead of the standard error. (This is a little lazy, but I don't want to
-// spend too much time getting to know estout right now, which could display
-// both at once.)
-noi di _n "Results for main regression, showing the p-value instead of SE:"
-noi esttab `res_main', keep(`v_coupletreatment') b(%8.3f) p /// 
-	mtitles("Used voucher") star(* .1 ** .05 *** .01) stats(N mean, ///
-	label("N" "Mean of Outcome Variable among Individual Treatment") ///
-	fmt(0 3)) coeflabel(`v_coupletreatment' "Assigned to couple treatment") ///
-	varwidth(51)
+noi esttab `res_main' `res_main_nocov', keep(`v_coupletreatment') b(%8.3f) ///
+	se mtitles("Main results" "No covariates") star(* .1 ** .05 *** .01) ///
+	stats(N mean, label("N" ///
+	"Mean indiv. treat.") fmt(0 3)) ///
+	coeflabel(`v_coupletreatment' "Couple treament") ///
+	varwidth(18) modelwidth(13)
 }
