@@ -485,7 +485,7 @@ nest = 3
 # Specify maximum number of repetitions for randomization distribution
 nrdmax = 10000
 
-# Check how many cores are available
+# Specify how many cores to use for parallel processing
 ncores = cpu_count()
 
 # Run simluations on all but one of the available cores in parallel
