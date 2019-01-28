@@ -17,8 +17,8 @@ from scipy.special import binom as binomial
 ################################################################################
 
 # Define how to run the simulation for a given correlation pair
-def run_simulation(corr, means, T, sampsis, tprobs, nparts, nsimul, nrdmax,
-    cov_est = 'hc1', postau=1, nmod=3, cnum=0, prec=4, sups=True,
+def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
+    nrdmax, cov_est = 'hc1', postau=1, nmod=3, cnum=0, prec=4, sups=True,
     mlw=100, getresults=False, tex=True, fnamepref='results_'):
     # Inputs
     # corr: 2-element tuple, specified correlation between X and Y0, and X and
@@ -49,28 +49,61 @@ def run_simulation(corr, means, T, sampsis, tprobs, nparts, nsimul, nrdmax,
     #
     # Outputs
     # results: DataFrame, contains the results
+    #
+    # Note
+    # To generate the three variables I need, I start with X as a normally
+    # distributed random variable. Then, I generate the other two variables
+    # based on that. Let Z denote any of them. I want to achieve
+    #
+    # Corr(X,Z) = Cov(X,Z) / sqrt(Var(X) Var(Z)) = gamma                     (1)
+    #
+    # for some gamma. I can generate
+    #
+    # Z = X + Z_eps                                                          (2)
+    #
+    # where Z_eps is an error term, if you will. From standard linear regression
+    # this implies Cov(X,V) / Var(X) = 1. Also, taking the variance of (2), I
+    # have Var(Z) = Var(X) + Var(Z_eps). Plugging both of these into (1),
+    #
+    # Var(Z_eps) = Var(X) * (gamma^(-2) - 1)
+    #
+    # and since I get to choose Var(Z_eps), I can thereby generate random
+    # variables with arbitrary correlation structure.
 
     # Set seed (since this will be run in parallel, it's actually important to
     # set the seed within the function, rather than outside)
     np.random.seed(666+cnum)
 
-    # Set up covariance matrix
-    C = np.eye(len(corr)+1)
+    # Generate X as a normally distributed random variable
+    X = np.random.normal(means[0], np.sqrt(var_X), size=(T,1))
 
-    # Fill in off-diagonal elements
-    for i, c in enumerate(corr):
-        C[0,i+1] = C[i+1,0] = c
+    # Let Y0_eps have a chi2 distribution
+    if corr[0] != 0:
+        # Calculate the necessary variance
+        var_Y0 = var_X*(corr[0]**(-2)-1)
 
-    # Get data
-    D = np.random.multivariate_normal(means, C, size=T)
+        # Calculate the degrees of freedom implied by this variance
+        df_Y0 = .5*var_Y0
 
-    # Split them up into X, Y0, and tau. I'd like these to be Numpy arrays, i.e.
-    # (for all practical purposes) vectors. By default, np.array() likes to
-    # create row vectors, which I find unintuitive. The tranpose() changes these
-    # into column vectors.
-    X = np.array(D[:,0], ndmin=2).transpose()
-    Y0 = np.array(D[:,1], ndmin=2).transpose()
-    tau = np.array(D[:,len(corr)], ndmin=2).transpose()
+        # Calculate Y0
+        Y0 = means[1] + X + np.random.chisquare(df_Y0,size=(T,1))
+    else:
+        Y0 = means[1] - 1 + np.random.chisquare(1,size=(T,1))
+
+    # Let tau_eps have a Gumbel distribution
+    if corr[1] != 0:
+        # Calculate the necessary variance
+        var_tau = var_X*(corr[1]**(-2)-1)
+
+        # Calculate the implied scale for the Gumbel distribution
+        beta_tau = np.sqrt( (6/(np.pi**2)) * var_tau )
+
+        # Calculate tau
+        tau = (means[2] - np.euler_gamma*beta_tau + X +
+            np.random.gumbel(0,beta_tau,size=(T,1)))
+    else:
+        tau = ( means[2] - np.euler_gamma +
+        np.random.gumbel(0,1,size=(T,1)) )
 
     # Get the partition of X. First, X[:,0].argsort() gets the ranks in the
     # distribution of X. Then, nparts/T converts it into fractions of the
@@ -467,6 +500,9 @@ corrs = [[.0,.0], [.1,.1], [.6,.1], [.1,.6]]
 # size, power will be sufficient if the effect size is large.)
 means = [0, 0, .2]
 
+# Specify variance of X
+var_X = 1
+
 # Specify number of tuples
 T = 100
 
@@ -496,5 +532,6 @@ ncores = cpu_count()
 
 # Run simluations on all but one of the available cores in parallel
 Parallel(n_jobs=ncores)(delayed(run_simulation)
-    (corr=corr, means=means, T=T, sampsis=sampsis, tprobs=tprobs, nparts=nparts,
-    nsimul=nsimul, nrdmax=nrdmax, cnum=cnum) for cnum, corr in enumerate(corrs))
+    (corr=corr, means=means, var_X=var_X,T=T, sampsis=sampsis, tprobs=tprobs,
+    nparts=nparts, nsimul=nsimul, nrdmax=nrdmax, cnum=cnum) for cnum, corr in
+    enumerate(corrs))
