@@ -82,12 +82,17 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
         # Calculate the necessary variance
         var_Y0 = var_X*(corr[0]**(-2)-1)
 
-        # Calculate the degrees of freedom implied by this variance
+        # Calculate the degrees of freedom implied by this variance (this comes
+        # from the fact that for a chi2(k) random variable, its variance is
+        # equal to 2k)
         df_Y0 = .5*var_Y0
 
-        # Calculate Y0
-        Y0 = means[1] + X + np.random.chisquare(df_Y0,size=(T,1))
+        # Calculate Y0, where I need to make sure to correct for the mean of
+        # the error term (the mean of a chi2(k) is simply k)
+        Y0 = means[1] - df_Y0 + X + np.random.chisquare(df_Y0,size=(T,1))
     else:
+        # In the case without correlation between X and Y0, just make sure to
+        # get the mean right, and choose a chi2(1) error term
         Y0 = means[1] - 1 + np.random.chisquare(1,size=(T,1))
 
     # Let tau_eps have a Gumbel distribution
@@ -95,13 +100,17 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
         # Calculate the necessary variance
         var_tau = var_X*(corr[1]**(-2)-1)
 
-        # Calculate the implied scale for the Gumbel distribution
+        # Calculate the implied scale for the Gumbel distribution (a
+        # Gumbel(0,b) random variable has variance b^2 (pi^2/6))
         beta_tau = np.sqrt( (6/(np.pi**2)) * var_tau )
 
-        # Calculate tau
+        # Calculate tau, correcting for the fact that a Gumbel(0,b) random
+        # variable has mean gb, where g is the Euler-Mascheroni constant)
         tau = (means[2] - np.euler_gamma*beta_tau + X +
             np.random.gumbel(0,beta_tau,size=(T,1)))
     else:
+        # In the case of no correlation between X and tau, just make sure to get
+        # the mean right, and use a Gumbel(0,1) error term
         tau = ( means[2] - np.euler_gamma +
         np.random.gumbel(0,1,size=(T,1)) )
 
