@@ -18,7 +18,7 @@ from scipy.special import binom as binomial
 
 # Define how to run the simulation for a given correlation pair
 def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
-    nrdmax, dfdef=1, locdef=0, scaledef=1 cov_est = 'hc1', postau=1, nmod=3,
+    nrdmax, dfdef=1, locdef=0, scaledef=1, cov_est = 'hc1', postau=1, nmod=3,
     cnum=0, prec=4, sups=True, mlw=100, getresults=False, tex=True,
     fnamepref='results_'):
     # Inputs
