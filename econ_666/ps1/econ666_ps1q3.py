@@ -66,7 +66,7 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
     #
     # for some gamma. I can generate
     #
-    # Z = a + X + Z_eps                                                      (2)
+    # Z = alpha + X + Z_eps                                                  (2)
     #
     # where Z_eps is an error term, if you will. From standard linear regression
     # this implies Cov(X,V) / Var(X) = 1. Also, taking the variance of (2), I
@@ -75,8 +75,8 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
     # Var(Z_eps) = Var(X) * (gamma^(-2) - 1)
     #
     # and since I get to choose Var(Z_eps), I can thereby generate random
-    # variables with arbitrary correlation structure. I can then use a to adjust
-    # the mean of the generated variable.
+    # variables with arbitrary correlation structure. I can then use alpha to
+    # adjust the mean of the generated variable.
 
     # Set seed (since this will be run in parallel, it's actually important to
     # set the seed within the function, rather than outside)
