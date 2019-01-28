@@ -18,8 +18,9 @@ from scipy.special import binom as binomial
 
 # Define how to run the simulation for a given correlation pair
 def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
-    nrdmax, cov_est = 'hc1', postau=1, nmod=3, cnum=0, prec=4, sups=True,
-    mlw=100, getresults=False, tex=True, fnamepref='results_'):
+    nrdmax, dfdef=1, locdef=0, scaledef=1 cov_est = 'hc1', postau=1, nmod=3,
+    cnum=0, prec=4, sups=True, mlw=100, getresults=False, tex=True,
+    fnamepref='results_'):
     # Inputs
     # corr: 2-element tuple, specified correlation between X and Y0, and X and
     #       tau
@@ -31,6 +32,12 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
     # nsimul: scalar, number of simulations to run
     # nrdmax: scalar, maximum number of iterations to use for randomization
     #         distributions
+    # dfdef: scalar, default degrees of freedom for chi2 distribution of Y0 if
+    #        corr(X,Y0) = 0
+    # locdef: scalar, default location parameter for Gumbel distribution of tau
+    #         if corr(X,tau) = 0
+    # scaledef: scalar, default scale parameter for Gumbel distribution of tau
+    #         if corr(X,tau) = 0
     # cov_est: string, specifies the covariance estimator to use for the OLS
     #          estimation
     # postau: integer, position of the estimate of tau (the coefficient on the
@@ -93,7 +100,7 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
     else:
         # In the case without correlation between X and Y0, just make sure to
         # get the mean right, and choose a chi2(1) error term
-        Y0 = means[1] - 1 + np.random.chisquare(1,size=(T,1))
+        Y0 = means[1] - dfdef + np.random.chisquare(dfdef,size=(T,1))
 
     # Let tau_eps have a Gumbel distribution
     if corr[1] != 0:
@@ -111,8 +118,8 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
     else:
         # In the case of no correlation between X and tau, just make sure to get
         # the mean right, and use a Gumbel(0,1) error term
-        tau = ( means[2] - np.euler_gamma +
-        np.random.gumbel(0,1,size=(T,1)) )
+        tau = ( means[2] - np.euler_gamma*scaledef +
+        np.random.gumbel(locdef,scaledef,size=(T,1)) )
 
     # Get the partition of X. First, X[:,0].argsort() gets the ranks in the
     # distribution of X. Then, nparts/T converts it into fractions of the
