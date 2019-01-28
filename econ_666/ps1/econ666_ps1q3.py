@@ -121,7 +121,7 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
         # the mean right, and use a Gumbel(0,1) error term
         tau = ( means[2] - np.euler_gamma*scaledef +
         np.random.gumbel(locdef,scaledef,size=(T,1)) )
-
+    
     # Get the partition of X. First, X[:,0].argsort() gets the ranks in the
     # distribution of X. Then, nparts/T converts it into fractions of the
     # length of X. Taking the ceil() makes sure that the groups are between 1
