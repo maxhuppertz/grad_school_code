@@ -1,4 +1,4 @@
-function [beta_hat,Sigma_hat] = ivreg(y,X,Z)
+function [beta_hat,Sigma_hat,eps_hat] = ivreg(y,X,Z)
 % Estimates two stage least squares instrumental variables
 %
 % Inputs

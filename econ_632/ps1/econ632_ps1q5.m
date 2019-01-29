@@ -6,16 +6,16 @@ rng(632)
 
 % Set number of people n, number of and products per market J, and number
 % of markets M
-n = 10000;
+n = 20000;
 J = 4;
-M = 100;
+M = 200;
 
 % Get m = m(i) for each individual
 m = ceil((1:n)' * (M/n));
 
 % Set up xi, where the [m,j] element of this vector equals xi_{mj}
-mu_xi = [11,12,10,11.5];  % Mean of the quality for each product
-sigma2_xi = [1,.5,1.2,.7];  % Variance for each product
+mu_xi = [-.5,1.5,.5,0];  % Mean of the quality for each product
+sigma2_xi = [.7,.5,1.2,1];  % Variance for each product
 xi = randn(M,J) .* (ones(M,1) * sqrt(sigma2_xi)) + ones(M,1) * mu_xi;
 
 % Set up Z, where the [m,j] element of this [M,J] matrix equals Z_{mj}
@@ -80,12 +80,18 @@ Mivsamp = sum(ivsamp);
 fprintf(['\nEffective number of markets: ',num2str(Mivsamp),'\n'])
 
 % Set up cell array to display results
-D = cell(3,4);
-D(1,:) = {'Parameter', 'True value', 'Estimate', 'SE_a'};
-D(2,1) = {'Intercept'};
-D(2,2) = {'n/a'};
-D(3,1) = {'beta'};
-D(3,2) = num2cell(beta);
+D1 = cell(3,4);
+D1(1,:) = {'Parameter', 'True value', 'Estimate', 'SE_a'};
+D1(2,1) = {'beta'};
+D1(2,2) = {'n/a'};
+D1(5,1) = {'beta'};
+D1(5,2) = num2cell(beta);
+
+% Fill in estimates of other parameters
+for i=2:J-1
+    D1(i+1,1) = {strcat('D',num2str(i))};
+    D1(i+1,2) = {mu_xi(i)};
+end
 
 % Created vector of log share differences (option J is the outside good)
 DlnSflat = ...
@@ -96,14 +102,77 @@ DlnSflat = ...
 pflat = reshape(p(ivsamp,1:J-1),[Mivsamp*(J-1),1]);
 Zflat = reshape(Z(ivsamp,1:J-1),[Mivsamp*(J-1),1]);
 
+% Make a flattened version of the product identifier
+pidflat = kron(ones(Mivsamp,1),(1:J-1)');
+
+% Create a dummy version of this
+DP = zeros(Mivsamp*(J-1),J-1);
+
+% Go through all products but the outside option
+for i=1:J-1
+    % Replace the dummy in question
+    DP(:,i) = (pidflat == i);
+end
+
 % Run 2SLS on the flattened (pooled) data, including an intercept
-[theta_hat,Sigma_hat] = ivreg(DlnSflat, [ones((J-1)*Mivsamp,1),pflat], ...
-    [ones((J-1)*Mivsamp,1),Zflat]);
+[theta_hat,Sigma_hat,xi_hat] = ivreg(DlnSflat, ...
+    [ones(Mivsamp*(J-1),1),DP(:,2:J-1),pflat], ...
+    [ones(Mivsamp*(J-1),1),DP(:,2:J-1),Zflat]);
 
 % Calculate standard errors
 SE_a = sqrt(diag(Sigma_hat));
 
 % Display the results
-D(2:3,3:4) = num2cell([theta_hat, SE_a]);
+D1(2:5,3:4) = num2cell([theta_hat, SE_a]);
 fprintf('\n2SLS estimates\n')
-disp(D)
+disp(D1)
+xi_hat_orig = mean(reshape(xi_hat,[Mivsamp,J-1]),1);
+
+% Select number of bootstrap iterations
+B = 4999;
+
+% Set up vector of bootstrap estimates
+T = zeros(B,J-1);
+
+% Go through all bootstrap samples
+parfor b=1:B
+    % Set random number generator seed (necessary if this is run in
+    % parallel)
+    rng(b)
+    
+    % Draw index for bootstrap sample (note this is at the market level)
+    i = randi([1,Mivsamp],Mivsamp,1);
+    
+    % Convert to an index to select from flattened arrays. Get the
+    % initially chosen market, but the corresponding next two rows in the
+    % flattened arrays
+    add = kron(ones(Mivsamp,1),(0:2)');  % Gets next to rows
+    I = kron(i,ones(J-1,1)) + add;
+    
+    % Estimate on the bootstrap sample
+    [~,~,xi_hat] = ivreg(DlnSflat(I,:), ...
+        [ones(Mivsamp*(J-1),1),DP(I,2:J-1),pflat], ...
+        [ones(Mivsamp*(J-1),1),DP(I,2:J-1),Zflat]);
+    
+    % Add estimate to the vector of bootstrap estimates
+    T(b,:) = mean(reshape(xi_hat,[Mivsamp,J-1]),1);
+end
+
+% Set up array to display results
+D2 = cell(4,4);
+D2(1,1) = {'Parameter'};
+D2(1,2) = {'True value'};
+D2(1,3) = {'Estimate'};
+D2(1,4) = {'SE_b'};
+
+% Add rows for each xi_hat
+for i=1:J-1
+    D2(i+1,1) = {strcat('xi_hat ',num2str(i))};
+    D2(i+1,2) = {mu_xi(i)};
+end
+
+% Add estimates and bootstrapped standard errors
+D2(2:4,3:4) = num2cell([xi_hat_orig', std(T,1)']);
+
+% Display the results
+disp(D2)
