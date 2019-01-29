@@ -183,4 +183,5 @@ end
 D2(2:J,3:4) = num2cell([xi_hat_orig', std(T,1)']);
 
 % Display the results
+disp('Recovered mean quality')
 disp(D2)
