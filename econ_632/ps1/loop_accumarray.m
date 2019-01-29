@@ -44,7 +44,7 @@ A = cellfun(fun,A);
 A(isnan(A)) = fillval;
 
 % Make B sparse if desired
-if issparse
+if issparse == 1
     A = sparse(A);
 end
 end

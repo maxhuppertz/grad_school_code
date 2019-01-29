@@ -44,7 +44,7 @@ end
 G = [dbeta; dxi];
 
 % If normalization is required, leave out xi_J
-if normalize
+if normalize == 1
     G = G(1:J,1);
 end
 
@@ -85,7 +85,7 @@ for j = 1:J
 end
 
 % If normalization is required, leave out xi_J
-if normalize
+if normalize == 1
     H = H(1:J,1:J);
 end
 end

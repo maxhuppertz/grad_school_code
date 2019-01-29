@@ -63,7 +63,7 @@ lnS = log(S);
 addtozeros = 0;
 
 % Add to the shares of the goods in question, if desired
-if addtozeros
+if addtozeros == 1
     % Add to the shares
     lnS(lnS==-Inf) = 10^(-14);
     
@@ -112,10 +112,8 @@ else
     icept = DP(:,1:J-1);
 end
 
-% Run 2SLS on the flattened (pooled) data, including an intercept
-[theta_hat,Sigma_hat,xi_hat] = ivreg(DlnSflat, ...
-    [icept,pflat], ...
-    [icept,Zflat]);
+% Run 2SLS on the flattened (pooled) data, including the intercept
+[theta_hat,Sigma_hat,xi_hat] = ivreg(DlnSflat,[icept,pflat],[icept,Zflat]);
 
 % Calculate standard errors
 SE_a = sqrt(diag(Sigma_hat));
@@ -160,25 +158,24 @@ parfor b=1:B
     I = kron(i,ones(J-1,1)) + add;
     
     % Estimate on the bootstrap sample
-    [~,~,xi_hat] = ivreg(DlnSflat(I,:), ...
-        [icept(I,:),pflat], ...
-        [icept(I,:),Zflat]);
+    [~,~,xi_hat] = ...
+        ivreg(DlnSflat(I,:),[icept(I,:),pflat],[icept(I,:),Zflat]);
     
-    % Add estimate to the vector of bootstrap estimates
+    % Add mean of estimates to the vector of bootstrap estimates
     T(b,:) = mean(reshape(xi_hat,[Mivsamp,J-1]),1);
 end
 
 % Set up array to display results
 D2 = cell(4,4);
 D2(1,1) = {'Parameter'};
-D2(1,2) = {'True difference'};
+D2(1,2) = {'True value'};
 D2(1,3) = {'Estimate'};
 D2(1,4) = {'SE_b'};
 
 % Add rows for each xi_hat
 for i=1:J-1
     D2(i+1,1) = {strcat('xi_hat ',num2str(i))};
-    D2(i+1,2) = {mu_xi(i)-mu_xi(J)};
+    D2(i+1,2) = {mu_xi(i)};
 end
 
 % Add estimates and bootstrapped standard errors

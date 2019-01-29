@@ -13,7 +13,7 @@ fagree = all(all(loop_accumarray(subs,vals,[7,7],@mean,0,1) ...
 
 % Display whether the two agree
 fprintf('\nResult of function agreement check:\n')
-if fagree
+if fagree == 1
     % If they agree, display that
     disp('Loop-based and built-in accumarray functions agree')
 else

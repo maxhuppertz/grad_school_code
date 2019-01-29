@@ -45,7 +45,7 @@ function I = CP(b,beta_bar,sigma2,probonly)
     end
     
     % Check whether to get the conditional choice probability only
-    if probonly
+    if probonly == 1
         % Calculate only the exponential ratio
         I = (exp(b.*p(cidx) + X(cidx)) ...
             ./ sum(exp((b*ones(1,J)).*p + X),2));
