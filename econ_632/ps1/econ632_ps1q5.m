@@ -60,7 +60,7 @@ lnS = log(S);
 % Markets with zero share for any good will cause a problem, since they
 % will cause the IV estimation to return NaNs. Select whether to add a tiny
 % amount to the share of the good in question for that market
-addtozeros = 0;
+addtozeros = 1;
 
 % Add to the shares of the goods in question, if desired
 if addtozeros == 1
@@ -110,7 +110,7 @@ simpleicept = 0;
 if simpleicept == 1
     icept = ones(Mivsamp*(J-1),1);
 else
-    icept = [ones(Mivsamp*(J-1),1),DP(:,2:J-2)];
+    icept = DP(:,1:J-1);
 end
 
 % Run 2SLS on the flattened (pooled) data, including the intercept
