@@ -101,15 +101,16 @@ for i=1:J-1
     DP(:,i) = (pidflat == i);
 end
 
-% Specify whether to use simple intercept. Otherwise, uses a dummy for each
-% option other than the outside one
+% Specify whether to use simple intercept. Otherwise, uses a simple
+% intercept, plus a dummy for each option other than the outside one and
+% the second to last one
 simpleicept = 0;
 
 % Implement the chosen intercept
-if simpleicept
+if simpleicept == 1
     icept = ones(Mivsamp*(J-1),1);
 else
-    icept = DP(:,1:J-1);
+    icept = [ones(Mivsamp*(J-1),1),DP(:,2:J-2)];
 end
 
 % Run 2SLS on the flattened (pooled) data, including the intercept

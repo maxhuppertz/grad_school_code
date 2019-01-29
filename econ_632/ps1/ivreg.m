@@ -47,7 +47,7 @@ XXinv = (X_hat'*X_hat) \ eye(k);
 % Estimate second stage coefficient
 beta_hat = (X_hat'*X_hat)\(X_hat'*y);
 
-% Get second stage residuals
+% Get second stage residuals (it's important to use X, not X_hat)
 eps_hat = y - X*beta_hat;
 
 % Calculate rescaled residuals (useful for variance/covariance estimator)
