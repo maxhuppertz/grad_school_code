@@ -14,7 +14,7 @@ M = 100;
 m = ceil((1:n)' * (M/n));
 
 % Set up xi, where the [m,j] element of this vector equals xi_{mj}
-mu_xi = [11,12,10,11.5];  % Mean of the quality for each product
+mu_xi = [1,2,0,1.5];  % Mean of the quality for each product
 sigma2_xi = [.5,.2,.7,1];  % Variance for each product
 xi = randn(M,J) .* (ones(M,1) * sqrt(sigma2_xi)) + ones(M,1) * mu_xi;
 
@@ -60,7 +60,7 @@ lnS = log(S);
 % Markets with zero share for any good will cause a problem, since they
 % will cause the IV estimation to return NaNs. Select whether to add a tiny
 % amount to the share of the good in question for that market
-addtozeros = 1;
+addtozeros = 0;
 
 % Add to the shares of the goods in question, if desired
 if addtozeros == 1
