@@ -58,16 +58,16 @@ end
 % will cause the IV estimation to return NaNs. Select whether to add a tiny
 % amount to the share of the good in question for that market, set them to
 % one (sounds crazy, I know), or do nothing
-dealwithzeros = 'add';
+dealwithzeros = '';
 
 % Add to the shares of the goods in question, if desired
-if strcmp(addtozeros,'add')
+if strcmp(dealwithzeros,'addsmall')
     % Add a small number to the shares
     S(S==0) = 10^(-14);
     
     % Display a message that this happened
     fprintf('\nZero shares set to 10^(-14)\n')
-elseif strcmp(dealwithzeros,'one')
+elseif strcmp(dealwithzeros,'addone')
     % Add to the shares
     S(S==0) = 1;
     
