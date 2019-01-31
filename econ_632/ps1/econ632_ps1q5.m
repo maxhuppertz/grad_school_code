@@ -58,7 +58,7 @@ end
 % will cause the IV estimation to return NaNs. Select whether to add a tiny
 % amount to the share of the good in question for that market, 
 % or do nothing
-dealwithzeros = 'addsmall';
+dealwithzeros = '';
 
 % Add to the shares of the goods in question, if desired
 if strcmp(dealwithzeros,'addsmall')
