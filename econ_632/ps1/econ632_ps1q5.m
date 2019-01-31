@@ -6,7 +6,7 @@ rng(632)
 
 % Set number of people n, number of and products per market J, and number
 % of markets M
-n = 10000;
+n = 1000000;
 J = 4;
 M = 100;
 
