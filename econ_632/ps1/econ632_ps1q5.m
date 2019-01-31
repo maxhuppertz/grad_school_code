@@ -56,9 +56,9 @@ end
 
 % Markets with zero share for any good will cause a problem, since they
 % will cause the IV estimation to return NaNs. Select whether to add a tiny
-% amount to the share of the good in question for that market, set them to
-% one (sounds crazy, I know), or do nothing
-dealwithzeros = '';
+% amount to the share of the good in question for that market, 
+% or do nothing
+dealwithzeros = 'addsmall';
 
 % Add to the shares of the goods in question, if desired
 if strcmp(dealwithzeros,'addsmall')
@@ -67,12 +67,6 @@ if strcmp(dealwithzeros,'addsmall')
     
     % Display a message that this happened
     fprintf('\nZero shares set to 10^(-14)\n')
-elseif strcmp(dealwithzeros,'addone')
-    % Add to the shares
-    S(S==0) = 1;
-    
-    % Display a message that this happened
-    fprintf('\nZero shares set to 1\n')
 else
     % This will result in zero share market being discarded
     % Display a message that this happened
