@@ -54,22 +54,33 @@ for i=1:J
     S(:,i) = accumarray(m,C(:,i),[],@mean);
 end
 
-% Calculate log shares
-lnS = log(S);
-
 % Markets with zero share for any good will cause a problem, since they
 % will cause the IV estimation to return NaNs. Select whether to add a tiny
-% amount to the share of the good in question for that market
-addtozeros = 0;
+% amount to the share of the good in question for that market, set them to
+% one (sounds crazy, I know), or do nothing
+dealwithzeros = 'add';
 
 % Add to the shares of the goods in question, if desired
-if addtozeros == 1
-    % Add to the shares
-    lnS(lnS==-Inf) = 10^(-14);
+if strcmp(addtozeros,'add')
+    % Add a small number to the shares
+    S(S==0) = 10^(-14);
     
     % Display a message that this happened
     fprintf('\nZero shares set to 10^(-14)\n')
+elseif strcmp(dealwithzeros,'one')
+    % Add to the shares
+    S(S==0) = 1;
+    
+    % Display a message that this happened
+    fprintf('\nZero shares set to 1\n')
+else
+    % This will result in zero share market being discarded
+    % Display a message that this happened
+    fprintf('\nMarkets with zero shares discarded\n')
 end
+
+% Calculate log shares
+lnS = log(S);
 
 % Get IV sample (markets with non-zero shares for all goods)
 ivsamp = sum(lnS~=-Inf,2) == J;
