@@ -75,7 +75,7 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
     # this implies Cov(X,V) / Var(X) = 1. Also, taking the variance of (2), I
     # have Var(Z) = Var(X) + Var(Z_eps). Plugging both of these into (1),
     #
-    # Var(Z_eps) = Var(X) * (gamma^(-2) - 1)
+    # Var(Z_eps) = Var(X) * (1 - gamma^2)
     #
     # and since I get to choose Var(Z_eps), I can thereby generate random
     # variables with arbitrary correlation structure. I can then use alpha to
@@ -91,7 +91,7 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
     # Let Y0_eps have a chi2 distribution
     if corr[0] != 0:
         # Calculate the necessary variance
-        var_Y0 = var_X*(corr[0]**(-2)-1)
+        var_Y0 = var_X*(1-corr[0]**2)
 
         # Calculate the degrees of freedom implied by this variance (this comes
         # from the fact that for a chi2(k) random variable, its variance is
@@ -109,7 +109,7 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
     # Let tau_eps have a Gumbel distribution
     if corr[1] != 0:
         # Calculate the necessary variance
-        var_tau = var_X*(corr[1]**(-2)-1)
+        var_tau = var_X*(1-corr[1]**2)
 
         # Calculate the implied scale for the Gumbel distribution (a
         # Gumbel(0,b) random variable has variance b^2 (pi^2/6))
