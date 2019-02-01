@@ -18,8 +18,8 @@ from scipy.special import binom as binomial
 
 # Define how to run the simulation for a given correlation pair
 def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
-    nrdmax, dfdef=1, locdef=0, scaledef=1, cov_est = 'hc1', postau=1, nest=3,
-    cnum=0, prec=4, sups=True, mlw=100, getresults=False, tex=True,
+    nrdmax, dfdef=1, locdef=0, scaledef=1, cov_est = 'hc1', postau=1, nest=4,
+    cnum=0, prec=4, sups=True, mlw=110, getresults=False, tex=True,
     fnamepref='results_'):
     # Inputs
     # corr: 2-element tuple, specified correlation between X and Y0, and X and
@@ -542,5 +542,5 @@ ncores = cpu_count()
 # Run simluations on all but one of the available cores in parallel
 Parallel(n_jobs=ncores)(delayed(run_simulation)
     (corr=corr, means=means, var_X=var_X,T=T, sampsis=sampsis, tprobs=tprobs,
-    nparts=nparts, nsimul=nsimul, nrdmax=nrdmax, cnum=cnum) for
-    cnum, corr in  enumerate(corrs))
+    nparts=nparts, nsimul=nsimul, nrdmax=nrdmax, cnum=cnum) for cnum, corr in
+    enumerate(corrs))
