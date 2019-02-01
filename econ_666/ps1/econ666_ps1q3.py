@@ -549,7 +549,7 @@ nparts = 3
 nsimul = 100
 
 # Specify maximum number of repetitions for randomization distribution
-nrdmax = 10
+nrdmax = 10000
 
 # Specify how many cores to use for parallel processing
 ncores = cpu_count()
