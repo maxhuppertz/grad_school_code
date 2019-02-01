@@ -18,7 +18,7 @@ from scipy.special import binom as binomial
 
 # Define how to run the simulation for a given correlation pair
 def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
-    nrdmax, dfdef=1, locdef=0, scaledef=1, cov_est = 'hc1', postau=1, nest=4,
+    nrdmax, dfdef=1, locdef=0, scaledef=1, cov_est = 'hmsd', postau=1, nest=4,
     cnum=0, prec=4, sups=True, mlw=110, getresults=False, tex=True,
     fnamepref='results_'):
     # Inputs
@@ -43,6 +43,9 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
     # postau: integer, position of the estimate of tau (the coefficient on the
     #         treatment dummy) in all models to be estimated
     # nest: integer, number of models to be estimated
+    # cnum: integer, index of the correlation pair for the current simulation in
+    #       the vector of correlation pairs (necessary to set the random number
+    #       generator's seed to run this in parallel)
     # prec: integer, precision for floating point number printing in results
     # sups: boolean, if true, number which are too small to be printed using the
     #       selected printing precision will be printed as zero
@@ -478,8 +481,20 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
     # Make sure sample sizes are stored as integers
     results['N'] = results['N'].astype(int)
 
+    # Get the variances for Y0 and tau to display them
+    if corr[0] != 0:
+        d_var_Y0 = var_Y0
+    else:
+        d_var_Y0 = scaledef
+
+    if corr[0] != 0:
+        d_var_tau = var_tau
+    else:
+        d_var_tau = scaledef
+
     # Print the results
     print('Correlations: corr(X,Y0) = ', corr[0], ', corr(X,tau) = ', corr[1],
+        '\n', 'Variances: V[Y0] = ', d_var_Y0, ', V[tau] = ', d_var_tau,
         '\n', results, '\n', sep='')
 
     # Check whether to export to latex
@@ -534,7 +549,7 @@ nparts = 3
 nsimul = 100
 
 # Specify maximum number of repetitions for randomization distribution
-nrdmax = 10000
+nrdmax = 10
 
 # Specify how many cores to use for parallel processing
 ncores = cpu_count()
