@@ -18,7 +18,7 @@ from scipy.special import binom as binomial
 
 # Define how to run the simulation for a given correlation pair
 def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
-    nrdmax, beta_Z=1, dfdef=1, locdef=0, scaledef=1, cov_est = 'hmsd',
+    nrdmax, dfdef=1, locdef=0, scaledef=1, cov_est = 'hmsd',
     postau=1, nest=4, cnum=0, prec=4, sups=True, mlw=110, getresults=False,
     tex=True, fnamepref='results_'):
     # Inputs
@@ -32,7 +32,6 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
     # nsimul: scalar, number of simulations to run
     # nrdmax: scalar, maximum number of iterations to use for randomization
     #         distributions
-    # beta_Z: scalar, parameter for the generation of tau and Y0, see note below
     # dfdef: scalar, default degrees of freedom for chi2 distribution of Y0 if
     #        corr(X,Y0) = 0
     # locdef: scalar, default location parameter for Gumbel distribution of tau
@@ -70,13 +69,13 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
     #
     # for some gamma. I can generate
     #
-    # Z = alpha + beta_Z*X + Z_eps                                           (2)
+    # Z = alpha + X + Z_eps                                             (2)
     #
     # where Z_eps is an error term, if you will. From standard linear regression
-    # this implies Cov(X,V) / Var(X) = beta_Z. Also, taking the variance of
-    # (2), I have Var(Z) = Var(X) + Var(Z_eps). Plugging both of these into (1),
+    # this implies Cov(X,Z) / Var(X) = 1. Also, taking the variance of (2), I
+    # have Var(Z) = Var(X) + Var(Z_eps). Plugging both of these into (1),
     #
-    # Var(Z_eps) = beta_Z^2 * Var(X) * (gamma^(-2) - 1)
+    # Var(Z_eps) = Var(X) * (gamma^(-2) - 1)
     #
     # and since I get to choose Var(Z_eps), I can thereby generate random
     # variables with arbitrary correlation structure. I can then use alpha to
@@ -92,7 +91,7 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
     # Let Y0_eps have a chi2 distribution
     if corr[0] != 0:
         # Calculate the necessary variance
-        var_Y0 = (beta_Z**2)*var_X*(corr[0]**(-2) - 1)
+        var_Y0 = var_X*(corr[0]**(-2) - 1)
 
         # Calculate the degrees of freedom implied by this variance (this comes
         # from the fact that for a chi2(k) random variable, its variance is
@@ -110,7 +109,7 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
     # Let tau_eps have a Gumbel distribution
     if corr[1] != 0:
         # Calculate the necessary variance
-        var_tau = (beta_Z**2)*var_X*(corr[1]**(-2) - 1)
+        var_tau = var_X*(corr[1]**(-2) - 1)
 
         # Calculate the implied scale for the Gumbel distribution (a
         # Gumbel(0,b) random variable has variance b^2 (pi^2/6))
@@ -496,8 +495,7 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
     # Print the results
     print('Correlations: corr(X,Y0) = ', corr[0], ', corr(X,tau) = ', corr[1],
         '\n', 'Variances: V[Y0] = ', d_var_Y0, ', V[tau] = ', d_var_tau,
-        '\n', results, '\n', np.corrcoef(X,Y0,rowvar=False)[0,1], ' ',
-        np.corrcoef(X,tau,rowvar=False)[0,1], '\n', sep='')
+        '\n', results, '\n', sep='')
 
     # Check whether to export to latex
     if tex:
