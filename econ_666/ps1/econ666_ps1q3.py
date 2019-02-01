@@ -18,7 +18,7 @@ from scipy.special import binom as binomial
 
 # Define how to run the simulation for a given correlation pair
 def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
-    nrdmax, dfdef=1, locdef=0, scaledef=1, cov_est = 'hc1', postau=1, nmod=3,
+    nrdmax, dfdef=1, locdef=0, scaledef=1, cov_est = 'hc1', postau=1, nest=3,
     cnum=0, prec=4, sups=True, mlw=100, getresults=False, tex=True,
     fnamepref='results_'):
     # Inputs
@@ -42,7 +42,7 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
     #          estimation
     # postau: integer, position of the estimate of tau (the coefficient on the
     #         treatment dummy) in all models to be estimated
-    # nmod: integer, number of models to be estimated
+    # nest: integer, number of models to be estimated
     # prec: integer, precision for floating point number printing in results
     # sups: boolean, if true, number which are too small to be printed using the
     #       selected printing precision will be printed as zero
@@ -121,7 +121,7 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
         # the mean right, and use a Gumbel(0,1) error term
         tau = ( means[2] - np.euler_gamma*scaledef +
         np.random.gumbel(locdef,scaledef,size=(T,1)) )
-    
+
     # Get the partition of X. First, X[:,0].argsort() gets the ranks in the
     # distribution of X. Then, nparts/T converts it into fractions of the
     # length of X. Taking the ceil() makes sure that the groups are between 1
@@ -272,18 +272,21 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
                 # The first data set is just an intercept and a treatment dummy
                 Z1 = np.concatenate((beta0,W),axis=1)
 
-                # The first data set also includes the partition dummies
-                Z2 = np.concatenate((beta0,W,D[I,:]),axis=1)
+                # The second data set contains the covariate X
+                Z2 = np.concatenate((beta0,W,X[I,:]),axis=1)
 
-                # The third data set also includes an interaction between the
+                # The third data set also includes the partition dummies
+                Z3 = np.concatenate((beta0,W,D[I,:]),axis=1)
+
+                # The fourth data set also includes an interaction between the
                 # treatment dummy and the partition dummies
-                Z3 = np.concatenate(
+                Z4 = np.concatenate(
                     (beta0,W,D[I,:],(W @ np.ones(shape=(1,nparts-1))) * D[I,:]),
                     axis=1)
 
                 # Estimate the first two regression models and store the
                 # estimates in the tau_hats array, in row s
-                for i, Z in enumerate([Z1, Z2]):
+                for i, Z in enumerate([Z1, Z2, Z3]):
                     # Estimate the model
                     beta_hat, S_hat = ols(Yobs,Z,cov_est=cov_est)
 
@@ -304,7 +307,7 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
 
                 # For the saturated model, I need to get the average treatment
                 # effect. First, estimate the model.
-                beta_hat, S_hat = ols(Yobs,Z3,cov_est=cov_est)
+                beta_hat, S_hat = ols(Yobs,Z4,cov_est=cov_est)
 
                 # Set up a vector of linear constraints on tau
                 L = np.zeros(shape=(beta_hat.shape))
@@ -345,7 +348,7 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
                 S_hat_satu = L.transpose() @ S_hat @ L
 
                 # Store the estimate and its standard error
-                tau_hats[s,2*(nmod-1):] = (
+                tau_hats[s,2*(nest-1):] = (
                     tau_hat_avg_satu, np.sqrt(S_hat_satu)
                     )
 
@@ -530,12 +533,6 @@ nparts = 3
 # Specify number of simulations to run
 nsimul = 100
 
-# Tell the program how many estimations will be run for each simulation. (For
-# example, if there is a simply regression of Y on a treament dummy, another
-# regression of Y on a treatment dummy and partition indicators, and then a
-# third regression for the saturated model, that's three estimations.)
-nest = 3
-
 # Specify maximum number of repetitions for randomization distribution
 nrdmax = 10000
 
@@ -545,5 +542,5 @@ ncores = cpu_count()
 # Run simluations on all but one of the available cores in parallel
 Parallel(n_jobs=ncores)(delayed(run_simulation)
     (corr=corr, means=means, var_X=var_X,T=T, sampsis=sampsis, tprobs=tprobs,
-    nparts=nparts, nsimul=nsimul, nrdmax=nrdmax, cnum=cnum) for cnum, corr in
-    enumerate(corrs))
+    nparts=nparts, nsimul=nsimul, nrdmax=nrdmax, cnum=cnum) for
+    cnum, corr in  enumerate(corrs))
