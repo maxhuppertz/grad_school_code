@@ -546,10 +546,10 @@ tprobs = [.3, .5]
 nparts = 3
 
 # Specify number of simulations to run
-nsimul = 10000
+nsimul = 100
 
 # Specify maximum number of repetitions for randomization distribution
-nrdmax = 10
+nrdmax = 10000
 
 # Specify how many cores to use for parallel processing
 ncores = cpu_count()
