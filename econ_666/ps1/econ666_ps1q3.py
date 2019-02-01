@@ -32,6 +32,7 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
     # nsimul: scalar, number of simulations to run
     # nrdmax: scalar, maximum number of iterations to use for randomization
     #         distributions
+    # beta_Z: scalar, parameter for the generation of tau and Y0, see note below
     # dfdef: scalar, default degrees of freedom for chi2 distribution of Y0 if
     #        corr(X,Y0) = 0
     # locdef: scalar, default location parameter for Gumbel distribution of tau
@@ -69,13 +70,13 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
     #
     # for some gamma. I can generate
     #
-    # Z = alpha + beta*X + Z_eps                                             (2)
+    # Z = alpha + beta_Z*X + Z_eps                                           (2)
     #
     # where Z_eps is an error term, if you will. From standard linear regression
-    # this implies Cov(X,V) / Var(X) = beta. Also, taking the variance of (2), I
-    # have Var(Z) = Var(X) + Var(Z_eps). Plugging both of these into (1),
+    # this implies Cov(X,V) / Var(X) = beta_Z. Also, taking the variance of
+    # (2), I have Var(Z) = Var(X) + Var(Z_eps). Plugging both of these into (1),
     #
-    # Var(Z_eps) = beta^2 * Var(X) * (gamma^(-2) - 1)
+    # Var(Z_eps) = beta_Z^2 * Var(X) * (gamma^(-2) - 1)
     #
     # and since I get to choose Var(Z_eps), I can thereby generate random
     # variables with arbitrary correlation structure. I can then use alpha to
