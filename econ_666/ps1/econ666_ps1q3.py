@@ -90,8 +90,13 @@ def run_simulation(corr, means, vars, T, sampsis, tprobs, nparts, nsimul,
     # set the seed within the function, rather than outside)
     np.random.seed(666+cnum)
 
-    # Generate X as a normally distributed random variable
-    X = np.random.normal(means[0], np.sqrt(vars[0]), size=(T,1))
+    # Get scale for exponential distribution of X
+    scale_X = np.sqrt(1/vars[0])
+
+    # Generate X as an exponentially distributed random variable (subtract the
+    # mean of that distribution, which is 1/scale_X, to make sure to hit the
+    # specified mean for X)
+    X = means[0] - (1/scale_X) + np.random.exponential(scale_X, size=(T,1))
 
     # Let Y0_eps have a chi2 distribution
     if corr[0] != 0:
