@@ -259,7 +259,10 @@ estadd r(mean)
 *** Part 6: Permutation p-value
 ********************************************************************************
 
-noi est res `res_main_nocov'
+// Restore estimates of voucher usage on treatment dummy
+est res `res_main_nocov'
+
+// Get the t-statistic for the coefficient on treatment
 mat b_hat_orig = e(b)
 mat V_hat_orig = e(V)
 loc t_tau_orig = b_hat_orig[1,1] / sqrt(V_hat_orig[1,1])
@@ -279,7 +282,7 @@ gen `v_treat_reassign' = 0
 // 749! / (371!*(749-317)!)
 //
 // is very large.)
-loc nrdmax = 100
+loc nrdmax = 10000
 
 // Set up a counter for how many results were more extreme
 loc n_more_extreme = 0
@@ -310,16 +313,14 @@ forval i=1/`nrdmax'{
 		}
 }
 
-// Display the result
-noi di _n "Permutation p-value: " `n_more_extreme'/`nrdmax'
-
 ********************************************************************************
 *** Part 7: Display the results
 ********************************************************************************
 
-// Display the result using esttab. (This requires the estout package. If you
-// don't have it, type ssc install estout, which should download and install it
-// automatically.)
+// Display the estimation results for parts 2 to 5 using esttab. (This requires
+// the estout package. If you don't have it, type ssc install estout, which
+// should download and install it automatically.)
+// This shows standard errors
 noi esttab `res_main' `res_main_nocov' `res_main_fc1' `res_main_fc2', ///
 	keep(`v_coupletreatment') b(%8.3f) ///
 	se mtitles("Main results" "No covariates" ///
@@ -329,4 +330,18 @@ noi esttab `res_main' `res_main_nocov' `res_main_fc1' `res_main_fc2', ///
 	"Mean indiv. treat.") fmt(0 3)) ///
 	coeflabel(`v_coupletreatment' "Couple treament") ///
 	varwidth(18) modelwidth(16)
+
+// This shows p-values
+noi esttab `res_main' `res_main_nocov' `res_main_fc1' `res_main_fc2', ///
+	keep(`v_coupletreatment') b(%8.3f) ///
+	p mtitles("Main results" "No covariates" ///
+	"Fake covariate 1" "Fake covariate 2") ///
+	star(* .1 ** .05 *** .01) ///
+	stats(N mean, label("N" ///
+	"Mean indiv. treat.") fmt(0 3)) ///
+	coeflabel(`v_coupletreatment' "Couple treament") ///
+	varwidth(18) modelwidth(16)
+	
+// Display the permutation p-value result
+noi di _n "Permutation p-value: " `n_more_extreme'/`nrdmax'
 }
