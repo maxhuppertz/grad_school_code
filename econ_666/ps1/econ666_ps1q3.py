@@ -17,14 +17,16 @@ from scipy.special import binom as binomial
 ################################################################################
 
 # Define how to run the simulation for a given correlation pair
-def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
-    nrdmax, dfdef=1, locdef=0, scaledef=1, cov_est = 'hmsd',
+def run_simulation(corr, means, vars, T, sampsis, tprobs, nparts, nsimul,
+    nrdmax, dfdef=1, locdef=0, scaledef=1, cov_est = 'hmsd', beta_Z=.2,
     postau=1, nest=4, cnum=0, prec=4, sups=True, mlw=110, getresults=False,
     tex=True, fnamepref='results_'):
     # Inputs
     # corr: 2-element tuple, specified correlation between X and Y0, and X and
     #       tau
     # means: 3-element vector, specified means for X, Y0, and tau
+    # vars: 3-element vector, specified variance for X, and variances for eps_Y0
+    #       and eps_tau, see the note below
     # T: scalar, number of tuples in the simulated data
     # sampsis: vector, different sizes for random samples to draw
     # tprobs: vector, different treatment probabilities for each sample size
@@ -40,6 +42,8 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
     #         if corr(X,tau) = 0
     # cov_est: string, specifies the covariance estimator to use for the OLS
     #          estimation
+    # beta_Z: scalar, used in the construction of Y0 and tau (see the note
+    #         below)
     # postau: integer, position of the estimate of tau (the coefficient on the
     #         treatment dummy) in all models to be estimated
     # nest: integer, number of models to be estimated
@@ -69,15 +73,16 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
     #
     # for some gamma. I can generate
     #
-    # Z = alpha + X + Z_eps                                             (2)
+    # Z = alpha + beta_Z*X + Z_eps                                           (2)
     #
-    # where Z_eps is an error term, if you will. From standard linear regression
-    # this implies Cov(X,Z) / Var(X) = 1. Also, taking the variance of (2), I
-    # have Var(Z) = Var(X) + Var(Z_eps). Plugging both of these into (1),
+    # where Z_eps is an error term, if you will. From standard linear
+    # regression, this implies Cov(X,Z) / Var(X) = beta_Z. Also, taking the
+    # variance of (2), I have Var(Z) = beta_Z^2*Var(X) + Var(Z_eps). Plugging
+    # both of these into (1),
     #
-    # Var(Z_eps) = Var(X) * (gamma^(-2) - 1)
+    # beta_Z = sqrt( (Var(X) / Var(Z_eps)) * (gamma^(-2) - 1))
     #
-    # and since I get to choose Var(Z_eps), I can thereby generate random
+    # and since I get to choose beta_Z, I can thereby generate random
     # variables with arbitrary correlation structure. I can then use alpha to
     # adjust the mean of the generated variable.
 
@@ -86,44 +91,46 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
     np.random.seed(666+cnum)
 
     # Generate X as a normally distributed random variable
-    X = np.random.normal(means[0], np.sqrt(var_X), size=(T,1))
+    X = np.random.normal(means[0], np.sqrt(vars[0]), size=(T,1))
 
     # Let Y0_eps have a chi2 distribution
     if corr[0] != 0:
-        # Calculate the necessary variance
-        var_Y0 = var_X*(corr[0]**(-2) - 1)
-
-        # Calculate the degrees of freedom implied by this variance (this comes
-        # from the fact that for a chi2(k) random variable, its variance is
-        # equal to 2k)
-        df_Y0 = .5*var_Y0
-
-        # Calculate Y0, where I need to make sure to correct for the mean of
-        # the error term (the mean of a chi2(k) is simply k)
-        Y0 = means[1] - df_Y0 + X + np.random.chisquare(df_Y0,size=(T,1))
+        # Calculate the necessary beta if there has to be a correlation
+        beta_Y0 = (
+            np.sqrt( (vars[1]/vars[0]) * ((corr[0]**2) / (1 - corr[0]**2)) )
+            )
     else:
-        # In the case without correlation between X and Y0, just make sure to
-        # get the mean right, and choose a chi2(1) error term
-        Y0 = means[1] - dfdef + np.random.chisquare(dfdef,size=(T,1))
+        # Otherwise, set it to zero
+        beta_Y0 = 0
+
+    # Calculate the degrees of freedom implied by this variance (this comes
+    # from the fact that for a chi2(k) random variable, its variance is
+    # equal to 2k)
+    df_Y0 = .5*vars[1]
+
+    # Calculate Y0, where I need to make sure to correct for the mean of
+    # the error term (the mean of a chi2(k) is simply k)
+    Y0 = ( means[1] - df_Y0 + beta_Y0*X +
+        np.random.chisquare(df_Y0,size=(T,1)) )
 
     # Let tau_eps have a Gumbel distribution
     if corr[1] != 0:
-        # Calculate the necessary variance
-        var_tau = var_X*(corr[1]**(-2) - 1)
-
-        # Calculate the implied scale for the Gumbel distribution (a
-        # Gumbel(0,b) random variable has variance b^2 (pi^2/6))
-        beta_tau = np.sqrt( (6/(np.pi**2)) * var_tau )
-
-        # Calculate tau, correcting for the fact that a Gumbel(0,b) random
-        # variable has mean gb, where g is the Euler-Mascheroni constant)
-        tau = (means[2] - np.euler_gamma*beta_tau + X +
-            np.random.gumbel(0,beta_tau,size=(T,1)))
+        # Calculate the necessary beta if there has to be a correlation
+        beta_tau = (
+            np.sqrt( (vars[2]/vars[0]) * ((corr[1]**2) / (1 - corr[1]**2)) )
+            )
     else:
-        # In the case of no correlation between X and tau, just make sure to get
-        # the mean right, and use a Gumbel(0,1) error term
-        tau = ( means[2] - np.euler_gamma*scaledef +
-        np.random.gumbel(locdef,scaledef,size=(T,1)) )
+        # Otherwise, it's zero
+        beta_tau = 0
+
+    # Calculate the implied scale for the Gumbel distribution (a
+    # Gumbel(0,b) random variable has variance b^2 (pi^2/6))
+    scale_tau = np.sqrt( (6/(np.pi**2)) * vars[2] )
+
+    # Calculate tau, correcting for the fact that a Gumbel(0,b) random
+    # variable has mean gb, where g is the Euler-Mascheroni constant)
+    tau = ( means[2] - np.euler_gamma*scale_tau + beta_tau*X +
+        np.random.gumbel(0,scale_tau,size=(T,1)) )
 
     # Get the partition of X. First, X[:,0].argsort() gets the ranks in the
     # distribution of X. Then, nparts/T converts it into fractions of the
@@ -482,15 +489,8 @@ def run_simulation(corr, means, var_X, T, sampsis, tprobs, nparts, nsimul,
     results['N'] = results['N'].astype(int)
 
     # Get the variances for Y0 and tau to display them
-    if corr[0] != 0:
-        d_var_Y0 = var_Y0
-    else:
-        d_var_Y0 = scaledef
-
-    if corr[0] != 0:
-        d_var_tau = var_tau
-    else:
-        d_var_tau = scaledef
+    d_var_Y0 = (beta_Y0**2)*vars[0] + vars[1]
+    d_var_tau = (beta_tau**2)*vars[0] + vars[2]
 
     # Print the results
     print('Correlations: corr(X,Y0) = ', corr[0], ', corr(X,tau) = ', corr[1],
@@ -530,8 +530,9 @@ corrs = [[.0,.0], [.1,.1], [.6,.1], [.1,.6]]
 # [mean_X, mean_Y0, mean_tau]
 means = [0, 0, .2]
 
-# Specify variance of X
-var_X = 1
+# Specify variance of X, and variances for the two error terms used in creating
+# Y0 and tau
+vars = [1,1,1]
 
 # Specify number of tuples
 T = 100
@@ -556,6 +557,6 @@ ncores = cpu_count()
 
 # Run simluations on all but one of the available cores in parallel
 Parallel(n_jobs=ncores)(delayed(run_simulation)
-    (corr=corr, means=means, var_X=var_X,T=T, sampsis=sampsis, tprobs=tprobs,
+    (corr=corr, means=means, vars=vars, T=T, sampsis=sampsis, tprobs=tprobs,
     nparts=nparts, nsimul=nsimul, nrdmax=nrdmax, cnum=cnum) for cnum, corr in
     enumerate(corrs))
