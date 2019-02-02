@@ -259,6 +259,10 @@ estadd r(mean)
 *** Part 6: Permutation p-value
 ********************************************************************************
 
+est res `res_main_nocov'
+mat b_hat_orig = e(b)
+loc tau_hat_orig = b_hat_orig[1,1]
+
 // Calculate number of treated units in the data
 su `v_coupletreatment'
 loc n_treat = r(sum)
@@ -274,7 +278,10 @@ gen `v_treat_reassign' = 0
 // 749! / (371!*(749-317)!)
 //
 // is very large.)
-loc nrdmax = 1
+loc nrdmax = 10000
+
+// Set up a counter for how many results were more extreme
+loc n_more_extreme = 0
 
 // Go through all simulations
 forval i=1/`nrdmax'{
@@ -286,7 +293,17 @@ forval i=1/`nrdmax'{
 	
 	// Get the randomized treatment assignment
 	replace `v_treat_reassign' = (_n <= `n_treat')
+	
+	// Run regression for this new assignment
+	reg `v_usedvoucher' `v_treat_reassign'
+	
+	mat b_hat_rnd = e(b)
+	if abs(b_hat_rnd[1,1]) > abs(`tau_hat_orig'){
+		loc `n_more_extreme' = `n_more_extreme' + 1
+		}
 }
+
+noi di _n "Permutation p-value: " `n_more_extreme'/`nrdmax'
 
 ********************************************************************************
 *** Part 7: Display the results
