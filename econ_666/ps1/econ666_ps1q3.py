@@ -499,7 +499,8 @@ def run_simulation(corr, means, vars, T, sampsis, tprobs, nparts, nsimul,
 
     # Print the results
     print('Correlations: corr(X,Y0) = ', corr[0], ', corr(X,tau) = ', corr[1],
-        '\n', 'Variances: V[Y0] = ', d_var_Y0, ', V[tau] = ', d_var_tau,
+        '\n', 'Variances: V[Y0] = ', np.around(d_var_Y0,prec),
+        ', V[tau] = ', np.around(d_var_tau,prec),
         '\n', results, '\n', sep='')
 
     # Check whether to export to latex
