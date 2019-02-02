@@ -284,7 +284,8 @@ gen `v_treat_reassign' = 0
 // is very large.)
 loc nrdmax = 10000
 
-// Set up a counter for how many results were more extreme
+// Set up a counter for how many t-statistics in the simulated randomization
+// distribution are more extreme
 loc n_more_extreme = 0
 
 // Go through all simulations
