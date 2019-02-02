@@ -178,8 +178,11 @@ loc rho_Yfc1 = .7
 // and since I get to choose beta_Z, I can thereby generate random
 // variables with arbitrary correlation structure. I can then use alpha to
 // adjust the mean of the generated variable.
+
+// Calculate beta_Z
 loc beta_fc1 = sqrt((`var_eps_fc1'/`var_Y') * (`rho_Yfc1'^2/(1 - `rho_Yfc1'^2)))
 
+// Generate fake covariate #1
 gen `v_fc1' = ///
 	`mean_fc1' + `beta_fc1'*`v_usedvoucher' + rnormal(0, sqrt(`var_eps_fc1'))
 
