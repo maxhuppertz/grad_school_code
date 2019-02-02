@@ -75,10 +75,10 @@ def run_simulation(corr, means, vars, T, sampsis, tprobs, nparts, nsimul,
     #
     # Z = alpha + beta_Z*X + Z_eps                                           (2)
     #
-    # where Z_eps is an error term, if you will. From standard linear
-    # regression, this implies Cov(X,Z) / Var(X) = beta_Z. Also, taking the
+    # where Z_eps is an error term, if you will. Expanding Cov(X,Z) and
+    # plugging in (2) yields Cov(X,Z) = beta_Z*Var(X). Also, taking the
     # variance of (2), I have Var(Z) = beta_Z^2*Var(X) + Var(Z_eps). Plugging
-    # both of these into (1),
+    # both of these into (1) gives
     #
     # beta_Z = sqrt( (Var(X) / Var(Z_eps)) * (gamma^(-2) / (1 - gamma^(-2))) )
     #

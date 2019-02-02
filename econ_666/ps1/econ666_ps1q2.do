@@ -9,6 +9,9 @@ qui{
 // Clear everything
 clear *
 
+// Set random number generator's seed
+set seed 666
+
 // Get current working directory
 loc mdir: pwd
 
@@ -140,26 +143,29 @@ estadd r(mean)
 ********************************************************************************
 
 // Specify name for main results with fake covariate number one
-loc res_main_fakecov_1 = "main_results_fakecov_1"
+loc res_main_fc1 = "main_results_fc1"
 
-loc mean_Z = 0
+loc v_fc1 = "fc1"
 
-loc var_eps_Z = 1
+loc mean_fc1 = 0
+
+loc var_eps_fc1 = 1
 
 su `v_usedvoucher'
 loc var_Y = r(sd)^2
 
-loc rho_YZ = .7
+loc rho_Yfc1 = .7
 
-loc beta_Z = sqrt( (`var_eps_Z'/`var_Y') * (`rho_YZ'^2 / (1 - `rho_YZ'^2)) )
+loc beta_fc1 = sqrt((`var_eps_fc1'/`var_Y') * (`rho_Yfc1'^2/(1 - `rho_Yfc1'^2)))
 
-gen Z = `mean_Z' + `beta_Z'*`v_usedvoucher' + rnormal(0,sqrt(`var_eps_Z'))
+gen `v_fc1' = ///
+	`mean_fc1' + `beta_fc1'*`v_usedvoucher' + rnormal(0, sqrt(`var_eps_fc1'))
 
 // Run the regression using only the treatment dummy, without covariates
-reg `v_usedvoucher' `v_coupletreatment' Z
+reg `v_usedvoucher' `v_coupletreatment' `v_fc1'
 
 // Store the estimates
-est sto `res_main_fakecov_1'
+est sto `res_main_fc1'
 
 // Get mean outcome for individual treatment recipients
 su `v_usedvoucher' if `v_indivtreatment' == 1
@@ -174,7 +180,7 @@ estadd r(mean)
 // Display the result using esttab. (This requires the estout package. If you
 // don't have it, type ssc install estout, which should download and install it
 // automatically.)
-noi esttab `res_main' `res_main_nocov' `res_main_fakecov_1', ///
+noi esttab `res_main' `res_main_nocov' `res_main_fc1', ///
 	keep(`v_coupletreatment') b(%8.3f) ///
 	se mtitles("Main results" "No covariates" "Fake Covariate 1") ///
 	star(* .1 ** .05 *** .01) ///
