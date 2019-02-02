@@ -179,7 +179,7 @@ loc rho_Yfc1 = .7
 // variables with arbitrary correlation structure. I can then use alpha to
 // adjust the mean of the generated variable.
 
-// Calculate beta_Z
+// Calculate beta_Z for fake covariate #1
 loc beta_fc1 = sqrt((`var_eps_fc1'/`var_Y') * (`rho_Yfc1'^2/(1 - `rho_Yfc1'^2)))
 
 // Generate fake covariate #1
@@ -202,15 +202,69 @@ su `v_usedvoucher' if `v_indivtreatment' == 1
 estadd r(mean)
 
 ********************************************************************************
-*** Part 5: Display the results
+*** Part 5: Fake covariate #2
+********************************************************************************
+
+// Specify name for fake covariate #2
+loc v_fc2 = "fc2"
+
+// Specify mean for fake covariate #2
+loc mean_fc2 = 0
+
+// Specify variance for error term of fake covariate #2
+loc var_eps_fc2 = 1
+
+// Get residuals from the regression of the voucher use indicator on only the
+// treatment dummy (only a temporary variable)
+est res `res_main_nocov'
+predict temp
+
+// Summarize residuals, save the variance
+su temp
+loc var_Y_res = r(sd)^2
+
+// Specify correlation between voucher use indicator residuals and fake
+// covariate #2
+loc rho_Yfc2 = .7
+
+// Calculate beta_Z for fake covariate #2 (see the note in the preceding section
+// on how this works)
+loc beta_fc2 = ///
+	sqrt((`var_eps_fc2'/`var_Y_res') * (`rho_Yfc2'^2/(1 - `rho_Yfc2'^2)))
+
+// Generate fake covariate #2
+gen `v_fc2' = ///
+	`mean_fc2' + `beta_fc2'*temp + rnormal(0, sqrt(`var_eps_fc2'))
+
+// Drop the temporary variable
+drop temp	
+
+// Specify name for main results with fake covariate number one
+loc res_main_fc2 = "main_results_fc2"
+	
+// Run the regression using only the treatment dummy, without covariates
+reg `v_usedvoucher' `v_coupletreatment' `v_fc2'
+
+// Store the estimates
+est sto `res_main_fc2'
+
+// Get mean outcome for individual treatment recipients
+su `v_usedvoucher' if `v_indivtreatment' == 1
+
+// Add the individual treatment mean to this regression as well
+estadd r(mean)
+
+********************************************************************************
+*** Part 6: Display the results
 ********************************************************************************
 
 // Display the result using esttab. (This requires the estout package. If you
 // don't have it, type ssc install estout, which should download and install it
 // automatically.)
-noi esttab `res_main' `res_main_nocov' `res_main_fc1', ///
+noi esttab `res_main' `res_main_nocov' `res_main_fc1' `res_main_fc2', ///
 	keep(`v_coupletreatment') b(%8.3f) ///
-	se mtitles("Main results" "No covariates" "Fake Covariate 1") ///
+	se mtitles("Main results" "No covariates" ///
+	"Fake covariate 1" "Fake covariate 2") ///
 	star(* .1 ** .05 *** .01) ///
 	stats(N mean, label("N" ///
 	"Mean indiv. treat.") fmt(0 3)) ///
