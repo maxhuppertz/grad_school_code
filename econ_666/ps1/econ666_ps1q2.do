@@ -259,7 +259,34 @@ estadd r(mean)
 *** Part 6: Permutation p-value
 ********************************************************************************
 
+// Calculate number of treated units in the data
+su `v_coupletreatment'
+loc n_treat = r(sum)
 
+// Specify name for treatment reassignment variable, generate it as zeros
+loc v_treat_reassign = "treat_reassign"
+gen `v_treat_reassign' = 0
+
+// Specify how many simulations draws to use. (Getting the exact randomization
+// distribution is not going to work here. There are 749 units in the sample, of
+// whom 371 are treated. And
+//
+// 749! / (371!*(749-317)!)
+//
+// is very large.)
+loc nrdmax = 1
+
+// Go through all simulations
+forval i=1/`nrdmax'{
+	// Draw an N(0,1) random variable as the basis for randomization
+	replace `v_treat_reassign' = rnormal(0,1)
+	
+	// Sort observations based on their random draws
+	sort `v_treat_reassign'
+	
+	// Get the randomized treatment assignment
+	replace `v_treat_reassign' = (_n <= `n_treat')
+}
 
 ********************************************************************************
 *** Part 7: Display the results
