@@ -80,7 +80,7 @@ def run_simulation(corr, means, vars, T, sampsis, tprobs, nparts, nsimul,
     # variance of (2), I have Var(Z) = beta_Z^2*Var(X) + Var(Z_eps). Plugging
     # both of these into (1) gives
     #
-    # beta_Z = sqrt( (Var(X) / Var(Z_eps)) * (gamma^(-2) / (1 - gamma^(-2))) )
+    # beta_Z = sqrt( (Var(X) / Var(Z_eps)) * (gamma^2 / (1 - gamma^2)) )
     #
     # and since I get to choose beta_Z, I can thereby generate random
     # variables with arbitrary correlation structure. I can then use alpha to
