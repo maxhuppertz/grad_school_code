@@ -65,7 +65,7 @@ def run_simulation(corr, means, vars, T, sampsis, tprobs, nparts, nsimul,
     # results: DataFrame, contains the results
     #
     # Note
-    # To generate the three variables I need, I start with X as a normally
+    # To generate the three variables I need, I start with X as an exponentially
     # distributed random variable. Then, I generate the other two variables
     # based on that. Let Z denote any of them. I want to achieve
     #

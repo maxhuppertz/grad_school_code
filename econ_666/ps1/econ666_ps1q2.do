@@ -142,25 +142,50 @@ estadd r(mean)
 *** Part 4: Fake covariate #1
 ********************************************************************************
 
-// Specify name for main results with fake covariate number one
-loc res_main_fc1 = "main_results_fc1"
-
+// Specify name for fake covariate #1
 loc v_fc1 = "fc1"
 
+// Specify mean for fake covariate #1
 loc mean_fc1 = 0
 
+// Specify variance for error term of fake covariate #1
 loc var_eps_fc1 = 1
 
+// Summarize dependent variable (voucher use indicator), save the variance
 su `v_usedvoucher'
 loc var_Y = r(sd)^2
 
+// Specify correlation between voucher use indicator and fake covariate #1
 loc rho_Yfc1 = .7
 
+// Generate fake covariate #1
+// How does this work? Let Y denote the voucher use indicator. Let Z denote fake
+// covariate #1. I want to achieve
+//
+// Corr(Y,Z) = Cov(Y,Z) / sqrt(Var(Y) Var(Z)) = gamma                     (1)
+//
+// for some gamma. I can generate
+//
+// Z = alpha + beta_Z*Y + Z_eps                                           (2)
+//
+// where Z_eps is an error term, if you will. Expanding Cov(Y,Z) and
+// plugging in (2) yields Cov(Y,Z) = beta_Z*Var(Y). Also, taking the
+// variance of (2), I have Var(Z) = beta_Z^2*Var(Y) + Var(Z_eps). Plugging
+// both of these into (1) gives
+//
+// beta_Z = sqrt( (Var(Y) / Var(Z_eps)) * (gamma^2 / (1 - gamma^2)) )
+//
+// and since I get to choose beta_Z, I can thereby generate random
+// variables with arbitrary correlation structure. I can then use alpha to
+// adjust the mean of the generated variable.
 loc beta_fc1 = sqrt((`var_eps_fc1'/`var_Y') * (`rho_Yfc1'^2/(1 - `rho_Yfc1'^2)))
 
 gen `v_fc1' = ///
 	`mean_fc1' + `beta_fc1'*`v_usedvoucher' + rnormal(0, sqrt(`var_eps_fc1'))
 
+// Specify name for main results with fake covariate number one
+loc res_main_fc1 = "main_results_fc1"
+	
 // Run the regression using only the treatment dummy, without covariates
 reg `v_usedvoucher' `v_coupletreatment' `v_fc1'
 
