@@ -431,7 +431,7 @@ def run_simulation(corr, means, vars, T, sampsis, tprobs, nparts, nsimul,
                     beta_hat_simp = ols(Yobs,Z1,get_cov=False)
 
                     # Store the result
-                    tau_true[s,0] = beta_hat_simp[1,0]
+                    tau_true[s,0] = beta_hat_simp[postau,0]
             else:
                 # If getting the exact randomization distribution is too
                 # computationally intensive, go through the maximum number of
@@ -465,7 +465,7 @@ def run_simulation(corr, means, vars, T, sampsis, tprobs, nparts, nsimul,
                     beta_hat_simp = ols(Yobs,Z1,get_cov=False)
 
                     # Store the result
-                    tau_true[s,0] = beta_hat_simp[1,0]
+                    tau_true[s,0] = beta_hat_simp[postau,0]
 
             # Store the expected value of tau
             tau_hats_avg[nsampsi*2+nprob,2] = np.mean(tau_true, axis=0)
