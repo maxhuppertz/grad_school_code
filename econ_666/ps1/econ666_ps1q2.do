@@ -212,12 +212,13 @@ loc v_fc2 = "fc2"
 loc mean_fc2 = 0
 
 // Specify variance for error term of fake covariate #2
-loc var_eps_fc2 = 1
+loc var_eps_fc2 = 10
 
 // Get residuals from the regression of the voucher use indicator on only the
 // treatment dummy (only a temporary variable)
 est res `res_main_nocov'
-predict temp
+predict temp  // Get fitted values
+replace temp = `v_usedvoucher' - temp  // Get residuals
 
 // Summarize residuals, save the variance
 su temp
@@ -255,7 +256,13 @@ su `v_usedvoucher' if `v_indivtreatment' == 1
 estadd r(mean)
 
 ********************************************************************************
-*** Part 6: Display the results
+*** Part 6: Permutation p-value
+********************************************************************************
+
+
+
+********************************************************************************
+*** Part 7: Display the results
 ********************************************************************************
 
 // Display the result using esttab. (This requires the estout package. If you
