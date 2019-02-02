@@ -103,9 +103,6 @@ loc dummy = "flag_survey d_a16_3_ageinyrs d_hus3_3_ageinyears d_school d_hus1_hi
 // Specify name for main results
 loc res_main = "main_results"
 
-// Specify name for main results without covariates
-loc res_main_nocov = "main_results_nocov"
-
 // Run the main regression (note that, like AFL, this uses homoskedastic
 // standard errors)
 reg `v_usedvoucher' `v_coupletreatment' `indep' `dummy'
@@ -119,6 +116,13 @@ su `v_usedvoucher' if `v_indivtreatment' == 1
 // Add the individual treatment mean
 estadd r(mean)
 
+********************************************************************************
+*** Part 3: ITT using only necessary covariates
+********************************************************************************
+
+// Specify name for main results without covariates
+loc res_main_nocov = "main_results_nocov"
+
 // Run the regression using only the treatment dummy, without covariates
 reg `v_usedvoucher' `v_coupletreatment'
 
@@ -131,13 +135,51 @@ su `v_usedvoucher' if `v_indivtreatment' == 1
 // Add the individual treatment mean to this regression as well
 estadd r(mean)
 
+********************************************************************************
+*** Part 4: Fake covariate #1
+********************************************************************************
+
+// Specify name for main results with fake covariate number one
+loc res_main_fakecov_1 = "main_results_fakecov_1"
+
+loc mean_Z = 0
+
+loc var_eps_Z = 1
+
+su `v_usedvoucher'
+loc var_Y = r(sd)^2
+
+loc rho_YZ = .7
+
+loc beta_Z = sqrt( (`var_eps_Z'/`var_Y') * (`rho_YZ'^2 / (1 - `rho_YZ'^2)) )
+
+gen Z = `mean_Z' + `beta_Z'*`v_usedvoucher' + rnormal(0,sqrt(`var_eps_Z'))
+
+// Run the regression using only the treatment dummy, without covariates
+reg `v_usedvoucher' `v_coupletreatment' Z
+
+// Store the estimates
+est sto `res_main_fakecov_1'
+
+// Get mean outcome for individual treatment recipients
+su `v_usedvoucher' if `v_indivtreatment' == 1
+
+// Add the individual treatment mean to this regression as well
+estadd r(mean)
+
+********************************************************************************
+*** Part 5: Display the results
+********************************************************************************
+
 // Display the result using esttab. (This requires the estout package. If you
 // don't have it, type ssc install estout, which should download and install it
 // automatically.)
-noi esttab `res_main' `res_main_nocov', keep(`v_coupletreatment') b(%8.3f) ///
-	se mtitles("Main results" "No covariates") star(* .1 ** .05 *** .01) ///
+noi esttab `res_main' `res_main_nocov' `res_main_fakecov_1', ///
+	keep(`v_coupletreatment') b(%8.3f) ///
+	se mtitles("Main results" "No covariates" "Fake Covariate 1") ///
+	star(* .1 ** .05 *** .01) ///
 	stats(N mean, label("N" ///
 	"Mean indiv. treat.") fmt(0 3)) ///
 	coeflabel(`v_coupletreatment' "Couple treament") ///
-	varwidth(18) modelwidth(13)
+	varwidth(18) modelwidth(16)
 }
