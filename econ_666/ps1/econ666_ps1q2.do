@@ -324,37 +324,19 @@ timer off 1
 *** Part 7: Display the results
 ********************************************************************************
 
-// Display the estimation results for parts 2 to 5 using esttab. (This requires
-// the estout package. If you don't have it, type ssc install estout, which
-// should download and install it automatically.)
-// This shows standard errors
-noi di _n "Estimation results:"
-noi esttab `res_main' `res_main_nocov' `res_main_fc1' `res_main_fc2', ///
+// Display the estimation results for parts 2 to 5
+noi estimates table ///
+	`res_main' `res_main_nocov' `res_main_fc1' `res_main_fc2', ///
 	keep(`v_coupletreatment') b(%8.3f) ///
-	se mtitles("Main results" "No covariates" ///
-	"Fake covariate 1" "Fake covariate 2") ///
-	star(* .1 ** .05 *** .01) ///
-	stats(N mean, label("N" ///
-	"Mean indiv. treat.") fmt(0 3)) ///
-	coeflabel(`v_coupletreatment' "Couple treament") ///
-	varwidth(18) modelwidth(16)
-
-// This shows p-values
-noi esttab `res_main' `res_main_nocov' `res_main_fc1' `res_main_fc2', ///
-	keep(`v_coupletreatment') b(%8.3f) ///
-	p mtitles("Main results" "No covariates" ///
-	"Fake covariate 1" "Fake covariate 2") ///
-	star(* .1 ** .05 *** .01) ///
-	stats(N mean, label("N" ///
-	"Mean indiv. treat.") fmt(0 3)) ///
-	coeflabel(`v_coupletreatment' "Couple treament") ///
-	varwidth(18) modelwidth(16)
+	se t p se(%8.3f) t(%8.3f) p(%8.3f) ///
+	stats(N r2 mean) stfmt(%8.3f) ///
+	modelw(20) title("{bf:Estimation results:}")
 	
 // Display the permutation p-value result
-noi di _n "Permutation p-value: " `n_more_extreme'/`nrdmax' ///
-	" (based on `nrdmax' simulation draws)"
+noi di _n "{bf:Permutation p-value: }" "{text:`=`n_more_extreme'/`nrdmax''}" ///
+	"{text: (based on `nrdmax' simulation draws)}"
 
 // Dispay the time this took
 timer list 1  // Get the timer result; time elapsed is stored in r(t1)
-noi di _n "Randomization inference took " r(t1) " seconds"
+noi di _n "{text:Randomization inference took " r(t1) " seconds}"
 }
