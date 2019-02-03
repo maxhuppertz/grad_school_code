@@ -282,7 +282,7 @@ gen `v_treat_reassign' = 0
 // 749! / (371!*(749-317)!)
 //
 // is very large.)
-loc nrdmax = 15000
+loc nrdmax = 25000
 
 // Set up a counter for how many t-statistics in the simulated randomization
 // distribution are more extreme
