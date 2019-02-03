@@ -328,7 +328,7 @@ timer off 1
 noi estimates table ///
 	`res_main' `res_main_nocov' `res_main_fc1' `res_main_fc2', ///
 	keep(`v_coupletreatment') b(%8.3f) ///
-	se t p se(%8.3f) t(%8.3f) p(%8.3f) ///
+	se p se(%8.3f) p(%8.3f) ///
 	stats(N r2 mean) stfmt(%8.3f) ///
 	modelw(20) title("{bf:Estimation results:}")
 	
