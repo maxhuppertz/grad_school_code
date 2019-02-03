@@ -282,11 +282,14 @@ gen `v_treat_reassign' = 0
 // 749! / (371!*(749-317)!)
 //
 // is very large.)
-loc nrdmax = 10000
+loc nrdmax = 15000
 
 // Set up a counter for how many t-statistics in the simulated randomization
 // distribution are more extreme
 loc n_more_extreme = 0
+
+// Time how long this takes using timer 1
+timer on 1
 
 // Go through all simulations
 forval i=1/`nrdmax'{
@@ -311,8 +314,11 @@ forval i=1/`nrdmax'{
 	// counter
 	if abs(`t_tau_rnd') > abs(`t_tau_orig'){
 		loc ++n_more_extreme  // Increases the counter by one
-		}
+	}
 }
+
+// Stop the timer
+timer off 1
 
 ********************************************************************************
 *** Part 7: Display the results
@@ -322,6 +328,7 @@ forval i=1/`nrdmax'{
 // the estout package. If you don't have it, type ssc install estout, which
 // should download and install it automatically.)
 // This shows standard errors
+noi di _n "Estimation results:"
 noi esttab `res_main' `res_main_nocov' `res_main_fc1' `res_main_fc2', ///
 	keep(`v_coupletreatment') b(%8.3f) ///
 	se mtitles("Main results" "No covariates" ///
@@ -344,5 +351,10 @@ noi esttab `res_main' `res_main_nocov' `res_main_fc1' `res_main_fc2', ///
 	varwidth(18) modelwidth(16)
 	
 // Display the permutation p-value result
-noi di _n "Permutation p-value: " `n_more_extreme'/`nrdmax'
+noi di _n "Permutation p-value: " `n_more_extreme'/`nrdmax' ///
+	" (based on `nrdmax' simulation draws)"
+
+// Dispay the time this took
+timer list 1  // Get the timer result; time elapsed is stored in r(t1)
+noi di _n "Randomization inference took " r(t1) " seconds"
 }
