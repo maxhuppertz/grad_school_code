@@ -299,7 +299,7 @@ forval i=1/`nrdmax'{
 	// Sort observations based on their random draws (the stable option is
 	// necessary, because otherwise observations ties will be broken in
 	// different ways on different runs, which will make it impossible to
-	// replicate any exact result)
+	// replicate the results)
 	sort `v_treat_reassign', stable
 	
 	// Get the randomized treatment assignment
