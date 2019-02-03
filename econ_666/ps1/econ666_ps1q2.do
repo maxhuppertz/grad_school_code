@@ -296,8 +296,11 @@ forval i=1/`nrdmax'{
 	// Draw an N(0,1) random variable as the basis for randomization
 	replace `v_treat_reassign' = rnormal(0,1)
 	
-	// Sort observations based on their random draws
-	sort `v_treat_reassign'
+	// Sort observations based on their random draws (the stable option is
+	// necessary, because otherwise observations ties will be broken in
+	// different ways on different runs, which will make it impossible to
+	// replicate any exact result)
+	sort `v_treat_reassign', stable
 	
 	// Get the randomized treatment assignment
 	replace `v_treat_reassign' = (_n <= `n_treat')
