@@ -10,7 +10,7 @@ qui{
 clear *
 
 // Set random number generator's seed
-set seed 666
+set se 666
 
 // Get current working directory
 loc mdir: pwd
