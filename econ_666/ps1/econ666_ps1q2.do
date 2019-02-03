@@ -259,6 +259,9 @@ estadd r(mean)
 *** Part 6: Permutation p-value
 ********************************************************************************
 
+// Specify which variables to use for the minmax t-statistic randomization
+loc minmaxvars = "a16_3_ageinyrs school step3_numchildren e1_ideal fertdesdiff2 step7_injectables step7_pill"
+
 // Restore estimates of voucher usage on treatment dummy
 est res `res_main_nocov'
 
@@ -282,7 +285,7 @@ gen `v_treat_reassign' = 0
 // 749! / (371!*(749-317)!)
 //
 // is very large.)
-loc nrdmax = 25000
+loc nrdmax = 30000
 
 // Set up a counter for how many t-statistics in the simulated randomization
 // distribution are more extreme
@@ -306,7 +309,7 @@ forval i=1/`nrdmax'{
 	replace `v_treat_reassign' = (_n <= `n_treat')
 	
 	// Run regression for this new assignment
-	reg `v_usedvoucher' `v_treat_reassign'
+	reg `v_usedvoucher' `v_treat_reassign' `indep' `dummy'
 	
 	// Get t-statistic for the treatment coefficient
 	mat b_hat_rnd = e(b)
