@@ -3,7 +3,7 @@ qui{
 *** Econ 666, PS1Q2: Replication and randomization inference
 *** Replicates results from Ashraf, Field, and Lee (2014) --  AFL
 *** Also computes randomization inference to see how robust the results are to
-*** that
+*** that, and assesses the effect of different covariates structures
 ********************************************************************************
 
 // Clear everything
