@@ -262,6 +262,8 @@ estadd r(mean)
 // Specify which variables to use for the minmax t-statistic randomization
 loc minmaxvars = "a16_3_ageinyrs school step3_numchildren e1_ideal fertdesdiff2 step7_injectables step7_pill"
 
+loc nminmax = 10
+
 // Restore estimates of voucher usage on treatment dummy
 est res `res_main_nocov'
 
@@ -285,7 +287,7 @@ gen `v_treat_reassign' = 0
 // 749! / (371!*(749-317)!)
 //
 // is very large.)
-loc nrdmax = 30000
+loc nrdmax = 10
 
 // Set up a counter for how many t-statistics in the simulated randomization
 // distribution are more extreme
@@ -294,21 +296,62 @@ loc n_more_extreme = 0
 // Time how long this takes using timer 1
 timer on 1
 
+// Generate a temporary variable for the minmax t-statistic approach
+gen temp = 0
+
 // Go through all simulations
 forval i=1/`nrdmax'{
-	// Draw an N(0,1) random variable as the basis for randomization
-	replace `v_treat_reassign' = rnormal(0,1)
+	// Set up minmax t-statistic for the current iteration as missing
+	loc minmaxt = .
 	
-	// Sort observations based on their random draws (the stable option is
-	// necessary, because otherwise observations ties will be broken in
-	// different ways on different runs, which will make it impossible to
-	// replicate the results)
-	sort `v_treat_reassign', stable
+	// Go through all minmax-t assessments
+	forval j=1/`nminmax'{
+		// Set up maximum t-statistic for the current assessment as missing
+		loc maxt_j = 0
+		
+		// Draw a temporary N(0,1) random variable as the basis for
+		// randomization
+		replace temp = rnormal(0,1)
+		
+		// Sort observations based on their random draws (the stable option is
+		// necessary, because otherwise observations ties will be broken in
+		// different ways on different runs, which will make it impossible to
+		// replicate the results)
+		sort temp, stable
+		
+		// Get the randomized treatment assignment
+		replace temp = (_n <= `n_treat')
+		
+		// Go through all balancing variables
+		foreach var of loc minmaxvars{
+			// Regress the new treatment assignment on each balancing variable
+			reg temp `var'
+			
+			// Get the absolute value of the t-statistic
+			mat b_hat_bal = e(b)
+			mat V_hat_bal = e(V)
+			loc t_bal = abs(b_hat_bal[1,1] / sqrt(V_hat_bal[1,1]))
+			
+			// If it is larger than the maximum recorded so far for this
+			// treatment assignment, replace the recorded maximum with the
+			// current t-statistic
+			if `t_bal' > `maxt_j'{
+				loc maxt_j = `t_bal'
+			}
+		}
+		
+		// Check whether the current treatment reassignment resulted in a lower
+		// maximum t-statistic than the current minmax t-statistic
+		if `maxt_j' < `minmaxt'{
+			// If so, replace the minmax value
+			loc minmaxt = `maxt_j'
+			
+			// Also save the current treatment assignment
+			replace `v_treat_reassign' = temp
+		}
+	}
 	
-	// Get the randomized treatment assignment
-	replace `v_treat_reassign' = (_n <= `n_treat')
-	
-	// Run regression for this new assignment
+	// Run the regression for the new treatment assignment
 	reg `v_usedvoucher' `v_treat_reassign' `indep' `dummy'
 	
 	// Get t-statistic for the treatment coefficient
@@ -325,6 +368,9 @@ forval i=1/`nrdmax'{
 
 // Stop the timer
 timer off 1
+
+// Drop the temporary variable
+drop temp
 
 ********************************************************************************
 *** Part 7: Display the results
