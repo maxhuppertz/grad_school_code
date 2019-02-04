@@ -262,10 +262,12 @@ estadd r(mean)
 // Specify which variables to use for the minmax t-statistic randomization
 loc minmaxvars = "a16_3_ageinyrs school step3_numchildren e1_ideal fertdesdiff2 step7_injectables step7_pill"
 
+// Specify how many treatment assignments to try for the minmax t-statistic
+// approach
 loc nminmax = 10
 
 // Restore estimates of voucher usage on treatment dummy
-est res `res_main_nocov'
+est res `res_main'
 
 // Get the t-statistic for the coefficient on treatment
 mat b_hat_orig = e(b)
@@ -287,7 +289,7 @@ gen `v_treat_reassign' = 0
 // 749! / (371!*(749-317)!)
 //
 // is very large.)
-loc nrdmax = 10
+loc nrdmax = 10000
 
 // Set up a counter for how many t-statistics in the simulated randomization
 // distribution are more extreme
