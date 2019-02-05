@@ -19,7 +19,7 @@ loc mdir: pwd
 loc ddir = "data"
 
 // Specify whether to download data
-loc download_data = 0
+loc download_data = 1
 
 // Specify name of AFL data file (doesn't need to exist, if you specify that
 // you'd like to download it)
@@ -35,7 +35,7 @@ cap cd "`mdir'/`ddir'"
 // If there's an error code, it doesn't exist, so create it
 if _rc{
 	mkdir "`ddir'"
-	
+
 	// Change to data directory
 	cd "`ddir'"
 	}
@@ -43,29 +43,29 @@ if _rc{
 if `download_data'{
 	// Specify URL for AFL data set (it's in a .zip archive)
 	loc afl2014_url = "https://www.aeaweb.org/aer/data/10407/20101434_data.zip"
-	
+
 	// Specify name for temporary local copy of the .zip archive
 	loc local_file = "temp.zip"
-	
+
 	// Download archive
 	copy "`afl2014_url'" "`local_file'"
-	
+
 	// Unzip it
 	unzipfile "`local_file'"
-	
+
 	// Delete the .zip archive
 	erase "`local_file'"
-	
+
 	// Specify name of parent directory (the folder this just created)
 	loc pardir = "20101434_Data"
-	
+
 	// Specify path to data file I actually need
 	loc subdir = "20101434_Data/Data"
-	
+
 	// Copy the data file into the data directory
 	copy "`mdir'/`ddir'/`subdir'/`data_file'" "`mdir'/`ddir'/`data_file'", ///
 		replace
-	
+
 	// Delete everything else
 	shell rmdir "`pardir'" /s /q
 	}
@@ -114,7 +114,7 @@ reg `v_usedvoucher' `v_coupletreatment' `indep' `dummy'
 est sto `res_main'
 
 // Get mean outcome for individual treatment recipients
-su `v_usedvoucher' if `v_indivtreatment' == 1  
+su `v_usedvoucher' if `v_indivtreatment' == 1
 
 // Add the individual treatment mean
 estadd r(mean)
@@ -188,7 +188,7 @@ gen `v_fc1' = ///
 
 // Specify name for main results with fake covariate number one
 loc res_main_fc1 = "main_results_fc1"
-	
+
 // Run the regression using only the treatment dummy, without covariates
 reg `v_usedvoucher' `v_coupletreatment' `v_fc1'
 
@@ -238,11 +238,11 @@ gen `v_fc2' = ///
 	`mean_fc2' + `beta_fc2'*temp + rnormal(0, sqrt(`var_eps_fc2'))
 
 // Drop the temporary variable
-drop temp	
+drop temp
 
 // Specify name for main results with fake covariate number one
 loc res_main_fc2 = "main_results_fc2"
-	
+
 // Run the regression using only the treatment dummy, without covariates
 reg `v_usedvoucher' `v_coupletreatment' `v_fc2'
 
@@ -305,35 +305,35 @@ gen temp = 0
 forval i=1/`nrdmax'{
 	// Set up minmax t-statistic for the current iteration as missing
 	loc minmaxt = .
-	
+
 	// Go through all minmax-t assessments
 	forval j=1/`nminmax'{
 		// Set up maximum t-statistic for the current assessment as missing
 		loc maxt_j = 0
-		
+
 		// Draw a temporary N(0,1) random variable as the basis for
 		// randomization
 		replace temp = rnormal(0,1)
-		
+
 		// Sort observations based on their random draws (the stable option is
 		// necessary, because otherwise observations ties will be broken in
 		// different ways on different runs, which will make it impossible to
 		// replicate the results)
 		sort temp, stable
-		
+
 		// Get the randomized treatment assignment
 		replace temp = (_n <= `n_treat')
-		
+
 		// Go through all balancing variables
 		foreach var of loc minmaxvars{
 			// Regress the new treatment assignment on each balancing variable
 			reg temp `var'
-			
+
 			// Get the absolute value of the t-statistic
 			mat b_hat_bal = e(b)
 			mat V_hat_bal = e(V)
 			loc t_bal = abs(b_hat_bal[1,1] / sqrt(V_hat_bal[1,1]))
-			
+
 			// If it is larger than the maximum recorded so far for this
 			// treatment assignment, replace the recorded maximum with the
 			// current t-statistic
@@ -341,26 +341,26 @@ forval i=1/`nrdmax'{
 				loc maxt_j = `t_bal'
 			}
 		}
-		
+
 		// Check whether the current treatment reassignment resulted in a lower
 		// maximum t-statistic than the current minmax t-statistic
 		if `maxt_j' < `minmaxt'{
 			// If so, replace the minmax value
 			loc minmaxt = `maxt_j'
-			
+
 			// Also save the current treatment assignment
 			replace `v_treat_reassign' = temp
 		}
 	}
-	
+
 	// Run the regression for the new treatment assignment
 	reg `v_usedvoucher' `v_treat_reassign' `indep' `dummy'
-	
+
 	// Get t-statistic for the treatment coefficient
 	mat b_hat_rnd = e(b)
 	mat V_hat_rnd = e(V)
 	loc t_tau_rnd = b_hat_rnd[1,1] / sqrt(V_hat_rnd[1,1])
-	
+
 	// If it is more extreme than the one observed originally, increase the
 	// counter
 	if abs(`t_tau_rnd') > abs(`t_tau_orig'){
@@ -385,7 +385,7 @@ noi estimates table ///
 	se p se(%8.3f) p(%8.3f) ///
 	stats(N r2 mean) stfmt(%8.3f) ///
 	modelw(20) title("{bf:Estimation results:}")
-	
+
 // Display the permutation p-value result
 noi di _n "{bf:Permutation p-value: }" "{text:`=`n_more_extreme'/`nrdmax''}" ///
 	"{text: (based on `nrdmax' simulation draws)}"
