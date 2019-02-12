@@ -345,16 +345,20 @@ D_resp = np.array(data.loc[(data[v_responder] == 1) & (data[v_itt_follow] == 1),
 # errors
 p_bonf, b, SE = bonferroni(family_resp_data, D_resp)
 
-# Put the results into a data frame
-res = pd.DataFrame(data=np.concatenate((b, SE, p_bonf), axis=1), columns=['beta_hat', 'SE', 'p_bonf'])
+# Put the results into a data frame, add column labels
+res = pd.DataFrame(data=np.concatenate((b, SE, p_bonf), axis=1),
+    columns=['beta_hat', 'SE', 'p_bonf'])
 
 # Add outcome labels to the results data frame
 res.insert(loc=0, column='outcome', value=family)
 
+# Use these as the new index
+res.set_index('outcome', inplace=True)
+
 # Set print options for pandas
 pd.set_option('display.max_columns', len(family)+1)
 pd.set_option('display.width', 110)
-pd.set_option('display.precision', 4)
+pd.set_option('display.precision', 3)
 
 # Print the results
 print(res)
