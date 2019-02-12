@@ -1,6 +1,7 @@
 # Import necessary packages
 import numpy as np
 from numpy.linalg import solve
+from scipy.stats import norm
 
 # This function just runs a standard linear regression of y on X
 def ols(y, X, get_cov=True, cov_est='hc1', get_t=True, get_p=True):
@@ -15,6 +16,8 @@ def ols(y, X, get_cov=True, cov_est='hc1', get_t=True, get_p=True):
     # get_t: boolean, if true, the function returns t-statistics for the simple
     #        null of beta[i] = 0, for each element of the coefficient vector
     #        separately
+    # get_p: boolean, if true, calculate the p-values for a two-sided test of
+    #        beta[i] = 0, for each element of the coefficient vector separately
 
     # If p-values are necessary, then t-statistics will be needed
     if get_p and not get_t:
@@ -68,8 +71,18 @@ def ols(y, X, get_cov=True, cov_est='hc1', get_t=True, get_p=True):
             # since Numpy loves its row vectors for some reason)
             t = beta_hat / np.array(np.sqrt(np.diag(V_hat)),ndmin=2).transpose()
 
-            # Return coefficients, variance/covariance matrix, and t-statistics
-            return beta_hat, V_hat, t
+            # Check whether to calculate p-values
+            if get_p:
+                # Calculate p-values
+                p = 2 * (1 - norm.cdf(np.abs(t)))
+
+                # Return coefficients, variance/covariance matrix, t-statistics,
+                # and p-values
+                return beta_hat, V_hat, t, p
+            else:
+                # Return coefficients, variance/covariance matrix, and
+                # t-statistics
+                return beta_hat, V_hat, t
         else:
             # Return coefficients and variance/covariance matrix
             return beta_hat, V_hat

@@ -103,14 +103,3 @@ ncores = cpu_count()
 
 # Get p-values using all available cores in parallel
 #results = Parallel(n_jobs=ncores)(delayed(function)(b, args) for b in range(B))
-
-n=10000
-k=3
-beta=np.ones(shape=(k,1))
-X = np.random.normal(size=(n,k))
-eps = np.random.normal(size=(n,1))
-y = X@beta + eps
-bhat,Vhat,t = ols(y,X)
-print(bhat)
-print(Vhat)
-print(t)
