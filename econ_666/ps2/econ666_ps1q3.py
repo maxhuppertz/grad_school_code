@@ -95,6 +95,10 @@ v_itt_ind = 'ittsample4'
 # as an index must refer to rows)
 data = data[data[v_itt_ind]==1]
 
+################################################################################
+### Part 3.1: Who wants how many kids, responder status
+################################################################################
+
 # Generate an indicator for whether the woman believes her partner wants a
 # higher minimum number of children than she does (pandas knows that the column
 # names I'm giving it refer to columns)
@@ -190,6 +194,39 @@ data.loc[(np.isnan(data[v_husb_more_minkids]) &
     np.isnan(data[v_husb_more_maxkids]) & np.isnan(data[v_husb_more_idkids]))
     | np.isnan(data[v_husb_wants_kids]) | np.isnan(data[v_kids_nexttwo]),
     v_responder] = np.nan
+
+################################################################################
+### Part 3.2: Positive effects on well-being
+################################################################################
+
+#gen satisfied = (j11satisfy==4 | j11satisfy==5)
+#replace satisfied = . if j11satisfy==.
+
+#gen healthier = (a21health==4 | a21health==5)
+#replace healthier = . if a21health==.
+
+#gen happier = (a22happy==4 | a22happy==5)
+#replace happier = . if a22happy==.
+
+#eststo D: reg satisfied Icouples if ittsample4_follow == 1 & responder_m==1
+#eststo E: reg healthier Icouples if ittsample4_follow == 1 & responder_m==1
+#eststo F: reg happier Icouples if ittsample4_follow == 1 & responder_m==1
+
+################################################################################
+### Part 3.2: Negative effects
+################################################################################
+
+#gen separated2 = (b1marstat==2 | b1marstat==3 | b1marstat==.)
+
+#gen violence_follow = (f10violenc==1)
+#replace violence_follow = . if f10violenc<0 | f10violenc==.
+
+#gen cur_using_condom = (g14mc==1)
+#replace cur_using_condom = . if g14mc==.
+
+#eststo D: reg separated2 Icouples if ittsample4_follow == 1 & responder_m==1
+#eststo E: reg violence_follow Icouples if ittsample4_follow == 1 & responder_m==1
+#eststo F: reg cur_using_condom Icouples if ittsample4_follow == 1 & responder_m==1
 
 ################################################################################
 ### Part 4: Run free step down resampling
