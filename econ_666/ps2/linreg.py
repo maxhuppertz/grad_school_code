@@ -18,6 +18,12 @@ def ols(y, X, get_cov=True, cov_est='hc1', get_t=True, get_p=True):
     #        separately
     # get_p: boolean, if true, calculate the p-values for a two-sided test of
     #        beta[i] = 0, for each element of the coefficient vector separately
+    #
+    # Outputs:
+    # beta_hat: [k,1] vector, coefficient estimates
+    # V_hat: [k,k] matrix, estimate of the variance/covariance matrix
+    # t: [k,1] vector, t-statistics
+    # p: [k,1] vector, p-values
 
     # If p-values are necessary, then t-statistics will be needed
     if get_p and not get_t:
