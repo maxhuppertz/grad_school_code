@@ -139,24 +139,5 @@ loc v_usedvoucher = "usedvoucher"
 // Specify couple treatment variable
 loc v_coupletreatment = "Icouples"
 
-// Specify name for main results without covariates
-loc res_main_nocov = "main_results_nocov"
-
-// Run the regression using only the treatment dummy, without covariates
-reg `v_usedvoucher' `v_coupletreatment' if `v_responder'==1
-
-// Store the estimates
-est sto `res_main_nocov'
-
-********************************************************************************
-*** Part 5: Display the results
-********************************************************************************
-
-// Display the estimation results for parts 2 to 5
-noi estimates table ///
-	`res_main_nocov', ///
-	keep(`v_coupletreatment') b(%8.3f) ///
-	se p se(%8.3f) p(%8.3f) ///
-	stats(N r2) stfmt(%8.3f) ///
-	modelw(20) title("{bf:Estimation results:}")
+keep `v_usedvoucher' `v_coupletreatment' separated2 violence_follow cur_using_condom satisfied healthier happier
 }
