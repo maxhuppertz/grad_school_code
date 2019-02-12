@@ -19,6 +19,51 @@ from zipfile import ZipFile
 ### Part 1: Define necessary functions
 ################################################################################
 
+# Define a function to do the Bonferroni correction
+def bonferroni(Y, X, icept=True, cidx=[1]):
+    # Get number of members in the family
+    M = Y.shape[1]
+
+    # Get number of parameters
+    k = X.shape[1]
+
+    # Set up vector of corrected p-statistics, as well as coefficient estimates
+    # and standard errors
+    p = np.zeros(shape=(M,k))
+    b = np.zeros(shape=(M,k))
+    SE = np.zeros(shape=(M,k))
+
+    # Go through all members in the family
+    for i in range(M):
+        # Make an index of where both the member and all parts of X are not NaN
+        I = (~np.isnan(Y[:,i]) & ~np.isnan(X.sum(axis=1)))
+
+        # Get the number of effective observations
+        n = I.sum()
+
+        # Get outcome variable, i.e. the current member of the family, for those
+        # observations with non-missing data for both LHS and RHS variables
+        y = np.array(Y[I,i], ndmin=2).transpose()
+
+        # Combine X with an intercept, using only observations which are not
+        # missing for the RHS and LHS variables
+        Z = np.concatenate((np.ones(shape=(n,1)), X[I]), axis=1)
+
+        # Get p-values for standard OLS
+        bhat, Vhat, _, p_uncorr = ols(y, Z, cov_est='hmsd')
+
+        # Save corrected p-values
+        p[i,:] = p_uncorr[cidx,0] * M
+
+        # Save point estimates for coefficients of interest
+        b[i,:] = bhat[cidx,0]
+
+        # Save standard errors
+        SE[i,:] = np.sqrt(np.diag(Vhat[cidx,cidx]))
+
+    # Return corrected p-values
+    return p, b, SE
+
 def permute_p():
     pass
 
@@ -94,9 +139,8 @@ v_itt = 'ittsample4'
 # Specify indicator for being in the ITT sample and having follow up data
 v_itt_follow = 'ittsample4_follow'
 
-# Retain only the ITT sample (pandas knows that the boolean vector its receiving
-# as an index must refer to rows)
-data = data[data[v_itt]==1]
+# Specify variable denoting couple treatment
+v_couple_treatment = 'Icouples'
 
 ################################################################################
 ### Part 3.1: Responder status
@@ -242,7 +286,7 @@ data.loc[np.isnan(data[v_happy_detail]), v_happier] = np.nan
 #eststo F: reg happier Icouples if ittsample4_follow == 1 & responder_m==1
 
 ################################################################################
-### Part 3.3: Negative effects
+### Part 3.3: Negative side effects
 ################################################################################
 
 # Generate an indicator for being separated
@@ -256,11 +300,11 @@ data[v_separated] = (
 # Generate an indicator for the partner being physically violent
 v_violence_detail = 'f10violenc'
 v_violence = 'violent'
-data[v_violence] = (v_violence_detail == 1)
+data[v_violence] = (data[v_violence_detail] == 1)
 
 # Replace it as missing if the detailed violence data are less than zero or
 # missing
-data.loc[(data[v_violence_detail] < 0) | np.isnan(data[v_violence_detail]),
+data.loc[((data[v_violence_detail] < 0) | np.isnan(data[v_violence_detail])),
     v_violence] = np.nan
 
 # Generate an indicator for condom usage
@@ -276,7 +320,47 @@ data.loc[np.isnan(data[v_condom_detail]), v_condom] = np.nan
 #eststo F: reg cur_using_condom Icouples if ittsample4_follow == 1 & responder_m==1
 
 ################################################################################
-### Part 4: Run free step down resampling
+### Part 4: Recreate baseline results
+################################################################################
+
+# Specify two (sub-)families of outcomes, one for measures of well-being, the
+# other for measures of potential negative side effects
+sad_family = [v_separated, v_violence, v_condom]
+happy_family = [v_satisfied, v_healthier, v_happier]
+
+# Combine them into one family
+family = sad_family + happy_family
+
+# Get the data for responders in the ITT follow-up sample, making sure these are
+# provided in float format
+family_resp_data = data.loc[(data[v_responder] == 1)
+    & (data[v_itt_follow] == 1),
+    family].astype(float).values
+
+# Get the treatment indicator for the same group
+D_resp = np.array(data.loc[(data[v_responder] == 1) & (data[v_itt_follow] == 1),
+    v_couple_treatment].values, ndmin=2).transpose()
+
+# Calculate Bonerroni-adjusted p-vaues, as well as point estimates and standard
+# errors
+p_bonf, b, SE = bonferroni(family_resp_data, D_resp)
+
+# Put the results into a data frame
+res = pd.DataFrame(data=np.concatenate((b, SE, p_bonf), axis=1), columns=['beta_hat', 'SE', 'p_bonf'])
+
+# Add outcome labels to the results data frame
+res.insert(loc=0, column='outcome', value=family)
+
+# Set print options for pandas
+pd.set_option('display.max_columns', len(family)+1)
+pd.set_option('display.width', 110)
+pd.set_option('display.precision', 4)
+
+# Print the results
+print(res)
+
+################################################################################
+### Part 5: Run free step down resampling
 ################################################################################
 
 # Specify how many cores to use for parallel processing
