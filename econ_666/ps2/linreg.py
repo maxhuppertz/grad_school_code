@@ -3,7 +3,27 @@ import numpy as np
 from numpy.linalg import solve
 
 # This function just runs a standard linear regression of y on X
-def ols(y, X, get_cov=True, cov_est='hc1'):
+def ols(y, X, get_cov=True, cov_est='hc1', get_t=True, get_p=True):
+    # Inputs
+    # y: [n,1] vector, LHS variables
+    # X: [n,k] matrix, RHS variables
+    # get_cov: boolean, if true, the function returns an estimate of the
+    #          variance/covariance matrix, in addition to the OLS coefficients
+    # cov_est: string, specifies which variance/covariance matrix estimator to
+    #          use. Currently, must be either hmsd (for the homoskedastic
+    #          estimator) or hc1 (for the Eicker-Huber-White HC1 estimator)
+    # get_t: boolean, if true, the function returns t-statistics for the simple
+    #        null of beta[i] = 0, for each element of the coefficient vector
+    #        separately
+
+    # If p-values are necessary, then t-statistics will be needed
+    if get_p and not get_t:
+        get_t = True
+
+    # If t-statistics are necessary, then the covariance has to be estimated
+    if get_t and not get_cov:
+        cov_est = True
+
     # Get number of observations n and number of coefficients k
     n, k = X.shape[0], X.shape[1]
 
@@ -40,8 +60,19 @@ def ols(y, X, get_cov=True, cov_est='hc1'):
         # Replace NaNs as zeros (happen if division by zero occurs)
         V_hat[np.isnan(V_hat)] = 0
 
-        # Return coefficients and EHW variance/covariance matrix
-        return beta_hat, V_hat
+        # Check whether to get t-statistics
+        if get_t:
+            # Calculate t-statistics (I like having them as a column vector, but
+            # to get that, I have to convert the square root of the diagonal
+            # elements of V_hat into a proper vector first and transpose them,
+            # since Numpy loves its row vectors for some reason)
+            t = beta_hat / np.array(np.sqrt(np.diag(V_hat)),ndmin=2).transpose()
+
+            # Return coefficients, variance/covariance matrix, and t-statistics
+            return beta_hat, V_hat, t
+        else:
+            # Return coefficients and variance/covariance matrix
+            return beta_hat, V_hat
     else:
         # Otherwise, just return coefficients
         return beta_hat
