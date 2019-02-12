@@ -88,16 +88,24 @@ data = pd.read_stata(data_file, index_col=id, convert_categoricals=False)
 ### Part 3: Data processing
 ################################################################################
 
-# Specify indicator for ITT sample
-v_itt_ind = 'ittsample4'
+# Specify indicator for ITT sample (people who were assigned to treatment)
+v_itt = 'ittsample4'
+
+# Specify indicator for being in the ITT sample and having follow up data
+v_itt_follow = 'ittsample4_follow'
 
 # Retain only the ITT sample (pandas knows that the boolean vector its receiving
 # as an index must refer to rows)
-data = data[data[v_itt_ind]==1]
+data = data[data[v_itt]==1]
 
 ################################################################################
-### Part 3.1: Who wants how many kids, responder status
+### Part 3.1: Responder status
 ################################################################################
+
+# AFL count people as responders if they believe their partner wants more
+# children than they do, and if they don't want to have a child over the next
+# two years. Some preliminary variables need to be created to get responder
+# status.
 
 # Generate an indicator for whether the woman believes her partner wants a
 # higher minimum number of children than she does (pandas knows that the column
@@ -199,14 +207,35 @@ data.loc[(np.isnan(data[v_husb_more_minkids]) &
 ### Part 3.2: Positive effects on well-being
 ################################################################################
 
-#gen satisfied = (j11satisfy==4 | j11satisfy==5)
-#replace satisfied = . if j11satisfy==.
+# Generate a dummy measure of life satisfaction
+v_satisfaction_detail = 'j11satisfy'
+v_satisfied = 'satisfied'
+data[v_satisfied] = (
+    (data[v_satisfaction_detail] == 4) | (data[v_satisfaction_detail] == 5)
+    )
 
-#gen healthier = (a21health==4 | a21health==5)
-#replace healthier = . if a21health==.
+# Replace it as missing if the life satisfaction score is missing
+data.loc[np.isnan(data[v_satisfaction_detail]), v_satisfied] = np.nan
 
-#gen happier = (a22happy==4 | a22happy==5)
-#replace happier = . if a22happy==.
+# Generate a dummy measure of health
+v_health_detail = 'a21health'
+v_healthier = 'healthier'
+data[v_healthier] = (
+    (data[v_health_detail] == 4) | (data[v_health_detail] == 5)
+    )
+
+# Replace it as missing if the health score is missing
+data.loc[np.isnan(data[v_health_detail]), v_healthier] = np.nan
+
+# Generate a dummy measure of happiness
+v_happy_detail = 'a22happy'
+v_happier = 'happier'
+data[v_happier] = (
+    (data[v_happy_detail] == 4) | (data[v_happy_detail] == 5)
+    )
+
+# Replace it as missing if the happiness score is missing
+data.loc[np.isnan(data[v_happy_detail]), v_happier] = np.nan
 
 #eststo D: reg satisfied Icouples if ittsample4_follow == 1 & responder_m==1
 #eststo E: reg healthier Icouples if ittsample4_follow == 1 & responder_m==1
@@ -216,13 +245,31 @@ data.loc[(np.isnan(data[v_husb_more_minkids]) &
 ### Part 3.3: Negative effects
 ################################################################################
 
-#gen separated2 = (b1marstat==2 | b1marstat==3 | b1marstat==.)
+# Generate an indicator for being separated
+v_marital_status = 'b1marstat'
+v_separated = 'separated'
+data[v_separated] = (
+    (data[v_marital_status] == 2) | (data[v_marital_status] == 3)
+    | np.isnan(data[v_marital_status])
+    )
 
-#gen violence_follow = (f10violenc==1)
-#replace violence_follow = . if f10violenc<0 | f10violenc==.
+# Generate an indicator for the partner being physically violent
+v_violence_detail = 'f10violenc'
+v_violence = 'violent'
+data[v_violence] = (v_violence_detail == 1)
 
-#gen cur_using_condom = (g14mc==1)
-#replace cur_using_condom = . if g14mc==.
+# Replace it as missing if the detailed violence data are less than zero or
+# missing
+data.loc[(data[v_violence_detail] < 0) | np.isnan(data[v_violence_detail]),
+    v_violence] = np.nan
+
+# Generate an indicator for condom usage
+v_condom_detail = 'g14mc'
+v_condom = 'condom'
+data[v_condom] = (data[v_condom_detail] == 1)
+
+# Replace it as missing if the condom usage data are missing
+data.loc[np.isnan(data[v_condom_detail]), v_condom] = np.nan
 
 #eststo D: reg separated2 Icouples if ittsample4_follow == 1 & responder_m==1
 #eststo E: reg violence_follow Icouples if ittsample4_follow == 1 & responder_m==1
