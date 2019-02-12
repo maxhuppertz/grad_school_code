@@ -147,9 +147,11 @@ v_husb_wants_kids = 'husb_wants_kids'
 # involving missing values is infinitely large and counted as True.) That is why
 # I added np.isnan(data[v_idkids_husb] + data[v_num_kids]), which replicates the
 # e12_hus_ideal / currentnumchildren issue, and np.isnan(data[v_how_many_more]),
-# which replicates the e17morekids issue. The problem is that in the next step,
-# where erroneous assignments are converted to missing, they forgot one
-# condition, I think. (See below.)
+# which replicates the e17morekids issue. (Since np.nan always evaluates to
+# False in Python, I have to manually add these conditions to replicates the
+# STATA assignments.) The problem is that in the next step, where these
+# erroneous assignments are converted to missing, they forgot one condition, I
+# think. (See below.)
 data[v_husb_wants_kids] = (
     ((data[v_idkids_husb] - data[v_num_kids]) > 0) | (data[v_how_many_more] > 0)
     | np.isnan(data[v_idkids_husb] + data[v_num_kids])
@@ -183,6 +185,7 @@ data[v_responder] = (
     & (data[v_husb_wants_kids] == True) & (data[v_kids_nexttwo] == 0)
     )
 
+# Replace it as missing if some of the components are missing
 data.loc[(np.isnan(data[v_husb_more_minkids]) &
     np.isnan(data[v_husb_more_maxkids]) & np.isnan(data[v_husb_more_idkids]))
     | np.isnan(data[v_husb_wants_kids]) | np.isnan(data[v_kids_nexttwo]),
