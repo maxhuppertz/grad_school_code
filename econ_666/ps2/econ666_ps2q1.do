@@ -100,7 +100,7 @@ replace `v_husb_more_idkids' = . if `v_idkids_husb_miss'==1
 // Generate an indicator for whether the woman believes her partner wants
 // a higher maximum number of children than she does
 loc v_maxkids_self = "e7maxnumber"
-loc v_maxkids_husb = "e18maxnumber_husb"
+loc v_maxkids_husb = "e18maxnumber_hus"
 loc v_husb_more_maxkids = "husb_more_maxkids"
 gen `v_husb_more_maxkids' = (`v_maxkids_husb'>`v_maxkids_self')
 replace `v_husb_more_maxkids' = . if `v_maxkids_husb'==. | `v_maxkids_self'==.
@@ -113,7 +113,8 @@ loc v_how_many_more = "e17morekids"  // How many more kids does the woman
 loc v_husb_wants_kids = "husb_wants_kids"
 gen `v_husb_wants_kids' = (((`v_idkids_husb'-`v_num_kids')>0) | `v_how_many_more'>0 )
 replace `v_husb_wants_kids' = . if (`v_idkids_husb_miss'==1 | `v_num_kids'==.) & (`v_how_many_more'==-9)
-
+noi count if (`v_idkids_husb'-`v_num_kids')>0
+noi count if `v_husb_wants_kids'==1
 // Specify variable name for indicator of whether the woman wants kids in the
 // next two years
 loc v_nokids_now = "wantschildin2"
@@ -123,6 +124,7 @@ loc v_responder = "responder"
 gen `v_responder' = ((`v_husb_more_minkids'==1 | `v_husb_more_idkids'==1 | `v_husb_more_maxkids'==1) &  `v_husb_wants_kids'==1 & `v_nokids_now'==0)
 replace `v_responder' = . if ((`v_husb_more_minkids'==. & `v_husb_more_idkids'==. & `v_husb_more_maxkids'==.) | `v_husb_wants_kids'==. | `v_nokids_now'==.)
 
+noi count if `v_responder'==1
 ********************************************************************************
 *** Part 3: ITT using only necessary covariates
 ********************************************************************************
@@ -139,5 +141,5 @@ loc v_usedvoucher = "usedvoucher"
 // Specify couple treatment variable
 loc v_coupletreatment = "Icouples"
 
-keep `v_usedvoucher' `v_coupletreatment' separated2 violence_follow cur_using_condom satisfied healthier happier
+//keep `v_usedvoucher' `v_coupletreatment' separated2 violence_follow cur_using_condom satisfied healthier happier
 }

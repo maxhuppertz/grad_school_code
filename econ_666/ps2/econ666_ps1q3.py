@@ -82,7 +82,7 @@ if download_data:
 
 # Load data into memory
 id = 'respondentid'  # Column to use as ID
-data = pd.read_stata(data_file, index_col=id)
+data = pd.read_stata(data_file, index_col=id, convert_categoricals=False)
 
 ################################################################################
 ### Part 3: Data processing
@@ -137,11 +137,35 @@ data.loc[np.isnan(data[v_maxkids_husb] + data[v_maxkids_self]),
 v_num_kids = 'currentnumchildren'
 v_how_many_more = 'e17morekids_hus'
 v_husb_wants_kids = 'husb_wants_kids'
+
+# A note on the variable created in the next step: The original STATA code is
+#
+# gen h_wantsmore_ideal_m = (((e12_hus_ideal-currentnumchildren)>0) | e17morekids>0 )
+#
+# but that codes observations as 1 if either e12_hus_ideal or currentnumchildren
+# are missing, and if e17morekids is missing. (Since in STATA, anything
+# involving missing values is infinitely large and counted as True.) That is why
+# I added np.isnan(data[v_idkids_husb] + data[v_num_kids]), which replicates the
+# e12_hus_ideal / currentnumchildren issue, and np.isnan(data[v_how_many_more]),
+# which replicates the e17morekids issue. The problem is that in the next step,
+# where erroneous assignments are converted to missing, they forgot one
+# condition, I think. (See below.)
 data[v_husb_wants_kids] = (
-    (data[v_idkids_husb] - data[v_num_kids] > 0) | (data[v_how_many_more] > 0)
+    ((data[v_idkids_husb] - data[v_num_kids]) > 0) | (data[v_how_many_more] > 0)
+    | np.isnan(data[v_idkids_husb] + data[v_num_kids])
+    | np.isnan(data[v_how_many_more])
     )
 
 # Replace it as NaN if any of the components are missing
+# The original STATA code is
+#
+# replace h_wantsmore_ideal_m = . if (d_e12_hus_ideal==1 | currentnumchildren==.) & (e17morekids==-9)
+#
+# which corrects the issue with missing values for  e12_hus_ideal or
+# currentnumchildren making the variable true. But it doesn't solve the
+# same issue for e17morekids, since that is sometimes coded as -9 (which means
+# the responder said she they don't know), but in other cases, it's just coded
+# as missing. This code will not fix the missing issue.
 data.loc[((data[v_idkids_husb_miss] == 1) | np.isnan(data[v_num_kids]))
     & (data[v_how_many_more] == -9),
     v_husb_wants_kids] = np.nan
@@ -156,7 +180,7 @@ v_responder = 'responder'
 data[v_responder] = (
     ((data[v_husb_more_minkids] == True) | (data[v_husb_more_maxkids] == True)
     | (data[v_husb_more_idkids] == True))
-    & (data[v_husb_wants_kids] == True) & (data[v_kids_nexttwo] == False)
+    & (data[v_husb_wants_kids] == True) & (data[v_kids_nexttwo] == 0)
     )
 
 data.loc[(np.isnan(data[v_husb_more_minkids]) &
