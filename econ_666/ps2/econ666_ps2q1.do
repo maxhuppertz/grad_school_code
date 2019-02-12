@@ -80,7 +80,7 @@ cd "`mdir'"
 *** Part 2: Variable generation
 ********************************************************************************
 
-// Generate an indicator for whether the woman believer her partner wants at
+// Generate an indicator for whether the woman believes her partner wants at
 // least more children than she does
 loc v_minkids_self = "e8minnumber"
 loc v_minkids_husb = "e19minnumber_hus"
@@ -88,7 +88,7 @@ loc v_husb_more_minkids = "husb_more_kids"
 gen `v_husb_more_minkids' = (`v_minkids_husb' > `v_minkids_self') 
 replace `v_husb_more_minkids' = . if `v_minkids_husb'==. | `v_minkids_self'==.
 
-// Generate an indicator for whether the woman believer her husband ideally
+// Generate an indicator for whether the woman believes her husband ideally
 // wants more children than she does
 loc v_idkids_self = "e1_ideal"
 loc v_idkids_husb = "e12_hus_ideal"
@@ -97,10 +97,10 @@ loc v_husb_more_idkids = "husb_more_idkids"
 gen `v_husb_more_idkids' = (`v_idkids_husb'>`v_idkids_self') 
 replace `v_husb_more_idkids' = . if `v_idkids_husb_miss'==1
 
-// Generate an indicator for whether the woman believer her partner wants at
+// Generate an indicator for whether the woman believes her partner wants
 // a higher maximum number of children than she does
 loc v_maxkids_self = "e7maxnumber"
-loc v_maxkids_husb = "e18maxnumber"
+loc v_maxkids_husb = "e18maxnumber_husb"
 loc v_husb_more_maxkids = "husb_more_maxkids"
 gen `v_husb_more_maxkids' = (`v_maxkids_husb'>`v_maxkids_self')
 replace `v_husb_more_maxkids' = . if `v_maxkids_husb'==. | `v_maxkids_self'==.

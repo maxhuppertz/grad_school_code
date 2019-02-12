@@ -47,7 +47,7 @@ chdir(mdir+ddir)
 data_file = 'fertility_regressions.dta'
 
 # Specify whether to download the data, or use a local copy instead
-download_data = True
+download_data = False
 
 if download_data:
     # Specify URL for data zip file containing data file
@@ -89,10 +89,80 @@ data = pd.read_stata(data_file, index_col=id)
 ################################################################################
 
 # Specify indicator for ITT sample
-itt_ind = 'ittsample4'
+v_itt_ind = 'ittsample4'
 
-# Retain only the ITT sample
-data = data[data[itt_ind]==1]
+# Retain only the ITT sample (pandas knows that the boolean vector its receiving
+# as an index must refer to rows)
+data = data[data[v_itt_ind]==1]
+
+# Generate an indicator for whether the woman believes her partner wants a
+# higher minimum number of children than she does (pandas knows that the column
+# names I'm giving it refer to columns)
+v_minkids_self = 'e8minnumber'
+v_minkids_husb = 'e19minnumber_hus'
+v_husb_more_minkids = 'husb_more_kids'
+data[v_husb_more_minkids] = data[v_minkids_husb] > data[v_minkids_self]
+
+# Replace it as NaN if one of the two components is missing (here, I need to
+# select both columns and rows; .loc[<rows>, <columns>] is very useful for
+# getting rows using a boolean vector, and columns using column names or
+# something like <:> to select all columns)
+data.loc[np.isnan(data[v_minkids_husb] + data[v_minkids_self]),
+    v_husb_more_minkids] = np.nan
+
+# Generate an indicator for whether the woman believes her husband wants a
+# higher ideal number of children than she wants
+v_idkids_self = 'e1_ideal'
+v_idkids_husb = 'e12_hus_ideal'
+v_husb_more_idkids = 'husb_more_idkids'
+data[v_husb_more_idkids] = data[v_idkids_husb] > data[v_idkids_self]
+
+# Replace it as NaN if the ideal number of kids for the husband is missing
+v_idkids_husb_miss = 'd_e12_hus_ideal'
+data.loc[data[v_idkids_husb_miss] == 1, v_husb_more_idkids] = np.nan
+
+# Generate an indicator for whether the woman believes her partner wants a
+# higher maximum number of children than she does
+v_maxkids_self = 'e7maxnumber'
+v_maxkids_husb = 'e18maxnumber_hus'
+v_husb_more_maxkids = 'husb_more_maxkids'
+data[v_husb_more_maxkids] = data[v_maxkids_husb] > data[v_maxkids_self]
+
+# Replace it as NaN if either of the components are missing
+data.loc[np.isnan(data[v_maxkids_husb] + data[v_maxkids_self]),
+    v_husb_more_maxkids] = np.nan
+
+# Generate an indicator for whether the couple currently have fewer children
+# than the husband would ideally want to have
+v_num_kids = 'currentnumchildren'
+v_how_many_more = 'e17morekids_hus'
+v_husb_wants_kids = 'husb_wants_kids'
+data[v_husb_wants_kids] = (
+    (data[v_idkids_husb] - data[v_num_kids] > 0) | (data[v_how_many_more] > 0)
+    )
+
+# Replace it as NaN if any of the components are missing
+data.loc[((data[v_idkids_husb_miss] == 1) | np.isnan(data[v_num_kids]))
+    & (data[v_how_many_more] == -9),
+    v_husb_wants_kids] = np.nan
+
+# Specify variable name for indicator of whether the woman wants kids in the
+# next two years
+v_kids_nexttwo = 'wantschildin2'
+
+# Generate an indicator for responder status (luckily, Python evaluates
+# np.nan == True as False, so this code works for boolean data)
+v_responder = 'responder'
+data[v_responder] = (
+    ((data[v_husb_more_minkids] == True) | (data[v_husb_more_maxkids] == True)
+    | (data[v_husb_more_idkids] == True))
+    & (data[v_husb_wants_kids] == True) & (data[v_kids_nexttwo] == False)
+    )
+
+data.loc[(np.isnan(data[v_husb_more_minkids]) &
+    np.isnan(data[v_husb_more_maxkids]) & np.isnan(data[v_husb_more_idkids]))
+    | np.isnan(data[v_husb_wants_kids]) | np.isnan(data[v_kids_nexttwo]),
+    v_responder] = np.nan
 
 ################################################################################
 ### Part 4: Run free step down resampling
