@@ -213,7 +213,7 @@ data.loc[(np.isnan(data[v_husb_more_minkids]) &
 #eststo F: reg happier Icouples if ittsample4_follow == 1 & responder_m==1
 
 ################################################################################
-### Part 3.2: Negative effects
+### Part 3.3: Negative effects
 ################################################################################
 
 #gen separated2 = (b1marstat==2 | b1marstat==3 | b1marstat==.)
