@@ -32,14 +32,14 @@ def bonferroni(p):
     return p_bc
 
 # Define a function to get Holm-Bonferroni adjusted p-values
-def holm_bonferroni(p, alpha=.05):
+def holm_bonferroni(p, alpha=.05, order='F'):
     # Get original dimensions of p-values, which might be provided as a matrix
     M, k = p.shape
 
     # Flatten the array of p-values, in case a matrix is provided. The order
     # argument is important only to ensure that this is put back into place the
     # same way later. Which order is chosen does not matter.
-    p = p.flatten(order='F')
+    p = p.flatten(order=order)
 
     # Get indices of sorted p-values
     p_sorted_index = np.argsort(p)
@@ -69,7 +69,7 @@ def holm_bonferroni(p, alpha=.05):
 
     # Put the ordered adjusted p-values back in the same shape as the input
     # p-values
-    p_hbo = np.reshape(p_hbo, newshape=(M,k), order='F')
+    p_hbo = np.reshape(p_hbo, newshape=(M,k), order=order)
 
     # Return the adjusted p-values
     return p_hbo
@@ -77,10 +77,23 @@ def holm_bonferroni(p, alpha=.05):
 # Define a function to do one interation of the free step down resampling
 # algorithm (that is, one treatment reassignment plus calculating the
 # corresponding p-values)
-def permute_p(Y, X, Isamp, ntreat, balvars, cidx,
-    Breg=2, breg_icept=True, cov_est='hmsd'):
-    # Get total sample size
-    N = Y.shape[0]
+def permute_p(Y, Isamp, ntreat, balvars, X=None, Z=None, seed=1,
+    Breg=2, breg_icept=True, cov_est='hmsd', order='F', shape=None):
+    # Set random number generator's seed
+    np.random.seed(seed)
+
+    # Get total sample size N and number of outcome variables M
+    N, M = Y.shape
+
+    if X is None and Z is None:
+        cidx = [0]
+    elif X is not None and Z is None:
+        cidx = [X.shape[1]]
+    else:
+        cidx = [X.shape[1]] + [z + X.shape[1] + 1 for z in range(Z.shape[1])]
+
+    # Get number of tests
+    T = M * len(cidx)
 
     # Set up vector of treatment assignments for this iteration
     W = np.zeros(shape=(N,1))
@@ -129,13 +142,59 @@ def permute_p(Y, X, Isamp, ntreat, balvars, cidx,
                 t[i,0] = tb[0,0]
 
         # Check whether the largest absolute value of any t-statistic across all
-        # balancing regressions is less than the maximum recorded so far
-        if np.maximum(np.abs(t[:,0])) <= tmax:
+        # balancing regressions is less than the maximum recorded so far. Note
+        # that np.minimum() and np.maximum() take exactly two arrays as inputs,
+        # and compute the element-wise min or max. Things get funky once they
+        # compare inputs of two different shapes. To get the min or max of the
+        # elements of a single array, I have to use np.amax() or np.amin()
+        # instead.
+        if np.amax(np.abs(t[:,0])) <= tmax:
             # If so, save the new minmax t-statistic
-            tmax = np.maximum(t)
+            tmax = np.amax(t)
 
             # Save the treatment assignment
             W = Wb
+
+    # Set up a vector of p-values, one for each outcome variable and coefficient
+    # of interest
+    pstar = np.zeros(shape=(T,1))
+
+    # Go through all members in the family
+    for i in range(T):
+        # Make an index of where both the member and all parts of X are not NaN,
+        # and only get units in the estimation sample, i.e. where Isamp == 1
+        I = (~np.isnan(Y[:,i]) & ~np.isnan(X.sum(axis=1)) & Isamp)
+
+        # Get the number of effective observations
+        n = I.sum()
+
+        # Get outcome variable, i.e. the current member of the family, for those
+        # observations with non-missing data for both LHS and RHS variables
+        y = np.array(Y[I,i], ndmin=2).transpose()
+
+        # Make a matrix of RHS variables. If X was specified, add it to the
+        # treatment assignment
+        if X is not None:
+            Xstar = np.concatenate((X[I], W[I]), axis=1)
+        else:
+            Xstar = W[I]
+
+        # If add was specified, add it in after the treatment assignment
+        if Z is not None:
+            Xstar = np.concatenate((Xstar, Z[I]), axis=1)
+
+        # Run OLS
+        _, _, _, p = ols(y, Xstar, cov_est='hmsd')
+
+        # Save only p-values of interest
+        pstar[i,:] = p[cidx]
+
+    # Reshape the result if desired
+    if shape is not None:
+        pstar = pstar.reshape(order=order)
+
+    # Return the adjusted p-values
+    return pstar
 
 ################################################################################
 ### Part 2.1: Set directories
@@ -506,13 +565,14 @@ balvars = ['a16_3_ageinyrs', 'school', 'step3_numchildren', 'e1_ideal',
 # Get data for balancing variable in the ITT sample
 BV = data.loc[I_itt, balvars].astype(float).values
 
-permute_p(Y=Y, X=X, Isamp=I_resitt, ntreat=ntreat, balvars=BV, cidx=cidx)
-
 # Specify how many cores to use for parallel processing
 ncores = cpu_count()
 
+# Set number of replications for the randomization distribution
+R = 2
+
 # Get p-values using all available cores in parallel
-#results = Parallel(n_jobs=ncores)(delayed(function)(b, args) for b in range(B))
+P = Parallel(n_jobs=ncores)(delayed(permute_p)(Y=Y, X=X, Isamp=I_resitt[I_itt], ntreat=ntreat, balvars=BV, seed=r) for r in range(R))
 
 ################################################################################
 ### Part 6: Print the results
