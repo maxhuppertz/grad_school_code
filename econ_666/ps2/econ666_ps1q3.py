@@ -586,7 +586,7 @@ BV = data.loc[I_itt, balvars].astype(float).values
 ncores = cpu_count()
 
 # Set number of replications for the randomization distribution
-R = 10000
+R = 100000
 
 # Set number of balancing regressions
 Breg = 100
