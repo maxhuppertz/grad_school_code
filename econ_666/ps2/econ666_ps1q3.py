@@ -586,11 +586,18 @@ BV = data.loc[I_itt, balvars].astype(float).values
 ncores = cpu_count()
 
 # Set number of replications for the randomization distribution
-R = 100000
+R = 10000
 
-# Get randomization p-values using all available cores in parallel
+# Set number of balancing regressions
+Breg = 100
+
+# Get randomization p-values using all available cores in parallel. Note that
+# the sample index this gets is the indicator for being a responder and in the
+# ITT follow-up sample, but only for those people who are in the original ITT
+# sample
 P = Parallel(n_jobs=ncores)( delayed(permute_p)
-    (Y=Y, X=X, Isamp=I_resitt[I_itt], ntreat=ntreat, balvars=BV, seed=r)
+    (Y=Y, X=X, Isamp=I_resitt[I_itt], ntreat=ntreat, balvars=BV, seed=r,
+    Breg=Breg)
     for r in range(R) )
 
 # Count how often the randomization values are below the original p-values
