@@ -20,50 +20,46 @@ from zipfile import ZipFile
 ################################################################################
 
 # Define a function to do the Bonferroni correction
-def bonferroni(Y, X, icept=True, cidx=[1]):
-    # Get number of members in the family
-    M = Y.shape[1]
+def bonferroni(p):
+    # Get number of members in the family M, and number of parameters of
+    # interest k
+    M, k = p.shape
 
-    # Get number of parameters
-    k = X.shape[1]
+    # Calculate Bonferroni corrected p-values
+    p_bc = np.minimum(p * (M*k), 1)
 
-    # Set up vector of corrected p-statistics, as well as coefficient estimates
-    # and standard errors
-    p = np.zeros(shape=(M,k))
-    b = np.zeros(shape=(M,k))
-    SE = np.zeros(shape=(M,k))
+    # Return them
+    return p_bc
 
-    # Go through all members in the family
-    for i in range(M):
-        # Make an index of where both the member and all parts of X are not NaN
-        I = (~np.isnan(Y[:,i]) & ~np.isnan(X.sum(axis=1)))
+# Define a function to get Holm-Bonferroni adjusted p-values
+def holm_bonferroni(p, alpha=.05):
+    #p = np.concatenate((p,p+1), axis=1)
 
-        # Get the number of effective observations
-        n = I.sum()
+    # Get number of members in the family M, and number of parameters of
+    # interest k
+    M, k = p.shape
 
-        # Get outcome variable, i.e. the current member of the family, for those
-        # observations with non-missing data for both LHS and RHS variables
-        y = np.array(Y[I,i], ndmin=2).transpose()
+    # Get indices of sorted p-values, using a flattened array in case this is a
+    # matrix of p-values
+    p_sorted_index = np.argsort(p, axis=None)
 
-        # Combine X with an intercept, using only observations which are not
-        # missing for the RHS and LHS variables
-        Z = np.concatenate((np.ones(shape=(n,1)), X[I]), axis=1)
+    #p_sorted_index = np.ravel_multi_index(p_sorted_index, dims=(M,k), order='F')
 
-        # Get p-values for standard OLS
-        bhat, Vhat, _, p_uncorr = ols(y, Z, cov_est='hmsd')
+    # Set up array of adjusted p-values
+    p_hb = np.zeros(shape=p.shape)
 
-        # Save corrected p-values
-        p[i,:] = p_uncorr[cidx,0] * M
+    # Go through the sorted index (note that this starts with the smallest
+    # p-values, which means that it starts with the most significant one)
+    for s, idx in enumerate(p_sorted_index):
+        row = np.int(np.floor(idx/k))
+        col = np.int(idx - k*row)
 
-        # Save point estimates for coefficients of interest
-        b[i,:] = bhat[cidx,0]
+        p_hb[row,col] = p.flatten()[idx] * (M-s+1)
 
-        # Save standard errors
-        SE[i,:] = np.sqrt(np.diag(Vhat[cidx,cidx]))
+    return p_hb
 
-    # Return corrected p-values
-    return p, b, SE
-
+# Define a function to do one interation of the free step down resampling
+# algorithm
 def permute_p():
     pass
 
@@ -331,23 +327,82 @@ happy_family = [v_satisfied, v_healthier, v_happier]
 # Combine them into one family
 family = sad_family + happy_family
 
+# Get number of family members
+M = len(family)
+
 # Get the data for responders in the ITT follow-up sample, making sure these are
 # provided in float format
-family_resp_data = data.loc[(data[v_responder] == 1)
+Y = data.loc[(data[v_responder] == 1)
     & (data[v_itt_follow] == 1),
     family].astype(float).values
 
 # Get the treatment indicator for the same group
-D_resp = np.array(data.loc[(data[v_responder] == 1) & (data[v_itt_follow] == 1),
+X = np.array(data.loc[(data[v_responder] == 1) & (data[v_itt_follow] == 1),
     v_couple_treatment].values, ndmin=2).transpose()
 
-# Calculate Bonerroni-adjusted p-vaues, as well as point estimates and standard
-# errors
-p_bonf, b, SE = bonferroni(family_resp_data, D_resp)
+# If I wanted to use covariates, I'd like to be able to easily ignore those
+# when calculating p-values etc., so specify index of coefficient(s) of
+# interest. Has to be a list!
+cidx = [1]
+
+# Get number of parameters
+k = X.shape[1]
+
+# Set up vector of coefficient estimates b, vector of standard errors SE, and
+# vector of unadjusted p-values p (these could be matrices if I cared about more
+# than one treatment arm or something)
+b = np.zeros(shape=(M,k))
+SE = np.zeros(shape=(M,k))
+p_unadj = np.zeros(shape=(M,k))
+
+# Set up vector of sample sizes
+N = np.zeros(shape=(M,1))
+
+# Go through all members in the family
+for i in range(M):
+    # Make an index of where both the member and all parts of X are not NaN
+    I = (~np.isnan(Y[:,i]) & ~np.isnan(X.sum(axis=1)))
+
+    # Get the number of effective observations
+    n = I.sum()
+
+    # Save it for printing later
+    N[i,0] = n
+
+    # Get outcome variable, i.e. the current member of the family, for those
+    # observations with non-missing data for both LHS and RHS variables
+    y = np.array(Y[I,i], ndmin=2).transpose()
+
+    # Combine X with an intercept, using only observations which are not
+    # missing for the RHS and LHS variables
+    Z = np.concatenate((np.ones(shape=(n,1)), X[I]), axis=1)
+
+    # Run OLS
+    bhat, Vhat, _, p = ols(y, Z, cov_est='hmsd')
+
+    # Save p-values
+    p_unadj[i,:] = p[cidx,0]
+
+    # Save point estimates for coefficients of interest
+    b[i,:] = bhat[cidx,0]
+
+    # Save standard errors
+    SE[i,:] = np.sqrt(np.diag(Vhat[cidx,cidx]))
+
+# Calculate Bonerroni-adjusted p-values
+p_bonf = bonferroni(p_unadj)
+
+# Calculate Holm-Bonferroni adjusted p-values
+p_holmbonf = holm_bonferroni(p_unadj)
 
 # Put the results into a data frame, add column labels
-res = pd.DataFrame(data=np.concatenate((b, SE, p_bonf), axis=1),
-    columns=['beta_hat', 'SE', 'p_bonf'])
+res = pd.DataFrame(
+    data=np.concatenate((N, b, SE, p_unadj, p_bonf, p_holmbonf), axis=1),
+    columns=['N', 'beta_hat', 'SE', 'p_naive', 'p_bonf', 'p_holmbonf']
+    )
+
+# Make sure sample sizes are saved as integers
+res['N'] = res['N'].astype(int)
 
 # Add outcome labels to the results data frame
 res.insert(loc=0, column='outcome', value=family)
