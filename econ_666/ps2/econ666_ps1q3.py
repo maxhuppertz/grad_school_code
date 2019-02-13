@@ -42,7 +42,7 @@ def holm_bonferroni(p, alpha=.05, order='F'):
     p = p.flatten(order=order)
 
     # Get indices of sorted p-values
-    p_sorted_index = np.argsort(p)
+    p_sorted_index = p.argsort()
 
     # Sort the p-values, make them into a proper (column) vector
     p = np.array(p[p_sorted_index], ndmin=2).transpose()
@@ -51,7 +51,7 @@ def holm_bonferroni(p, alpha=.05, order='F'):
     p_hb = p * np.array([M*k-s for s in range(M*k)], ndmin=2).transpose()
 
     # Go through all p-values but the first and enforce monotonicity
-    for i, pv in enumerate(p_hb[1:]):
+    for i in range(len(p_hb[1:])):
         # Replaces the current adjusted p-value with the preceding one if that
         # is larger, and enforces p <= 1
         p_hb[i+1] = np.minimum(np.maximum(p_hb[i], p_hb[i+1]), 1)
@@ -569,10 +569,36 @@ BV = data.loc[I_itt, balvars].astype(float).values
 ncores = cpu_count()
 
 # Set number of replications for the randomization distribution
-R = 2
+R = 100000
 
-# Get p-values using all available cores in parallel
-P = Parallel(n_jobs=ncores)(delayed(permute_p)(Y=Y, X=X, Isamp=I_resitt[I_itt], ntreat=ntreat, balvars=BV, seed=r) for r in range(R))
+# Get randomization p-values using all available cores in parallel
+P = Parallel(n_jobs=ncores)( delayed(permute_p)
+    (Y=Y, X=X, Isamp=I_resitt[I_itt], ntreat=ntreat, balvars=BV, seed=r)
+    for r in range(R) )
+
+# Count how often the randomization values are below the original p-values
+P = np.sum([(p_star < p_unadj) for p_star in P], axis=0)
+
+# Divide by the number of iterations
+P = P / R
+
+# Get the ranking of unadjusted p-values
+p_unadj_sort_idx = p_unadj[:,0].argsort()
+
+# Order the permutation p-values
+P = P[p_unadj_sort_idx]
+
+# Go through all but the first p-values
+for i in range(P.shape[0]-1):
+    # Replaces the current adjusted p-value with the preceding one if that
+    # is larger
+    P[i+1] = np.maximum(P[i], P[i+1])
+
+# Set up vector of reordered permutation p-values
+P_sr = np.zeros(shape=P.shape)
+
+# Put the p-values back in that order
+for sorti, origi in enumerate(p_unadj_sort_idx): P_sr[origi] = P[sorti]
 
 ################################################################################
 ### Part 6: Print the results
@@ -580,8 +606,8 @@ P = Parallel(n_jobs=ncores)(delayed(permute_p)(Y=Y, X=X, Isamp=I_resitt[I_itt], 
 
 # Put the results into a data frame, add column labels
 res = pd.DataFrame(
-    data=np.concatenate((N, b, SE, p_unadj, p_bonf, p_holmbonf), axis=1),
-    columns=['N', 'b_hat', 'SE', 'p', 'p_bf', 'p_hbf']
+    data=np.concatenate((N, b, SE, p_unadj, p_bonf, p_holmbonf, P_sr), axis=1),
+    columns=['N', 'b_hat', 'SE', 'p', 'p_bf', 'p_hbf', 'p_sr']
     )
 
 # Make sure sample sizes are saved as integers
