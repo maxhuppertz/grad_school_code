@@ -203,19 +203,31 @@ def permute_p(Y, Isamp, ntreat, balvars, X=None, Z=None, seed=1,
 # Specify name for main directory (just uses the file's directory)
 mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
 
-# Set data directory (doesn't need to exist)
+# Set data directory (doesn't need to exist, if you choose to download the data)
 ddir = '/data'
 
-# Create the data directory if it doesn't exist
-if not path.isdir(mdir+ddir):
-    mkdir(mdir+ddir)
+# Set a flag which will be turned to true if the data directory is generated,
+# to make sure data are downloaded
+download_enforce = False
 
-# Change directory to data
-chdir(mdir+ddir)
+# Set figures/tables directory (doesn't need to exist)
+fdir = '/figures'
+
+# Create the data directory if it doesn't exist
+for subdir in [fdir, ddir]:
+    if not path.isdir(mdir+subdir):
+        mkdir(mdir+subdir)
+
+        # If this is the data directory, ensure download later on
+        if subdir == ddir:
+            download_enfore = True
 
 ################################################################################
 ### Part 2.2: Download/load data
 ################################################################################
+
+# Change directory to data
+chdir(mdir+ddir)
 
 # Specify name of data file
 data_file = 'fertility_regressions.dta'
@@ -223,6 +235,11 @@ data_file = 'fertility_regressions.dta'
 # Specify whether to download the data, or use a local copy instead
 download_data = False
 
+# This gets overridden if the data directory didn't exist before
+if download_enforce:
+    download_data = True
+
+# Check whether to download the data
 if download_data:
     # Specify URL for data zip file containing data file
     web_zip_url = 'https://www.aeaweb.org/aer/data/10407/20101434_data.zip'
@@ -626,3 +643,9 @@ pd.set_option('display.precision', 3)
 
 # Print the results
 print(res)
+
+# Change directory to figures/tables
+chdir(mdir+fdir)
+
+# Save results as Latex table
+res.to_latex('results.tex', index=False)
