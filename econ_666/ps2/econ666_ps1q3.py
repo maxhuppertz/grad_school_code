@@ -33,16 +33,24 @@ def bonferroni(p):
 
 # Define a function to get Holm-Bonferroni adjusted p-values
 def holm_bonferroni(p, alpha=.05):
-    # Get number of members in the family M, and number of parameters of
-    # interest k
-    M, k = p.shape
+    # Flatten the array of p-values, in case a matrix is provided
+    p = p.flatten(order='F')
 
-    # Get indices of sorted p-values, using a flattened array in case this is a
-    # matrix of p-values
-    p_sorted_index = np.argsort(p, axis=None)
+    # Get number of tests
+    T = len(p)
+
+    # Get indices of sorted p-values
+    p_sorted_index = np.argsort(p)
+
+    # Sort the p-values, make them into a proper (column) vector
+    p = np.array(p[p_sorted_index], ndmin=2).transpose()
 
     # Set up array of adjusted p-values
     p_hb = np.zeros(shape=p.shape)
+
+    exit()
+    # Set up a variable to capture acceptance/rejection status
+    accept = False
 
     # Go through the sorted index (note that this starts with the smallest
     # p-values, which means that it starts with the most significant one)
@@ -51,9 +59,29 @@ def holm_bonferroni(p, alpha=.05):
         row = np.int(np.floor(idx/k))
         col = np.int(idx - k*row)
 
-        # Calculate adjusted p-value
-        # To do: The actual step down procedure
-        p_hb[row,col] = p.flatten()[idx] * (M-s+1)
+        # Check whether the adjusted p-value exceeds the significance level
+        if (p.flatten()[idx] * (M-s+2) > alpha) and not accept:
+            # Change acceptance status
+            accept = True
+
+            # Save the index of this p-value
+            idx_maxreject = s
+
+        # Check whether the algorithm has reached the acceptance region
+        if not accept:
+            # Calculate adjusted p-value, remembering zero indexing, so s starts
+            # at 0, which means the adjustment has to start with s + 1 = 1
+            p_hb[row,col] = p.flatten()[idx] * (M-s+2)
+        else:
+            # Get the index of the previous sorted p-value
+            prev_idx = p_sorted_index[s-1]
+
+            # Calculate the adjusted p-values as the
+            p_hb[row,col] = np.maximum(p.flatten()[prev_idx], )
+            pass
+
+    p_reord = np.zeros(shape=p.shape)
+    for sort_i, orig_i in enumerate(p_sorted_index): p_reord[orig_i] = p[sort_i]
 
     return p_hb
 
