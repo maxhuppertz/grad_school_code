@@ -33,8 +33,6 @@ def bonferroni(p):
 
 # Define a function to get Holm-Bonferroni adjusted p-values
 def holm_bonferroni(p, alpha=.05):
-    #p = np.concatenate((p,p+1), axis=1)
-
     # Get number of members in the family M, and number of parameters of
     # interest k
     M, k = p.shape
@@ -43,17 +41,18 @@ def holm_bonferroni(p, alpha=.05):
     # matrix of p-values
     p_sorted_index = np.argsort(p, axis=None)
 
-    #p_sorted_index = np.ravel_multi_index(p_sorted_index, dims=(M,k), order='F')
-
     # Set up array of adjusted p-values
     p_hb = np.zeros(shape=p.shape)
 
     # Go through the sorted index (note that this starts with the smallest
     # p-values, which means that it starts with the most significant one)
     for s, idx in enumerate(p_sorted_index):
+        # Get row and column indices of corresponding element of p
         row = np.int(np.floor(idx/k))
         col = np.int(idx - k*row)
 
+        # Calculate adjusted p-value
+        # To do: The actual step down procedure
         p_hb[row,col] = p.flatten()[idx] * (M-s+1)
 
     return p_hb
