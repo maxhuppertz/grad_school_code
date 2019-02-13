@@ -89,12 +89,13 @@ def permute_p(Y, X, Isamp, ntreat, balvars, cidx,
     tmax = np.inf
 
     # Go through all balancing regressions
-    for b in Breg:
+    for b in range(Breg):
         # Get new treatment assignment, by drawing randomly from a standard
         # normal distribution, getting the rank (adjusting by +1 to account for
         # Python's zero indexing), and assigning everyone with a rank equal to
         # or below the number of treated units to treatment
-        Wb = (np.random.normal(size=(N,1)).argsort() + 1 <= ntreat)
+        Wb = np.random.normal(size=(N,1))
+        Wb = np.array((Wb[:,0].argsort() + 1 <= ntreat), ndmin=2).transpose()
 
         # Set up vector of t-statistics for this treatment assignment
         t = np.zeros(shape=(balvars.shape[1],1))
@@ -104,28 +105,32 @@ def permute_p(Y, X, Isamp, ntreat, balvars, cidx,
             # Get indices of non-missing observations for that variable
             I = ~np.isnan(balvars[:,i])
 
+            # Make an array of balancing variables
+            Xbv = np.array(balvars[I,i], ndmin=2).transpose()
+
             # Check whether an intercept needs to be added
             if breg_icept:
-                # Combine the balancing variable with an intercept
-                Xbv = np.concatenate((np.ones(np.sum(I),1), balvars[I,i]),
-                    ndmin=2).transpose()
-            else:
-                # Just use the balancing variable as is
-                Xbv = np.array(balvars[I,i], ndmin=2).transpose()
+                # If so, combine the balancing variable with an intercept
+                Xbv = (
+                    np.concatenate((np.ones(shape=(np.sum(I),1)), Xbv),
+                        axis=1)
+                    )
 
             # Run OLS of treatment assignemnt on balancing variable, get the
             # t-statistic
-            _, _, tb, _ = ols(Wb[I,:], Xbv[I,i], cov_est=cov_est)
+            _, _, tb, _ = ols(Wb[I,:], Xbv, cov_est=cov_est)
 
             # Allocate correct t-statistic to the vector of t-statistics
             if breg_icept:
+                # If there is an intercept, use the second one
                 t[i,0] = tb[1,0]
             else:
+                # Otherwise, there is only one to use
                 t[i,0] = tb[0,0]
 
         # Check whether the largest absolute value of any t-statistic across all
         # balancing regressions is less than the maximum recorded so far
-        if np.maximum(np.abs(t)) <= tmax:
+        if np.maximum(np.abs(t[:,0])) <= tmax:
             # If so, save the new minmax t-statistic
             tmax = np.maximum(t)
 
@@ -499,9 +504,9 @@ balvars = ['a16_3_ageinyrs', 'school', 'step3_numchildren', 'e1_ideal',
     'fertdesdiff2', 'step7_injectables', 'step7_pill']
 
 # Get data for balancing variable in the ITT sample
-Y = data.loc[I_itt, balvars].astype(float).values
+BV = data.loc[I_itt, balvars].astype(float).values
 
-permute_p(Y=Y, X=X, Isamp=I_resitt, ntreat=ntreat, balvars, cidx=cidx)
+permute_p(Y=Y, X=X, Isamp=I_resitt, ntreat=ntreat, balvars=BV, cidx=cidx)
 
 # Specify how many cores to use for parallel processing
 ncores = cpu_count()
