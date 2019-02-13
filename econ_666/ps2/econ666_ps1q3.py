@@ -414,7 +414,7 @@ p_holmbonf = holm_bonferroni(p_unadj)
 # Put the results into a data frame, add column labels
 res = pd.DataFrame(
     data=np.concatenate((N, b, SE, p_unadj, p_bonf, p_holmbonf), axis=1),
-    columns=['N', 'beta_hat', 'SE', 'p_naive', 'p_bonf', 'p_holmbonf']
+    columns=['N', 'b_hat', 'SE', 'p', 'p_bf', 'p_hbf']
     )
 
 # Make sure sample sizes are saved as integers
