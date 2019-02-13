@@ -75,9 +75,62 @@ def holm_bonferroni(p, alpha=.05):
     return p_hbo
 
 # Define a function to do one interation of the free step down resampling
-# algorithm
-def permute_p():
-    pass
+# algorithm (that is, one treatment reassignment plus calculating the
+# corresponding p-values)
+def permute_p(Y, X, Isamp, ntreat, balvars, cidx,
+    Breg=2, breg_icept=True, cov_est='hmsd'):
+    # Get total sample size
+    N = Y.shape[0]
+
+    # Set up vector of treatment assignments for this iteration
+    W = np.zeros(shape=(N,1))
+
+    # Set up a place to save the smallest maximum t-statistic recorded so far
+    tmax = np.inf
+
+    # Go through all balancing regressions
+    for b in Breg:
+        # Get new treatment assignment, by drawing randomly from a standard
+        # normal distribution, getting the rank (adjusting by +1 to account for
+        # Python's zero indexing), and assigning everyone with a rank equal to
+        # or below the number of treated units to treatment
+        Wb = (np.random.normal(size=(N,1)).argsort() + 1 <= ntreat)
+
+        # Set up vector of t-statistics for this treatment assignment
+        t = np.zeros(shape=(balvars.shape[1],1))
+
+        # Go through all balancing variables
+        for i in range(balvars.shape[1]):
+            # Get indices of non-missing observations for that variable
+            I = ~np.isnan(balvars[:,i])
+
+            # Check whether an intercept needs to be added
+            if breg_icept:
+                # Combine the balancing variable with an intercept
+                Xbv = np.concatenate((np.ones(np.sum(I),1), balvars[I,i]),
+                    ndmin=2).transpose()
+            else:
+                # Just use the balancing variable as is
+                Xbv = np.array(balvars[I,i], ndmin=2).transpose()
+
+            # Run OLS of treatment assignemnt on balancing variable, get the
+            # t-statistic
+            _, _, tb, _ = ols(Wb[I,:], Xbv[I,i], cov_est=cov_est)
+
+            # Allocate correct t-statistic to the vector of t-statistics
+            if breg_icept:
+                t[i,0] = tb[1,0]
+            else:
+                t[i,0] = tb[0,0]
+
+        # Check whether the largest absolute value of any t-statistic across all
+        # balancing regressions is less than the maximum recorded so far
+        if np.maximum(np.abs(t)) <= tmax:
+            # If so, save the new minmax t-statistic
+            tmax = np.maximum(t)
+
+            # Save the treatment assignment
+            W = Wb
 
 ################################################################################
 ### Part 2.1: Set directories
@@ -346,23 +399,28 @@ family = sad_family + happy_family
 # Get number of family members
 M = len(family)
 
+# Make an indicator for being a responder and being in the ITT follow-up sample,
+# which is the subgroup I'm interested in here
+I_resitt = (data[v_responder] == 1) & (data[v_itt_follow] == 1)
+
 # Get the data for responders in the ITT follow-up sample, making sure these are
 # provided in float format
-Y = data.loc[(data[v_responder] == 1)
-    & (data[v_itt_follow] == 1),
-    family].astype(float).values
+Y = data.loc[I_resitt, family].astype(float).values
 
-# Get the treatment indicator for the same group
-X = np.array(data.loc[(data[v_responder] == 1) & (data[v_itt_follow] == 1),
-    v_couple_treatment].values, ndmin=2).transpose()
+# Get the treatment indicator for the same group (these should be integers)
+X = np.array(data.loc[I_resitt, v_couple_treatment].astype(int).values,
+    ndmin=2).transpose()
+
+# Add an intercept
+X = np.concatenate((np.ones(shape=(X.shape[0],1)), X), axis=1)
 
 # If I wanted to use covariates, I'd like to be able to easily ignore those
 # when calculating p-values etc., so specify index of coefficient(s) of
 # interest. Has to be a list!
 cidx = [1]
 
-# Get number of parameters
-k = X.shape[1]
+# Get number of parameters of interest
+k = len(cidx)
 
 # Set up vector of coefficient estimates b, vector of standard errors SE, and
 # vector of unadjusted p-values p (these could be matrices if I cared about more
@@ -389,12 +447,8 @@ for i in range(M):
     # observations with non-missing data for both LHS and RHS variables
     y = np.array(Y[I,i], ndmin=2).transpose()
 
-    # Combine X with an intercept, using only observations which are not
-    # missing for the RHS and LHS variables
-    Z = np.concatenate((np.ones(shape=(n,1)), X[I]), axis=1)
-
     # Run OLS
-    bhat, Vhat, _, p = ols(y, Z, cov_est='hmsd')
+    bhat, Vhat, _, p = ols(y, X[I], cov_est='hmsd')
 
     # Save p-values
     p_unadj[i,:] = p[cidx,0]
@@ -405,11 +459,59 @@ for i in range(M):
     # Save standard errors
     SE[i,:] = np.sqrt(np.diag(Vhat[cidx,cidx]))
 
-# Calculate Bonerroni-adjusted p-values
+################################################################################
+### Part 5: Adjusted p-values
+################################################################################
+
+################################################################################
+### Part 5.1: Bonferroni, Holm-Bonferroni
+################################################################################
+
+# Calculate Bonferroni-adjusted p-values
 p_bonf = bonferroni(p_unadj)
 
 # Calculate Holm-Bonferroni adjusted p-values
 p_holmbonf = holm_bonferroni(p_unadj)
+
+################################################################################
+### Part 5.2: Free step down resampling
+################################################################################
+
+# Make an indicator for being in the ITT sample, which will be useful later,
+# since that's where treatment is being assigned
+I_itt = (data[v_itt] == 1)
+
+# Get data for ITT sample
+Y = data.loc[I_itt, family].astype(float).values
+
+# Get the treatment indicator for the same group
+X = np.array(data.loc[I_itt, v_couple_treatment].astype(int).values,
+    ndmin=2).transpose()
+
+# Calculate number of treated units in the sample
+ntreat = np.sum(X)
+
+# Add an intercept
+X = np.concatenate((np.ones(shape=(X.shape[0],1)), X), axis=1)
+
+# Specify balancing variable for minmax t randomization
+balvars = ['a16_3_ageinyrs', 'school', 'step3_numchildren', 'e1_ideal',
+    'fertdesdiff2', 'step7_injectables', 'step7_pill']
+
+# Get data for balancing variable in the ITT sample
+Y = data.loc[I_itt, balvars].astype(float).values
+
+permute_p(Y=Y, X=X, Isamp=I_resitt, ntreat=ntreat, balvars, cidx=cidx)
+
+# Specify how many cores to use for parallel processing
+ncores = cpu_count()
+
+# Get p-values using all available cores in parallel
+#results = Parallel(n_jobs=ncores)(delayed(function)(b, args) for b in range(B))
+
+################################################################################
+### Part 6: Print the results
+################################################################################
 
 # Put the results into a data frame, add column labels
 res = pd.DataFrame(
@@ -433,13 +535,3 @@ pd.set_option('display.precision', 3)
 
 # Print the results
 print(res)
-
-################################################################################
-### Part 5: Run free step down resampling
-################################################################################
-
-# Specify how many cores to use for parallel processing
-ncores = cpu_count()
-
-# Get p-values using all available cores in parallel
-#results = Parallel(n_jobs=ncores)(delayed(function)(b, args) for b in range(B))
