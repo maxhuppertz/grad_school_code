@@ -466,7 +466,7 @@ data.loc[np.isnan(data[v_condom_detail]), v_condom] = np.nan
 #eststo F: reg cur_using_condom Icouples if ittsample4_follow == 1 & responder_m==1
 
 ################################################################################
-### Part 4: Recreate baseline results
+### Part 5: Adjusted p-values
 ################################################################################
 
 # Specify two (sub-)families of outcomes, one for measures of well-being, the
@@ -475,25 +475,29 @@ sad_family = [v_separated, v_violence, v_condom]
 happy_family = [v_satisfied, v_healthier, v_happier]
 
 # Combine them into one family
-family = sad_family + happy_family
+big_family = sad_family + happy_family
 
-# Get number of family members
-M = len(family)
+# Collect all families
+neighborhood = [big_family, happy_family, sad_family]
+
+# Make a dictionary of names for later
+family_name = {tuple(big_family): 'all', tuple(happy_family): 'wellbeing',
+    tuple(sad_family): 'sideff'}
+
+# Make an indicator for being in the ITT sample, which will be useful later,
+# since that's where treatment is being assigned
+I_itt = (data[v_itt] == 1)
 
 # Make an indicator for being a responder and being in the ITT follow-up sample,
 # which is the subgroup I'm interested in here
 I_resitt = (data[v_responder] == 1) & (data[v_itt_follow] == 1)
 
-# Get the data for responders in the ITT follow-up sample, making sure these are
-# provided in float format
-Y = data.loc[I_resitt, family].astype(float).values
-
 # Get the treatment indicator for the same group (these should be integers)
-X = np.array(data.loc[I_resitt, v_couple_treatment].astype(int).values,
+Xresitt = np.array(data.loc[I_resitt, v_couple_treatment].astype(int).values,
     ndmin=2).transpose()
 
 # Add an intercept
-X = np.concatenate((np.ones(shape=(X.shape[0],1)), X), axis=1)
+Xresitt = np.concatenate((np.ones(shape=(Xresitt.shape[0],1)), Xresitt), axis=1)
 
 # If I wanted to use covariates, I'd like to be able to easily ignore those
 # when calculating p-values etc., so specify index of coefficient(s) of
@@ -503,77 +507,15 @@ cidx = [1]
 # Get number of parameters of interest
 k = len(cidx)
 
-# Set up vector of coefficient estimates b, vector of standard errors SE, and
-# vector of unadjusted p-values p (these could be matrices if I cared about more
-# than one treatment arm or something)
-b = np.zeros(shape=(M,k))
-SE = np.zeros(shape=(M,k))
-p_unadj = np.zeros(shape=(M,k))
-
-# Set up vector of sample sizes
-N = np.zeros(shape=(M,1))
-
-# Go through all members in the family
-for i in range(M):
-    # Make an index of where both the member and all parts of X are not NaN
-    I = (~np.isnan(Y[:,i]) & ~np.isnan(X.sum(axis=1)))
-
-    # Get the number of effective observations
-    n = I.sum()
-
-    # Save it for printing later
-    N[i,0] = n
-
-    # Get outcome variable, i.e. the current member of the family, for those
-    # observations with non-missing data for both LHS and RHS variables
-    y = np.array(Y[I,i], ndmin=2).transpose()
-
-    # Run OLS
-    bhat, Vhat, _, p = ols(y, X[I], cov_est='hmsd')
-
-    # Save p-values
-    p_unadj[i,:] = p[cidx,0]
-
-    # Save point estimates for coefficients of interest
-    b[i,:] = bhat[cidx,0]
-
-    # Save standard errors
-    SE[i,:] = np.sqrt(np.diag(Vhat[cidx,cidx]))
-
-################################################################################
-### Part 5: Adjusted p-values
-################################################################################
-
-################################################################################
-### Part 5.1: Bonferroni, Holm-Bonferroni
-################################################################################
-
-# Calculate Bonferroni-adjusted p-values
-p_bonf = bonferroni(p_unadj)
-
-# Calculate Holm-Bonferroni adjusted p-values
-p_holmbonf = holm_bonferroni(p_unadj)
-
-################################################################################
-### Part 5.2: Free step down resampling
-################################################################################
-
-# Make an indicator for being in the ITT sample, which will be useful later,
-# since that's where treatment is being assigned
-I_itt = (data[v_itt] == 1)
-
-# Get data for ITT sample
-Y = data.loc[I_itt, family].astype(float).values
-
 # Get the treatment indicator for the same group
-X = np.array(data.loc[I_itt, v_couple_treatment].astype(int).values,
+Xitt = np.array(data.loc[I_itt, v_couple_treatment].astype(int).values,
     ndmin=2).transpose()
 
 # Calculate number of treated units in the sample
-ntreat = np.sum(X)
+ntreat = np.sum(Xitt)
 
 # Add an intercept
-X = np.concatenate((np.ones(shape=(X.shape[0],1)), X), axis=1)
+Xitt = np.concatenate((np.ones(shape=(Xitt.shape[0],1)), Xitt), axis=1)
 
 # Specify balancing variable for minmax t randomization
 balvars = ['a16_3_ageinyrs', 'school', 'step3_numchildren', 'e1_ideal',
@@ -586,73 +528,142 @@ BV = data.loc[I_itt, balvars].astype(float).values
 ncores = cpu_count()
 
 # Set number of replications for the randomization distribution
-R = 100000
+R = 100
 
 # Set number of balancing regressions
-Breg = 100
+Breg = 10
 
-# Get randomization p-values using all available cores in parallel. Note that
-# the sample index this gets is the indicator for being a responder and in the
-# ITT follow-up sample, but only for those people who are in the original ITT
-# sample
-P = Parallel(n_jobs=ncores)( delayed(permute_p)
-    (Y=Y, X=X, Isamp=I_resitt[I_itt], ntreat=ntreat, balvars=BV, seed=r,
-    Breg=Breg)
-    for r in range(R) )
+# Specify some column headers for printing the results later
+col_headers = ['N', 'b_hat', 'SE', 'p', 'p_bf', 'p_hbf', 'p_sr']
 
-# Count how often the randomization values are below the original p-values
-P = np.sum([(p_star < p_unadj) for p_star in P], axis=0)
+# Specify a label for the outcome column separately
+lab_outcome = 'outcome'
 
-# Divide by the number of iterations
-P = P / R
-
-# Get the ranking of unadjusted p-values
-p_unadj_sort_idx = p_unadj[:,0].argsort()
-
-# Order the permutation p-values
-P = P[p_unadj_sort_idx]
-
-# Go through all but the first p-values
-for i in range(P.shape[0]-1):
-    # Replaces the current adjusted p-value with the preceding one if that
-    # is larger
-    P[i+1] = np.maximum(P[i], P[i+1])
-
-# Set up vector of reordered permutation p-values
-P_sr = np.zeros(shape=P.shape)
-
-# Put the p-values back in that order
-for sorti, origi in enumerate(p_unadj_sort_idx): P_sr[origi] = P[sorti]
-
-################################################################################
-### Part 6: Print the results
-################################################################################
-
-# Put the results into a data frame, add column labels
-res = pd.DataFrame(
-    data=np.concatenate((N, b, SE, p_unadj, p_bonf, p_holmbonf, P_sr), axis=1),
-    columns=['N', 'b_hat', 'SE', 'p', 'p_bf', 'p_hbf', 'p_sr']
-    )
-
-# Make sure sample sizes are saved as integers
-res['N'] = res['N'].astype(int)
-
-# Add outcome labels to the results data frame
-res.insert(loc=0, column='outcome', value=family)
-
-# Use these as the new index
-res.set_index('outcome', inplace=True)
-
-# Set print options for pandas
-pd.set_option('display.max_columns', len(family)+1)
+# Set pandas print options
+pd.set_option('display.max_columns', len(big_family)+1)
 pd.set_option('display.width', 110)
 pd.set_option('display.precision', 3)
-
-# Print the results
-print(res)
 
 # Change directory to figures/tables
 chdir(mdir+fdir)
 
-# Save results as Latex table
-res.to_latex('results.tex', index=False)
+# Go through all families
+for family in neighborhood:
+    # Get number of family members
+    M = len(family)
+
+    # Get the data for responders in the ITT follow-up sample, making sure these are
+    # provided in float format
+    Y = data.loc[I_resitt, family].astype(float).values
+
+    # Set up vector of coefficient estimates b, vector of standard errors SE, and
+    # vector of unadjusted p-values p (these could be matrices if I cared about more
+    # than one treatment arm or something)
+    b = np.zeros(shape=(M,k))
+    SE = np.zeros(shape=(M,k))
+    p_unadj = np.zeros(shape=(M,k))
+
+    # Set up vector of sample sizes
+    N = np.zeros(shape=(M,1))
+
+    # Go through all members in the family
+    for i in range(M):
+        # Make an index of where both the member and all parts of X are not NaN
+        I = (~np.isnan(Y[:,i]) & ~np.isnan(Xresitt.sum(axis=1)))
+
+        # Get the number of effective observations
+        n = I.sum()
+
+        # Save it for printing later
+        N[i,0] = n
+
+        # Get outcome variable, i.e. the current member of the family, for those
+        # observations with non-missing data for both LHS and RHS variables
+        y = np.array(Y[I,i], ndmin=2).transpose()
+
+        # Run OLS
+        bhat, Vhat, _, p = ols(y, Xresitt[I], cov_est='hmsd')
+
+        # Save p-values
+        p_unadj[i,:] = p[cidx,0]
+
+        # Save point estimates for coefficients of interest
+        b[i,:] = bhat[cidx,0]
+
+        # Save standard errors
+        SE[i,:] = np.sqrt(np.diag(Vhat[cidx,cidx]))
+
+    ############################################################################
+    ### Part 5.1: Bonferroni, Holm-Bonferroni
+    ############################################################################
+
+    # Calculate Bonferroni-adjusted p-values
+    p_bonf = bonferroni(p_unadj)
+
+    # Calculate Holm-Bonferroni adjusted p-values
+    p_holmbonf = holm_bonferroni(p_unadj)
+
+    ############################################################################
+    ### Part 5.2: Free step down resampling
+    ############################################################################
+
+    # Get data for ITT sample
+    Y = data.loc[I_itt, family].astype(float).values
+
+    # Get randomization p-values using all available cores in parallel. Note that
+    # the sample index this gets is the indicator for being a responder and in the
+    # ITT follow-up sample, but only for those people who are in the original ITT
+    # sample
+    P = Parallel(n_jobs=ncores)( delayed(permute_p)
+        (Y=Y, X=Xitt, Isamp=I_resitt[I_itt], ntreat=ntreat, balvars=BV, seed=r,
+        Breg=Breg)
+        for r in range(R) )
+
+    # Count how often the randomization values are below the original p-values
+    P = np.sum([(p_star < p_unadj) for p_star in P], axis=0)
+
+    # Divide by the number of iterations
+    P = P / R
+
+    # Get the ranking of unadjusted p-values
+    p_unadj_sort_idx = p_unadj[:,0].argsort()
+
+    # Order the permutation p-values
+    P = P[p_unadj_sort_idx]
+
+    # Go through all but the first p-values
+    for i in range(P.shape[0]-1):
+        # Replaces the current adjusted p-value with the preceding one if that
+        # is larger
+        P[i+1] = np.maximum(P[i], P[i+1])
+
+    # Set up vector of reordered permutation p-values
+    P_sr = np.zeros(shape=P.shape)
+
+    # Put the p-values back in that order
+    for sorti, origi in enumerate(p_unadj_sort_idx): P_sr[origi] = P[sorti]
+
+    ############################################################################
+    ### Part 6: Print the results
+    ############################################################################
+
+    # Put the results into a data frame, add column labels
+    res = pd.DataFrame(
+        data=np.concatenate((N, b, SE, p_unadj, p_bonf, p_holmbonf, P_sr), axis=1),
+        columns=col_headers
+        )
+
+    # Make sure sample sizes are saved as integers
+    res[col_headers[0]] = res[col_headers[0]].astype(int)
+
+    # Add outcome labels to the results data frame
+    res.insert(loc=0, column=lab_outcome, value=family)
+
+    # Use these as the new index
+    res.set_index(lab_outcome, inplace=True)
+
+    # Print the results
+    print(res, '\n')
+
+    # Save results as Latex table
+    res.to_latex('results_'+family_name[tuple(family)]+'.tex', index=False)
