@@ -33,11 +33,13 @@ def bonferroni(p):
 
 # Define a function to get Holm-Bonferroni adjusted p-values
 def holm_bonferroni(p, alpha=.05):
-    # Flatten the array of p-values, in case a matrix is provided
-    p = p.flatten(order='F')
+    # Get original dimensions of p-values, which might be provided as a matrix
+    M, k = p.shape
 
-    # Get number of tests
-    T = len(p)
+    # Flatten the array of p-values, in case a matrix is provided. The order
+    # argument is important only to ensure that this is put back into place the
+    # same way later. Which order is chosen does not matter.
+    p = p.flatten(order='F')
 
     # Get indices of sorted p-values
     p_sorted_index = np.argsort(p)
@@ -46,44 +48,31 @@ def holm_bonferroni(p, alpha=.05):
     p = np.array(p[p_sorted_index], ndmin=2).transpose()
 
     # Set up array of adjusted p-values
-    p_hb = np.zeros(shape=p.shape)
+    p_hb = p * np.array([M*k-s for s in range(M*k)], ndmin=2).transpose()
 
-    exit()
-    # Set up a variable to capture acceptance/rejection status
-    accept = False
+    # Go through all p-values but the first and enforce monotonicity
+    for i, pv in enumerate(p_hb[1:]):
+        # Replaces the current adjusted p-value with the preceding one if that
+        # is larger, and enforces p <= 1
+        p_hb[i+1] = np.minimum(np.maximum(p_hb[i], p_hb[i+1]), 1)
 
-    # Go through the sorted index (note that this starts with the smallest
-    # p-values, which means that it starts with the most significant one)
-    for s, idx in enumerate(p_sorted_index):
-        # Get row and column indices of corresponding element of p
-        row = np.int(np.floor(idx/k))
-        col = np.int(idx - k*row)
+    # Now, put the p-values back in the original order. Set up an array of zeros
+    # of the same length as p_hb. (This will also be a column vector.)
+    p_hbo = np.zeros(shape=p_hb.shape)
 
-        # Check whether the adjusted p-value exceeds the significance level
-        if (p.flatten()[idx] * (M-s+2) > alpha) and not accept:
-            # Change acceptance status
-            accept = True
+    # Put the adjusted p-values back in the same order as the original. To do
+    # that, go through the sorting indices. The first index is the original
+    # position of the smallest p-value, so put that back where it came from. The
+    # second index is the original position of the second smallest p-value, so
+    # put that where it came from. And so on.
+    for sorti, origi in enumerate(p_sorted_index): p_hbo[origi] = p_hb[sorti]
 
-            # Save the index of this p-value
-            idx_maxreject = s
+    # Put the ordered adjusted p-values back in the same shape as the input
+    # p-values
+    p_hbo = np.reshape(p_hbo, newshape=(M,k), order='F')
 
-        # Check whether the algorithm has reached the acceptance region
-        if not accept:
-            # Calculate adjusted p-value, remembering zero indexing, so s starts
-            # at 0, which means the adjustment has to start with s + 1 = 1
-            p_hb[row,col] = p.flatten()[idx] * (M-s+2)
-        else:
-            # Get the index of the previous sorted p-value
-            prev_idx = p_sorted_index[s-1]
-
-            # Calculate the adjusted p-values as the
-            p_hb[row,col] = np.maximum(p.flatten()[prev_idx], )
-            pass
-
-    p_reord = np.zeros(shape=p.shape)
-    for sort_i, orig_i in enumerate(p_sorted_index): p_reord[orig_i] = p[sort_i]
-
-    return p_hb
+    # Return the adjusted p-values
+    return p_hbo
 
 # Define a function to do one interation of the free step down resampling
 # algorithm
