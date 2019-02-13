@@ -528,7 +528,7 @@ BV = data.loc[I_itt, balvars].astype(float).values
 ncores = cpu_count()
 
 # Set number of replications for the randomization distribution
-R = 100
+R = 100000
 
 # Set number of balancing regressions
 Breg = 10
@@ -548,7 +548,7 @@ pd.set_option('display.precision', 3)
 chdir(mdir+fdir)
 
 # Go through all families
-for family in neighborhood:
+for f, family in enumerate(neighborhood):
     # Get number of family members
     M = len(family)
 
@@ -615,7 +615,7 @@ for family in neighborhood:
     # ITT follow-up sample, but only for those people who are in the original ITT
     # sample
     P = Parallel(n_jobs=ncores)( delayed(permute_p)
-        (Y=Y, X=Xitt, Isamp=I_resitt[I_itt], ntreat=ntreat, balvars=BV, seed=r,
+        (Y=Y, X=Xitt, Isamp=I_resitt[I_itt], ntreat=ntreat, balvars=BV, seed=f*R+r,
         Breg=Breg)
         for r in range(R) )
 
