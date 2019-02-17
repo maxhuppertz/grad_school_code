@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import FormatStrFormatter
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from inspect import getsourcefile
 from os import chdir, mkdir, path, mkdir
 
 # Set graph options
@@ -16,7 +17,7 @@ plt.rc('text', usetex=True)
 matplotlib.rcParams["text.latex.preamble"].append(r'\usepackage{amsmath}')
 
 # Specify name for main directory (just uses the file's directory)
-mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
+mdir = path.dirname(path.abspath(getsourcefile(lambda:0))).replace('\\', '/')
 
 # Set figures directory (doesn't need to exist)
 fdir = '/figures'

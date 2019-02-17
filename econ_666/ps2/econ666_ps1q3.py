@@ -1,5 +1,7 @@
 ################################################################################
 ### Econ 666, PS2Q1: Multiple testing
+### Recreates some results from Ashraf, Field, and Lee (2014)
+### Then uses multiple testing corrections to adjust p-values
 ################################################################################
 
 # Import necessary packages and functions
@@ -8,12 +10,26 @@ import numpy as np
 import pandas as pd
 import re
 import requests
+from inspect import getsourcefile
 from joblib import Parallel, delayed
-from linreg import ols
 from multiprocessing import cpu_count
 from os import chdir, mkdir, path
 from shutil import copyfile, rmtree
 from zipfile import ZipFile
+
+# Specify name for main directory (just uses the file's directory)
+# I used to use path.abspath(__file__), but apparently, it may be a better idea
+# to use getsourcefile() instead of __file__ to make sure this runs on
+# different OSs. I just give it an object, and it checks which file defined it.
+# But since the object I give it is an inline function lambda, which was
+# created in this file, it points to this file
+mdir = path.dirname(path.abspath(getsourcefile(lambda:0))).replace('\\', '/')
+
+# Change to main directory
+chdir(mdir)
+
+# Import custom packages (have to be in the main directory)
+from linreg import ols
 
 ################################################################################
 ### Part 1: Define necessary functions
@@ -21,6 +37,12 @@ from zipfile import ZipFile
 
 # Define a function to do the Bonferroni correction
 def bonferroni(p):
+    # Inputs
+    # p: [M,k] matrix, p-values for the original hypotheses
+    #
+    # Outputs
+    # p_bc: [M,k] matrix, Bonferroni-adjusted p-values
+
     # Get number of members in the family M, and number of parameters of
     # interest k
     M, k = p.shape
@@ -33,6 +55,15 @@ def bonferroni(p):
 
 # Define a function to get Holm-Bonferroni adjusted p-values
 def holm_bonferroni(p, alpha=.05, order='F'):
+    # Inputs
+    # p: [M,k] matrix, p-values for the original hypotheses
+    # alpha: scalar, level of test used
+    # order: string, one of 'C', 'F', or 'A', specificies how to flatten and
+    #        reshape the input p-values (does not really matter)
+    #
+    # Outputs
+    # p_hb: [M,k] matrix, Holm-Bonferroni adjusted p-values
+
     # Get original dimensions of p-values, which might be provided as a matrix
     M, k = p.shape
 
@@ -77,19 +108,61 @@ def holm_bonferroni(p, alpha=.05, order='F'):
 # Define a function to do one interation of the free step down resampling
 # algorithm (that is, one treatment reassignment plus calculating the
 # corresponding p-values)
-def permute_p(Y, Isamp, ntreat, balvars, X=None, Z=None, seed=1,
-    Breg=2, breg_icept=True, cov_est='hmsd', order='F', shape=None):
+def permute_p(Y, Isamp, ntreat, balvars, prank, X=None, Z=None, seed=1,
+    Breg=10, breg_icept=True, cov_est='hmsd', order='F', shape=None):
+    # Inputs
+    # Y: [N,M] matrix, data for each of the M outcomes in the family
+    # Isamp: [N,1] vector, estimation sample to use. (If treatment assignment is
+    #        at a higher level than the estimation, e.g. because the estimatiion
+    #        is for a follow-up sample, this function will reassign treatment at
+    #        the higher level, but use only the subsample that survives to
+    #        follow-up for any estimations.)
+    # ntreat: scalar, number of treated units
+    # balvars: [N,B] matrix, data for each of the B balancing variables
+    # prank: [M,1] list-like (one dimensional), original order of the p-values,
+    #        from smallest to largest
+    # X: [N,D] matrix, data for covariates to include when estimating
+    #    regressions, but without saving their p-values
+    # Z: [N,E] matrix, data for covariates of interest, will be included in the
+    #    estimations, and their p-values will be recorded
+    # seed: scalar, random number generator's seed
+    # Breg: scalar, number of balancing regressions to use
+    # breg_icept: boolean, if true, balancing regressions will include an
+    #             intercept
+    # cov_est: string, covariance estimator to use (see ols() in linreg.py for
+    #          available options)
+    # order: string, one of 'C', 'F', or 'A', specificies how to flatten and
+    #        reshape the input p-values (does not really matter)
+    # shape: tuple, shape into which to reshape the p-values before outputting
+    #
+    # Outputs
+    # p_star: vector or matrix, shape depends on whether Z is included, and
+    #         whether shape was specified,  permutation p-values for one
+    #         iteration of the free step-down randomization
+
     # Set random number generator's seed
     np.random.seed(seed)
 
     # Get total sample size N and number of outcome variables M
     N, M = Y.shape
 
+    # Figure out the index of the parameter of interest
     if X is None and Z is None:
+        # If no other RHS variables are being used, it's just the first element
+        # of the estimates vector
         cidx = [0]
     elif X is not None and Z is None:
+        # If RHS variables are being inserted before it, figure out how many,
+        # and use the next index
         cidx = [X.shape[1]]
     else:
+        # If RHS variables of interest are included after it, include their
+        # indices as well
+        if X is none:
+            # If X wasn't specified, just make a [0,0] array for it
+            X = np.empty(shape=(0,0))
+
+        # Get the coefficient indices
         cidx = [X.shape[1]] + [z + X.shape[1] + 1 for z in range(Z.shape[1])]
 
     # Get number of tests
@@ -150,7 +223,7 @@ def permute_p(Y, Isamp, ntreat, balvars, X=None, Z=None, seed=1,
         # instead.
         if np.amax(np.abs(t[:,0])) <= tmax:
             # If so, save the new minmax t-statistic
-            tmax = np.amax(t)
+            tmax = np.amax(np.abs(t[:,0]))
 
             # Save the treatment assignment
             W = Wb
@@ -179,15 +252,25 @@ def permute_p(Y, Isamp, ntreat, balvars, X=None, Z=None, seed=1,
         else:
             Xstar = W[I]
 
-        # If add was specified, add it in after the treatment assignment
+        # If Z was specified, add it in after the treatment assignment
         if Z is not None:
             Xstar = np.concatenate((Xstar, Z[I]), axis=1)
 
         # Run OLS
-        _, _, _, p = ols(y, Xstar, cov_est='hmsd')
+        _, _, _, p = ols(y, Xstar, cov_est=cov_est)
 
         # Save only p-values of interest
         pstar[i,:] = p[cidx]
+    # Reorder p-values in the original order (lowest to highest)
+    pstar_reord = pstar[prank]
+
+    # Got through all p-values
+    for i in range(T):
+        # Replace them as the minimum across all originally larger p-values
+        pstar_reord[i,:] = np.amin(pstar_reord[i:,:])
+
+    # Put p-values back into the order of hypotheses being tested
+    for sorti, origi in enumerate(prank): pstar[origi] = pstar_reord[sorti]
 
     # Reshape the result if desired
     if shape is not None:
@@ -199,9 +282,6 @@ def permute_p(Y, Isamp, ntreat, balvars, X=None, Z=None, seed=1,
 ################################################################################
 ### Part 2.1: Set directories
 ################################################################################
-
-# Specify name for main directory (just uses the file's directory)
-mdir = path.dirname(path.abspath(__file__)).replace('\\', '/')
 
 # Set data directory (doesn't need to exist, if you choose to download the data)
 ddir = '/data'
@@ -233,7 +313,7 @@ chdir(mdir+ddir)
 data_file = 'fertility_regressions.dta'
 
 # Specify whether to download the data, or use a local copy instead
-download_data = False
+download_data = True
 
 # This gets overridden if the data directory didn't exist before
 if download_enforce:
@@ -427,10 +507,6 @@ data[v_happier] = (
 # Replace it as missing if the happiness score is missing
 data.loc[np.isnan(data[v_happy_detail]), v_happier] = np.nan
 
-#eststo D: reg satisfied Icouples if ittsample4_follow == 1 & responder_m==1
-#eststo E: reg healthier Icouples if ittsample4_follow == 1 & responder_m==1
-#eststo F: reg happier Icouples if ittsample4_follow == 1 & responder_m==1
-
 ################################################################################
 ### Part 3.3: Negative side effects
 ################################################################################
@@ -460,10 +536,6 @@ data[v_condom] = (data[v_condom_detail] == 1)
 
 # Replace it as missing if the condom usage data are missing
 data.loc[np.isnan(data[v_condom_detail]), v_condom] = np.nan
-
-#eststo D: reg separated2 Icouples if ittsample4_follow == 1 & responder_m==1
-#eststo E: reg violence_follow Icouples if ittsample4_follow == 1 & responder_m==1
-#eststo F: reg cur_using_condom Icouples if ittsample4_follow == 1 & responder_m==1
 
 ################################################################################
 ### Part 5: Adjusted p-values
@@ -514,8 +586,8 @@ Xitt = np.array(data.loc[I_itt, v_couple_treatment].astype(int).values,
 # Calculate number of treated units in the sample
 ntreat = np.sum(Xitt)
 
-# Add an intercept
-Xitt = np.concatenate((np.ones(shape=(Xitt.shape[0],1)), Xitt), axis=1)
+# Make an intercept for the ITT sample
+beta0 = np.ones(shape=(Xitt.shape[0],1))
 
 # Specify balancing variable for minmax t randomization
 balvars = ['a16_3_ageinyrs', 'school', 'step3_numchildren', 'e1_ideal',
@@ -531,7 +603,7 @@ ncores = cpu_count()
 R = 100000
 
 # Set number of balancing regressions
-Breg = 10
+Breg = 100
 
 # Specify some column headers for printing the results later
 col_headers = ['N', 'b_hat', 'SE', 'p', 'p_bf', 'p_hbf', 'p_sr']
@@ -547,18 +619,26 @@ pd.set_option('display.precision', 3)
 # Change directory to figures/tables
 chdir(mdir+fdir)
 
+# Print an empty line before printing other output
+print()
+
+# Print the number of replications and balancing regressions
+print(R, ' replications for RD, ', Breg,
+      ' balancing regressions', sep='')
+print()
+
 # Go through all families
 for f, family in enumerate(neighborhood):
     # Get number of family members
     M = len(family)
 
-    # Get the data for responders in the ITT follow-up sample, making sure these are
-    # provided in float format
+    # Get the data for responders in the ITT follow-up sample, making sure these
+    # are provided in float format
     Y = data.loc[I_resitt, family].astype(float).values
 
-    # Set up vector of coefficient estimates b, vector of standard errors SE, and
-    # vector of unadjusted p-values p (these could be matrices if I cared about more
-    # than one treatment arm or something)
+    # Set up vector of coefficient estimates b, vector of standard errors SE,
+    # and vector of unadjusted p-values p (these could be matrices if I cared
+    # about more than one treatment arm or something)
     b = np.zeros(shape=(M,k))
     SE = np.zeros(shape=(M,k))
     p_unadj = np.zeros(shape=(M,k))
@@ -610,30 +690,30 @@ for f, family in enumerate(neighborhood):
     # Get data for ITT sample
     Y = data.loc[I_itt, family].astype(float).values
 
-    # Get randomization p-values using all available cores in parallel. Note that
-    # the sample index this gets is the indicator for being a responder and in the
-    # ITT follow-up sample, but only for those people who are in the original ITT
-    # sample
+    # Get the ranking of unadjusted p-values
+    p_unadj_sort_idx = p_unadj[:,0].argsort()
+
+    # Get randomization p-values using all available cores in parallel. Note
+    # that the sample index this gets is the indicator for being a responder and
+    # in the ITT follow-up sample, but only for those people who are in the
+    # original ITT sample
     P = Parallel(n_jobs=ncores)( delayed(permute_p)
-        (Y=Y, X=Xitt, Isamp=I_resitt[I_itt], ntreat=ntreat, balvars=BV, seed=f*R+r,
-        Breg=Breg)
+        (Y=Y, X=beta0, Isamp=I_resitt[I_itt], ntreat=ntreat,
+         prank=p_unadj_sort_idx, balvars=BV, seed=f*R+r, Breg=Breg)
         for r in range(R) )
 
     # Count how often the randomization values are below the original p-values
-    P = np.sum([(p_star < p_unadj) for p_star in P], axis=0)
+    P = np.sum([(p_star <= p_unadj) for p_star in P], axis=0)
 
     # Divide by the number of iterations
     P = P / R
 
-    # Get the ranking of unadjusted p-values
-    p_unadj_sort_idx = p_unadj[:,0].argsort()
-
-    # Order the permutation p-values
+    # Order the permutation p-values in the same way
     P = P[p_unadj_sort_idx]
 
     # Go through all but the first p-values
     for i in range(P.shape[0]-1):
-        # Replaces the current adjusted p-value with the preceding one if that
+        # Replace the current adjusted p-value with the preceding one if that
         # is larger
         P[i+1] = np.maximum(P[i], P[i+1])
 
@@ -649,9 +729,8 @@ for f, family in enumerate(neighborhood):
 
     # Put the results into a data frame, add column labels
     res = pd.DataFrame(
-        data=np.concatenate((N, b, SE, p_unadj, p_bonf, p_holmbonf, P_sr), axis=1),
-        columns=col_headers
-        )
+        data=np.concatenate((N, b, SE, p_unadj, p_bonf, p_holmbonf, P_sr),
+        axis=1), columns=col_headers)
 
     # Make sure sample sizes are saved as integers
     res[col_headers[0]] = res[col_headers[0]].astype(int)
