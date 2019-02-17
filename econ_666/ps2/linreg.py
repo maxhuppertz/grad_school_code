@@ -47,7 +47,8 @@ def ols(y, X, get_cov=True, cov_est='hc1', get_t=True, get_p=True):
 
         # Check which covariance estimator to use
         if cov_est == 'hmsd':
-            # For the homoskedastic estimator, just calculate the standard variance
+            # For the homoskedastic estimator, just calculate the standard
+            # variance
             V_hat = ( 1 / (n - k) ) * XXinv * (U_hat.transpose() @ U_hat)
         elif cov_est == 'hc1':
             # Calculate component of middle part of EHW sandwich,

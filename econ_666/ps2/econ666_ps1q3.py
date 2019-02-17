@@ -547,7 +547,7 @@ sad_family = [v_separated, v_violence, v_condom]
 happy_family = [v_satisfied, v_healthier, v_happier]
 
 # Combine them into one family
-big_family = sad_family + happy_family
+big_family = happy_family + sad_family
 
 # Collect all families
 neighborhood = [big_family, happy_family, sad_family]
@@ -745,4 +745,4 @@ for f, family in enumerate(neighborhood):
     print(res, '\n')
 
     # Save results as Latex table
-    res.to_latex('results_'+family_name[tuple(family)]+'.tex', index=False)
+    res.to_latex('results_'+family_name[tuple(family)]+'.tex', index=True)
