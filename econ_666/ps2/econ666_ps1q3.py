@@ -279,6 +279,83 @@ def permute_p(Y, Isamp, ntreat, balvars, prank, X=None, Z=None, seed=1,
     # Return the adjusted p-values
     return pstar
 
+# Define a function to run the Benjamini-Hochberg FDR control for a set of
+# p-values
+def benjamini_hochberg(p, tol=10**(-6), order='F'):
+    # Save the shape of the input array of p-values
+    [M,k] = p.shape
+
+    # Flatten the p-values
+    p = p.flatten(order=order)
+
+    # Get indices of sorted p-values
+    p_sorted_index = p.argsort()
+
+    # Sort the p-values
+    p = p[p_sorted_index]
+
+    # Get number of tests T
+    T = M*k
+
+    # Make vectors of upper and lower boundaries for p-values
+    qlo = np.zeros(shape=(T,1))
+    qhi = np.ones(shape=(T,1))
+
+    # Go through all tests (the index is increasing, but I will work from the
+    # largest p-value down to the smallest)
+    for i in range(T):
+        # Set up a convergence indicator
+        converged = False
+
+        # Check whether this is any p-value but the largest
+        if i != 0:
+            # If it is not, replace the upper bound as the q-value from the last
+            # iteration, i.e. from the last p-value, since the current test
+            # would automatically be rejected if the preceding one was rejected.
+            # (Which implies that the q-value for the current test has to be
+            # at least weakly lower than that for the preceding one.)
+            qhi[M-i-1,0] = qhi[M-i,0]
+
+        # Iterate until convergence is achieved
+        while not converged:
+            # Calculate the midpoint between the lower and upper bound on the
+            # current p-value, starting with the highest and working my way down
+            # as i increases
+            mp = (qlo[M-i-1,0] + qhi[M-i-1,0]) / 2
+
+            # Check whether I would reject at the midpoint, using the Benjamini-
+            # Hochberg criterion
+            rej_mp = (p[M-i-1] < (mp * (M-i)) / M)
+
+            # Check whether I rejected
+            if rej_mp:
+                # If so, make the midpoint the new upper bound, since the value
+                # I'm looking for, which is the lowest q at which I would
+                # reject, must be below it
+                qhi[M-i-1,0] = mp
+            else:
+                # Otherwise, make the midpoint the new lower bound, for the same
+                # reason, but from below
+                qlo[M-i-1,0] = mp
+
+            # Check whether the bounds are within tolerance
+            if np.abs(qlo[M-i-1,0] - qhi[M-i-1,0]) <= tol:
+                # If so, set the convergence flag to one
+                converged = True
+
+    # Calculate q-values
+    q_unord = (qhi + qlo) / 2
+    q_ord = np.zeros(shape=q_unord.shape)
+
+    # Put the q-values back in the same order as the input p-values
+    for sorti, origi in enumerate(p_sorted_index): q_ord[origi] = q_unord[sorti]
+
+    # Put the ordered q-values back in the same shape as the input p-values
+    q_ord = np.reshape(q_ord, newshape=(M,k), order=order)
+
+    # Return the q-values
+    return q_ord
+
 ################################################################################
 ### Part 2.1: Set directories
 ################################################################################
@@ -606,13 +683,13 @@ R = 100000
 Breg = 100
 
 # Specify some column headers for printing the results later
-col_headers = ['N', 'b_hat', 'SE', 'p', 'p_bf', 'p_hbf', 'p_sr']
+col_headers = ['N', 'b_hat', 'SE', 'p', 'p_bf', 'p_hbf', 'p_sr', 'q_bh']
 
 # Specify a label for the outcome column separately
 lab_outcome = 'outcome'
 
 # Set pandas print options
-pd.set_option('display.max_columns', len(big_family)+1)
+pd.set_option('display.max_columns', len(big_family)+2)
 pd.set_option('display.width', 110)
 pd.set_option('display.precision', 3)
 
@@ -724,19 +801,26 @@ for f, family in enumerate(neighborhood):
     for sorti, origi in enumerate(p_unadj_sort_idx): P_sr[origi] = P[sorti]
 
     ############################################################################
-    ### Part 6: Print the results
+    ### Part 6: Benjamini-Hochberg FDR control
+    ############################################################################
+
+    # Calculate the Benjamini-Hochberg q-values
+    q_bh = benjamini_hochberg(p_unadj)
+
+    ############################################################################
+    ### Part 7: Print the results
     ############################################################################
 
     # Put the results into a data frame, add column labels
     res = pd.DataFrame(
-        data=np.concatenate((N, b, SE, p_unadj, p_bonf, p_holmbonf, P_sr),
+        data=np.concatenate((N, b, SE, p_unadj, p_bonf, p_holmbonf, P_sr, q_bh),
         axis=1), columns=col_headers)
 
     # Make sure sample sizes are saved as integers
     res[col_headers[0]] = res[col_headers[0]].astype(int)
 
     # Add outcome labels to the results data frame
-    res.insert(loc=0, column=lab_outcome, value=family)
+    res.insert(loc=0, column=lab_outcome, value=[f.capitalize() for f in family])
 
     # Use these as the new index
     res.set_index(lab_outcome, inplace=True)
