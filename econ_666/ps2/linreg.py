@@ -1,10 +1,12 @@
 # Import necessary packages
 import numpy as np
+import pandas as pd
 from numpy.linalg import solve
 from scipy.stats import norm
 
 # This function just runs a standard linear regression of y on X
-def ols(y, X, get_cov=True, cov_est='hc1', get_t=True, get_p=True):
+def ols(y, X, get_cov=True, cov_est='hc1', get_t=True, get_p=True,
+        clustvar=None):
     # Inputs
     # y: [n,1] vector, LHS variables
     # X: [n,k] matrix, RHS variables
@@ -58,6 +60,21 @@ def ols(y, X, get_cov=True, cov_est='hc1', get_t=True, get_p=True):
 
             # Calculate EHW variance/covariance matrix
             V_hat = ( n / (n - k) ) * XXinv @ (S.transpose() @ S) @ XXinv
+        elif cov_est == 'cluster':
+            # Calculate number of clusters
+            J = len(np.unique(clustvar))
+
+            # Same thing as S above, but needs to be a DataFrame, because pandas
+            # has the groupby method, which is needed in the next step
+            S = pd.DataFrame((U_hat @ np.ones(shape=(1,k))) * X)
+
+            # Sum all covariates within clusters
+            S = S.groupby(clustvar[:,0], axis=0).sum().values
+
+            # Calculate cluster-robust variance estimator
+            V_hat = (
+                ( n / (n - k) ) * ( J / (J - 1) )
+                * XXinv @ (S.transpose() @ S) @ XXinv)
         else:
             # Print an error message
             print('Error in ',ols.__name__,'(): The specified covariance '
