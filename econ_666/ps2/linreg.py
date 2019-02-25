@@ -4,6 +4,30 @@ import pandas as pd
 from numpy.linalg import solve
 from scipy.stats import norm
 
+# This function takes an input and converts it to a 'tall' array; that is, this
+# creates a two-dimensional output (vector or matrix), and the first dimension
+# will be longer than the second dimension
+def colvec(x):
+    # Inputs
+    # x: [n, k] array-like, has to be convertible to a Numpy array
+    #
+    # Outputs
+    # X: [max(n,k), min(n,k)] array
+
+    # Convert input into a two-dimensional Numpy array
+    X = np.array(x, ndmin=2)
+
+    # Get the shape of the array
+    n, k = X.shape
+
+    # Check whether the second dimension is larger than the first
+    if k > n:
+        # If so, take the transpose
+        X = X.transpose()
+
+    # Return the array
+    return X
+
 # This function just runs a standard linear regression of y on X
 def ols(y, X, get_cov=True, cov_est='hc1', get_t=True, get_p=True,
         clustvar=None):

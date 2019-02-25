@@ -522,7 +522,7 @@ data[v_husb_wants_kids] = (
 #
 # replace h_wantsmore_ideal_m = . if (d_e12_hus_ideal==1 | currentnumchildren==.) & (e17morekids==-9)
 #
-# which corrects the issue with missing values for  e12_hus_ideal or
+# which corrects the issue with missing values for e12_hus_ideal or
 # currentnumchildren making the variable true. But it doesn't solve the
 # same issue for e17morekids, since that is sometimes coded as -9 (which means
 # the responder said she they don't know), but in other cases, it's just coded

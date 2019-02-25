@@ -41,9 +41,9 @@ from linreg import ols
 ################################################################################
 
 # Set graph options
-#mpl.rcParams["text.latex.preamble"].append(r'\usepackage{amsmath}')
-#plt.rc('font', **{'family': 'serif', 'serif': ['lmodern']})
-#plt.rc('text', usetex=True)
+mpl.rcParams["text.latex.preamble"].append(r'\usepackage{amsmath}')
+plt.rc('font', **{'family': 'serif', 'serif': ['lmodern']})
+plt.rc('text', usetex=True)
 
 # Set figures/tables directory (doesn't need to exist)
 fdir = '/figures'
@@ -134,10 +134,10 @@ print('\n2(b) Sample size needed:', N_q2b)
 N_q2c = 200
 
 # Set up distribution for unskilled outcomes
-F_unskilled = t(df=p*N_q2c-2)
+F_unskilled = t(df=N_q2c-2)
 
 # Set up distribution for treated outcomes
-F_treated = t(df=p*N_q2c-2, loc=beta)
+F_treated = t(df=N_q2c-2, loc=beta)
 
 # Calculate the power
 kappa_q2c = F_treated.cdf(
@@ -176,13 +176,13 @@ def MDE(N, alpha, kappa, p, sigma2, F_crit=None, sigma_ovr=None):
         # Numpy column vector; see question 2(h) for why that is useful
         if F_crit is None:
             # Distribution for the control group
-            Fc = t(df=p*N-2)
+            Fc = t(df=N-2)
 
             # Get the critical value from that distribution
             crit_control = Fc.ppf(1-alpha/2)
 
             # Distribution for the treatment group
-            Ft = t(df=p*N-2, loc=E)
+            Ft = t(df=N-2, loc=E)
 
             # Get the critical value for the treatment group
             crit_treatment = Ft.ppf(kappa)
@@ -429,10 +429,15 @@ y = y_unskilled + beta * W
 cons = np.ones(shape=(N_q2h, 1))
 
 # Specify number of simulations to get the randomization distribution
-R = 100000
+R = 10000
+
+# Make a village dummy
+D = np.zeros(shape=(y.shape[0],1))
+
+D[V_lg == 1] = 1
 
 # Define a function to do one iteration of the randomization distribution
-def random_t(y, x1, V, N_0, N_1, p_0, p_1, seed):
+def random_t(y, x1, V, N_0, N_1, p_0, p_1, seed, D):
     # Set random number generator's seed
     np.random.seed(seed)
 
@@ -453,7 +458,7 @@ def random_t(y, x1, V, N_0, N_1, p_0, p_1, seed):
     W = np.array(W, ndmin=2).transpose()
 
     # Generate RHS data
-    X = np.concatenate((x1, W), axis=1)
+    X = np.concatenate((x1, W, D), axis=1)
 
     # Estimate regression, get coefficients and t-statistics
     b, _, t = ols(y, X, cov_est='hmsd', get_p=False)
@@ -467,7 +472,7 @@ ncores = cpu_count()
 # Get results
 res = Parallel(n_jobs=ncores)(
     delayed(random_t)
-    (y=y, x1=cons, V=V_lg, N_0=N_sm, N_1=N_lg, p_0=p_sm, p_1=p_lg, seed = r)
+    (y=y, x1=cons, V=V_lg, N_0=N_sm, N_1=N_lg, p_0=p_sm, p_1=p_lg, seed = r, D=D)
     for r in range(R))
 
 # Make the results into a Numpy array
@@ -530,6 +535,10 @@ V_lg = np.random.normal(size=N_q2h)
 # Allocate everyone ranked at or below the number of people in large villages
 # to a large village; that is, V[i] = 1 <=> i lives in a large village
 V_lg = (V_lg.argsort() + 1 <= N_lg)
+
+D = np.zeros(shape=(y.shape[0],1))
+
+D[V_lg == 1] = 1
 
 # Stack the village level effects for large villages (this uses the first J_lg
 # village level effects)
@@ -603,7 +612,7 @@ y = y_unskilled + beta * W
 
 # Define a function to do one iteration of the randomization distribution
 def random_t_cls(N, y, x1, V_1, Vid, Vid_0, Vid_1, J_0, J_1, N_0, N_1, p_0, p_1,
-                 seed):
+                 seed, D):
     # Set random number generator's seed
     np.random.seed(seed)
 
@@ -644,7 +653,7 @@ def random_t_cls(N, y, x1, V_1, Vid, Vid_0, Vid_1, J_0, J_1, N_0, N_1, p_0, p_1,
     W = np.array(W, ndmin=2).transpose()
 
     # Generate RHS data
-    X = np.concatenate((x1, W), axis=1)
+    X = np.concatenate((x1, W, D), axis=1)
 
     # Estimate regression, get coefficients and t-statistics
     b, _, t = ols(y, X, cov_est='cluster', clustvar=Vid, get_p=False)
@@ -656,7 +665,7 @@ def random_t_cls(N, y, x1, V_1, Vid, Vid_0, Vid_1, J_0, J_1, N_0, N_1, p_0, p_1,
 res = Parallel(n_jobs=ncores)(
     delayed(random_t_cls)
     (N=N_q2h, y=y, x1=cons, V_1=V_lg, Vid=Vid, Vid_0=Vid_sm, Vid_1=Vid_lg,
-     J_0=J_sm, J_1=J_lg, N_0=N_sm, N_1=N_lg, p_0=p_sm, p_1=p_lg, seed = r)
+     J_0=J_sm, J_1=J_lg, N_0=N_sm, N_1=N_lg, p_0=p_sm, p_1=p_lg, seed = r, D=D)
     for r in range(R))
 
 # Make the results into a Numpy array
