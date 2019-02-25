@@ -1,0 +1,135 @@
+################################################################################
+### ECON 632: PS2Q1 - Descriptive statistics
+################################################################################
+
+# Import matplotlib
+import matplotlib as mpl
+
+# Select backend that does not open figures interactively (has to be done before
+# pyplot is imported); without this, Python will get confused when it tries to
+# close figures, and it will send annoying warnings
+mpl.use('Agg')
+
+# Import other necessary packages and functions
+import matplotlib.pyplot as plt
+import pandas as pd
+from inspect import getsourcefile
+from os import chdir, mkdir, path
+
+################################################################################
+### Directories, custom packages, graph options
+################################################################################
+
+# Specify name for main directory (just uses the file's directory)
+# I used to use path.abspath(__file__), but apparently, it may be a better idea
+# to use getsourcefile() instead of __file__ to make sure this runs on
+# different OSs. I just give it an object, and it checks which file defined it.
+# But since the object I give it is an inline function lambda, which was
+# created in this file, it points to this file
+mdir = path.dirname(path.abspath(getsourcefile(lambda:0))).replace('\\', '/')
+
+# Change to main directory
+chdir(mdir)
+
+# Import custom packages (have to be in the main directory)
+from linreg import larry, ols
+
+# Set graph options
+#mpl.rcParams["text.latex.preamble"].append(r'\usepackage{amsmath}')
+#plt.rc('font', **{'family': 'serif', 'serif': ['lmodern']})
+#plt.rc('text', usetex=True)
+
+# Set data directory (has to exist and contain insurance_data.csv)
+ddir = '/data'
+
+# Set figures/tables directory (doesn't need to exist)
+fdir = '/figures'
+
+# Create the figures directory if it doesn't exist
+if not path.isdir(mdir+fdir):
+    mkdir(mdir+fdir)
+
+# Choose figure format
+ffmt = '.pdf'
+
+################################################################################
+### Load data, generate additional variables
+################################################################################
+
+# Change to data directory
+chdir(mdir+ddir)
+
+# Specify name of main data set
+fname = 'insurance_data.csv'
+
+# Specify name of individual ID variable
+v_id = 'indiv_id'
+
+# Specify name of choice situation ID variable
+v_cs = 'choice_sit'
+
+# Load the data
+insurance_data = pd.read_csv(fname, index_col=[v_id, v_cs])
+
+# Specify plan ID variable
+v_pid = 'plan_id'
+
+# Specify variable containing ID of chosen plan
+v_cid = 'plan_choice'
+
+# Specify name of premium variable
+v_pre = 'premium'
+
+# Specify name of coverage variable
+v_cov = 'plan_coverage'
+
+# Make an indicator for a plan being chosen
+i_chosen_plan = insurance_data[v_pid] == insurance_data[v_cid]
+
+temp = insurance_data.loc[i_chosen_plan, [v_pre, v_cov]]
+pfx_c = 'chosen_'
+newcols = {}
+for var in list(temp):
+    newcols[var] = pfx_c+var
+
+temp = temp.rename(newcols, axis=1)
+print(temp.index.names)
+
+insurance_data = insurance_data.merge(temp, on=[v_id, v_cs])
+
+# Print general descriptives
+print('\n', insurance_data.describe())
+
+################################################################################
+### Make figures
+################################################################################
+
+# Change to figures directory
+chdir(mdir+fdir)
+
+fname = 'premium_coverage_risk_score'
+fig, ax = plt.subplots(2, 1, num=fname, figsize=(6.5, 2*6.5*(9/16)))
+
+ax[0].scatter(insurance_data.loc[i_chosen_plan, 'risk_score'].groupby(v_id).mean(), insurance_data.loc[i_chosen_plan, 'premium'].groupby(v_id).mean())
+
+# Label y axis, set label position
+ax[0].set_ylabel(r'Premium', fontsize=11)
+
+# Label x axis, set label position
+
+ax[0].set_xlabel('Risk score', fontsize=11)
+
+ax[1].scatter(insurance_data.loc[i_chosen_plan, 'risk_score'].groupby(v_id).mean(), insurance_data.loc[i_chosen_plan, 'plan_coverage'].groupby(v_id).mean())
+
+# Label y axis, set label position
+ax[1].set_ylabel(r'Coverage', fontsize=11)
+
+# Label x axis, set label position
+ax[0].set_xlabel('Risk score', fontsize=11)
+
+plt.savefig(fname+ffmt)
+
+plt.close(fname)
+
+print('done')
+#
