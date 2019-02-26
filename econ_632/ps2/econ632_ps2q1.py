@@ -267,99 +267,89 @@ insurance_data_red = insurance_data.loc[v_chosen]
 ################################################################################
 
 ################################################################################
-### Part 3.1: Switching measures
+### Part 3.1: Dominated choices
 ################################################################################
 
-# Specify names of dominated choice measures
-domfrac_names = ['Dominated choices (coverage)', 'Dominated choices (quality)',
-                 'Dominated choices (both)']
-
-# Specify labels for plotting these
-domfrac_plotnames = ['Coverage', 'Quality', 'Both']
-
-# These will be put into a DataFrame. Specify a name for its (only) column.
-col = ['Value']
+# Specify names of dominated choice measures, as a dictionary. Each entry should
+# return the corresponding variable.
+dominance_measures = {'Coverage': v_dom_pc, 'Quality': v_dom_pq,
+                      'Both': v_dom_all}
 
 # Set up dominated choices measures DataFrame
-domfrac = pd.DataFrame(np.zeros(shape=(len(domfrac_names),1)),
-                       index=domfrac_names, columns=col)
+domfrac = pd.DataFrame(np.zeros(shape=(len(dominance_measures), 2)))
 
-# Calculate fraction of choices dominated by the premium and coverage measure
-domfrac.loc[domfrac_names[0], col] = insurance_data_red[v_dom_pc].mean()
+# Go through all dominance measures
+for i, measure in enumerate(dominance_measures):
+    # Get the corresponding variable
+    var = dominance_measures[measure]
 
-# Calculate fraction of choices dominated by the premium and quality measure
-domfrac.loc[domfrac_names[1], col] = insurance_data_red[v_dom_pq].mean()
+    # Record the name of the measures
+    domfrac.loc[i, 0] = measure
 
-# Calculate fraction of choices dominated by both measures
-domfrac.loc[domfrac_names[2], col] = insurance_data_red[v_dom_all].mean()
+    # Calculate the mean of the variable
+    domfrac.loc[i, 1] = insurance_data_red[var].mean()
 
 # Print dominated choices measures
-print('\n', domfrac.to_string())
+print('\nDominance measures\n',
+      domfrac.to_string(header=['Measure', 'Value']), sep='')
 
-# Specify names of switching measures
-switchfrac_names = ['Switches without tool', 'Switches with tool',
-                    'Dominated (coverage), no tool',
-                    'Dominated (coverage), tool',
-                    'Dominated (quality), no tool',
-                    'Dominated (quality), tool',
-                    'Dominated (both), no tool', 'Dominated (both), tool']
+################################################################################
+### Part 3.2: Switching measures
+################################################################################
 
-# Make versions of these for plotting (the with / without tool will be handled
-# by shading in the bars, so that's not needed here)
-switchfrac_plotnames = ['Fraction switching',
-                        'Dominated \n switches \n (coverage)',
-                        'Dominated \n switches \n (quality)',
-                        'Dominated \n switches \n (both)']
+# Make an index for people not having the tool (i.e. a Boolean array)
+idx_notool = (insurance_data_red[v_tool] == 0)
+
+# Make an index for people having the tool
+idx_tool = (insurance_data_red[v_tool] == 1)
+
+# Put them into a list
+ics_tool = [idx_notool, idx_tool]
+
+# Make an index for people switching without the tool
+idx_sw_notool = (insurance_data_red[v_tool] == 0) & insurance_data_red[v_switch]
+
+# Make an index for people switching with the tool
+idx_sw_tool = (insurance_data_red[v_tool] == 1) & insurance_data_red[v_switch]
+
+# Put them into a list
+ics_swtool = [idx_sw_notool, idx_sw_tool]
+
+# Specify names of switching measures as keys of this dictionary. Each entry
+# should return first the variable the measure refers to, and second the
+# indices used to condition for that measure when taking the mean.
+switching_measures = {'Fraction switching': [v_switch, ics_tool],
+                      'Dominated \n switches \n (coverage)':
+                      [v_swdom_pc, ics_swtool],
+                      'Dominated \n switches \n (quality)':
+                      [v_swdom_pq, ics_swtool],
+                      'Dominated \n switches \n (both)':
+                      [v_swdom_all, ics_swtool]}
+
+# Make a suffix for tables, indicating whether a measure is conditioned on
+# having or not having the tool available
+tabsuf = [', no tool', ', tool']
 
 # Set up switching measures DataFrame
-switchfrac = pd.DataFrame(np.zeros(shape=(len(switchfrac_names),1)),
-                       index=switchfrac_names, columns=col)
+switchfrac = pd.DataFrame(np.zeros(shape=(len(switching_measures)*2, 2)))
 
-# Calculate fraction of switches without the tool
-switchfrac.loc[switchfrac_names[0], col] = (
-    insurance_data_red.loc[(insurance_data_red[v_tool] == 0), v_switch].mean())
+# Go through all switching measures
+for i, measure in enumerate(switching_measures):
+    # Get the variable and indices
+    var, indices = switching_measures[measure]
 
-# Calculate fraction of switches with tool
-switchfrac.loc[switchfrac_names[1], col] = (
-    insurance_data_red.loc[(insurance_data_red[v_tool] == 1), v_switch].mean())
+    # Go through all conditioning indices
+    for j, idx in enumerate(indices):
+        # Replace the name of the measure in the results table
+        switchfrac.loc[2*i+j, 0] = measure.replace('\n ', '') + tabsuf[j]
 
-# Calculate fraction of switches to plans dominated in terms of premium and
-# coverage without the tool
-switchfrac.loc[switchfrac_names[2], col] = (
-    insurance_data_red.loc[(insurance_data_red[v_tool] == 0)
-                           & insurance_data_red[v_switch], v_swdom_pc].mean())
-
-# Calculate fraction of switches to plans dominated in terms of premium and
-# coverage when a tool was available
-switchfrac.loc[switchfrac_names[3], col] = (
-    insurance_data_red.loc[(insurance_data_red[v_tool] == 1)
-                           & insurance_data_red[v_switch], v_swdom_pc].mean())
-
-# Calculate fraction of switches to plans dominated in terms of premium and
-# service quality without the tool
-switchfrac.loc[switchfrac_names[4], col] = (
-    insurance_data_red.loc[(insurance_data_red[v_tool] == 0)
-                           & insurance_data_red[v_switch], v_swdom_pq].mean())
-
-# Calculate fraction of switches to plans dominated in terms of premium and
-# service quality when a tool was available
-switchfrac.loc[switchfrac_names[5], col] = (
-    insurance_data_red.loc[(insurance_data_red[v_tool] == 1)
-                           & insurance_data_red[v_switch], v_swdom_pq].mean())
-
-# Calculate fraction of switches to completely dominated plans without the tool
-switchfrac.loc[switchfrac_names[6], col] = (
-    insurance_data_red.loc[(insurance_data_red[v_tool] == 0)
-                           & insurance_data_red[v_switch], v_swdom_all].mean())
-
-# Calculate fraction of switches to completely dominated plans when a tool was
-# available
-switchfrac.loc[switchfrac_names[7], col] = (
-    insurance_data_red.loc[(insurance_data_red[v_tool] == 1)
-                           & insurance_data_red[v_switch], v_swdom_all].mean())
+        # Calculate the conditional mean of the measure
+        switchfrac.loc[2*i+j, 1] = (
+            insurance_data_red.loc[idx, var].mean())
 
 # Print switching measures
-print('\n', switchfrac.to_string())
+print('\nSwitching measures\n',
+      switchfrac.to_string(header=['Measure', 'Value']), sep='')
 
 ################################################################################
 ### Part 4: Make figures
@@ -381,7 +371,7 @@ eclr = 'black'
 colors = [mclr, sclr]
 
 # Make a list of patterns
-patterns = ['', '//'] * np.int((len(switchfrac_names) / 2))
+patterns = ['', '//'] * len(switching_measures)
 
 ################################################################################
 ### Part 4.1: Dominated choices
@@ -395,14 +385,14 @@ fig, ax = plt.subplots(1, 1, num=fname, figsize=(6.5, 6.5*(9/16)))
 
 # Plot switching fractions
 bars = ax.bar([x for x in range(len(domfrac_names))],
-              domfrac[col[0]].values, color=mclr,
+              domfrac.loc[:, 1].values, color=mclr,
               edgecolor=eclr, hatch='')
 
 # Set xticks
-ax.set_xticks([x for x in range(len(domfrac_plotnames))])
+ax.set_xticks([x for x in range(len(dominance_measures))])
 
 # Use plot names, change font size
-ax.set_xticklabels(domfrac_plotnames, fontsize=11)
+ax.set_xticklabels(dominance_measures, fontsize=11)
 
 # Don't displat tick marks on the horizontal axis
 ax.tick_params(axis='x', bottom='off')
@@ -430,21 +420,22 @@ fname = 'switch_bar'
 fig, ax = plt.subplots(1, 1, num=fname, figsize=(6.5, 6.5*(9/16)))
 
 # Plot switching fractions
-bars = ax.bar([x for x in range(len(switchfrac_names))],
-              switchfrac[col[0]].values, color=colors,
+bars = ax.bar([x for x in range(len(switching_measures)*2)],
+              switchfrac.loc[:, 1].values, color=colors,
               edgecolor=eclr, hatch='')
 
 # Set xticks
-ax.set_xticks([2*x + .5 for x in range(len(switchfrac_plotnames))])
+ax.set_xticks([2*x + .5 for x in range(len(switching_measures))])
 
-# Set patterns for all bars
+# Go through all bars and their patterns
 for bar, pattern in zip(bars, patterns):
+    # Set the pattern for the bars
     bar.set_hatch(pattern)
 
 # Use plot names, change font size
-ax.set_xticklabels(switchfrac_plotnames, fontsize=11)
+ax.set_xticklabels(switching_measures.keys(), fontsize=11)
 
-# Don't displat tick marks on the horizontal axis
+# Don't display tick marks on the horizontal axis
 ax.tick_params(axis='x', bottom='off')
 
 # Set vertical axis label
