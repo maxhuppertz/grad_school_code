@@ -384,7 +384,7 @@ fname = 'dominated_choices_bar'
 fig, ax = plt.subplots(1, 1, num=fname, figsize=(6.5, 6.5*(9/16)))
 
 # Plot switching fractions
-bars = ax.bar([x for x in range(len(domfrac_names))],
+bars = ax.bar([x for x in range(len(dominance_measures))],
               domfrac.loc[:, 1].values, color=mclr,
               edgecolor=eclr, hatch='')
 
@@ -394,8 +394,10 @@ ax.set_xticks([x for x in range(len(dominance_measures))])
 # Use plot names, change font size
 ax.set_xticklabels(dominance_measures, fontsize=11)
 
-# Don't displat tick marks on the horizontal axis
+# Don't display tick marks on the horizontal axis
 ax.tick_params(axis='x', bottom='off')
+
+ax.set_xlabel('Category in which chosen plan is dominated', fontsize=11)
 
 # Set vertical axis label
 ax.set_ylabel('Fraction', fontsize=11)
@@ -432,15 +434,18 @@ for bar, pattern in zip(bars, patterns):
     # Set the pattern for the bars
     bar.set_hatch(pattern)
 
-# Use plot names, change font size
-ax.set_xticklabels(switching_measures.keys(), fontsize=11)
+# Use plot names, change font size and alignment
+ax.set_xticklabels(switching_measures.keys(), fontsize=11,
+                   verticalalignment='center')
 
-# Don't display tick marks on the horizontal axis
-ax.tick_params(axis='x', bottom='off')
+# Don't display tick marks on the horizontal axis, add some padding so labels
+# stay out of the chart area
+ax.tick_params(axis='x', bottom='off', pad=20)
 
 # Set vertical axis label
 ax.set_ylabel('Fraction', fontsize=11)
 
+# Add a legend
 ax.legend((bars[0], bars[1]), ('Without tool', 'With tool'))
 
 # Make sure all labels are visible (otherwise, they might get cut off)
