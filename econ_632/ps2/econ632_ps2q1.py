@@ -26,6 +26,17 @@ from os import chdir, mkdir, path
 plt.rc('font', **{'family': 'serif', 'serif': ['lmodern']})
 plt.rc('text', usetex=True)
 
+# Set precision for floats
+prec = 3
+
+# Make a string so this can be used with pandas' float_format argument
+fstring = '{:,.'+str(prec)+'f}'
+
+# Set pandas print options
+pd.set_option('display.max_columns', 8)
+pd.set_option('display.width', 110)
+pd.set_option('display.precision', prec)
+
 # Specify name for main directory (just uses the file's directory)
 # I used to use path.abspath(__file__), but apparently, it may be a better idea
 # to use getsourcefile() instead of __file__ to make sure this runs on
@@ -39,6 +50,7 @@ chdir(mdir)
 
 # Import custom packages (have to be in the main directory)
 from linreg import larry, ols
+from texaux import textable
 
 # Set data directory (has to exist and contain insurance_data.csv)
 ddir = '/data'
@@ -211,7 +223,7 @@ v_dom_all = 'dominated_all'
 insurance_data[v_dom_all] = (insurance_data[v_n_better_all] > 0).astype(int)
 
 ################################################################################
-### Part 2.4.1: Switches, switches to dominated plans
+### Part 2.4: Switches, switches to dominated plans
 ################################################################################
 
 # Specify name for plan switching indicator
@@ -256,7 +268,28 @@ insurance_data[v_swdom_all] = (
     insurance_data[v_switch] & insurance_data[v_dom_all]).astype(int)
 
 ################################################################################
-### Part 2.5: Subsetting
+### Part 2.7: Squared variables
+################################################################################
+
+# Specify some further variables, which will be squared in the following
+v_tenure = 'years_enrolled'
+v_age = 'age'
+v_inc = 'income'
+v_rscore = 'risk_score'
+
+# Set prefix and suffix for squared variables
+suf2 = '^2'
+
+# Select which variables to square
+create_squarevars = [v_age, v_tenure, v_inc, v_rscore]
+
+# Go through all variables to be squared
+for var in create_squarevars:
+    # Generate the squared variable
+    insurance_data[var+suf2] = insurance_data[var]**2
+
+################################################################################
+### Part 2.6: Subsetting
 ################################################################################
 
 # Make a version of the data which contains only the rows for chosen plans
@@ -265,6 +298,9 @@ insurance_data_red = insurance_data.loc[v_chosen]
 ################################################################################
 ### Part 3: Calculate descriptive statistics
 ################################################################################
+
+# Change to figures/tables directory
+chdir(mdir+fdir)
 
 ################################################################################
 ### Part 3.1: Dominated choices
@@ -352,11 +388,78 @@ print('\nSwitching measures\n',
       switchfrac.to_string(header=['Measure', 'Value']), sep='')
 
 ################################################################################
-### Part 4: Make figures
+### Part 3.3: Determinants of dominated choices
 ################################################################################
 
-# Change to figures directory
-chdir(mdir+fdir)
+# Specify name of year variable
+v_year = 'year'
+
+# Select which variables to use on the RHS
+Xvars = {v_year: 'Year', v_tenure: 'Tenure',
+         v_tenure+suf2: r'$\text{Tenure}^2$', v_age: 'Age',
+         v_age+suf2: r'$\text{Age}^2$', v_inc: 'Income',
+         v_inc+suf2: r'$\text{Income}^2$', v_rscore: 'Risk score',
+         v_rscore+suf2: r'$\text{Risk score}^2$', v_tool: 'Comparison tool'}
+
+# Create an intercept
+beta0 = np.ones(shape=(insurance_data_red.shape[0], 1))
+
+# Make variables into a matrix
+X = larry(insurance_data_red[list(Xvars)])
+
+# Add the intercept
+X = np.concatenate((beta0, X), axis=1)
+
+# Generate a cluster variable
+clusters = larry(insurance_data_red.index.get_level_values(v_id))
+
+# Set up a DataFrame for the results
+domreg = pd.DataFrame(np.zeros(shape=(X.shape[1]+2, len(dominance_measures)*2)),
+                      index=['y', 'stat',  'Constant'] + list(Xvars))
+
+# Go through all measures of dominated choices
+for i, measure in enumerate(dominance_measures):
+    # Get the variable in question
+    var = dominance_measures[measure]
+
+    # Make it into a column vector
+    y = larry(insurance_data_red[var])
+
+    # Run OLS
+    bhat, _, _, p = ols(y, X, cov_est='cluster', clustvar=clusters)
+
+    # Add outcome name to results DataFrame
+    domreg.iloc[0, 2*i:2*i+2] = measure
+
+    # Add column labels for beta_har and p-value
+    domreg.iloc[1, 2*i] = 'b'
+    domreg.iloc[1, 2*i+1] = 'p'
+
+    # Add results
+    domreg.iloc[2:, 2*i] = bhat[:, 0]
+    domreg.iloc[2:, 2*i+1] = p[:, 0]
+
+# Set outcomes and beta_hat / p-values as headers
+domreg = domreg.T.set_index(['y', 'stat']).T
+
+# Print the results, using the correct floating point format
+print('\nDominance regressions\n',
+      domreg.to_string(float_format=fstring.format), sep='')
+
+# Save the result as a LaTeX table
+# Set file name
+fname = 'dominance_regressions.tex'
+
+# Rename index objects to LaTeX names
+domreg = domreg.rename(Xvars)
+
+# Save the table (the reset_index() makes sure the index is includes as a
+# column in the output)
+textable(domreg.reset_index().values, fname)
+
+################################################################################
+### Part 4: Make figures
+################################################################################
 
 # Set main color (UM official blue is #00274c)
 mclr = '#00274c'
