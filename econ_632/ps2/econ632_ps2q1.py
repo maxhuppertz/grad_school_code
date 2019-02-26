@@ -398,6 +398,7 @@ bars = ax.bar([x for x in range(len(domfrac_names))],
               domfrac[col[0]].values, color=mclr,
               edgecolor=eclr, hatch='')
 
+# Set xticks
 ax.set_xticks([x for x in range(len(domfrac_plotnames))])
 
 # Use plot names, change font size
@@ -433,8 +434,10 @@ bars = ax.bar([x for x in range(len(switchfrac_names))],
               switchfrac[col[0]].values, color=colors,
               edgecolor=eclr, hatch='')
 
+# Set xticks
 ax.set_xticks([2*x + .5 for x in range(len(switchfrac_plotnames))])
 
+# Set patterns for all bars
 for bar, pattern in zip(bars, patterns):
     bar.set_hatch(pattern)
 
