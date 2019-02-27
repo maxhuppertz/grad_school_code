@@ -27,7 +27,7 @@ plt.rc('font', **{'family': 'serif', 'serif': ['lmodern']})
 plt.rc('text', usetex=True)
 
 # Set precision for floats
-prec = 3
+prec = 4
 
 # Make a string so this can be used with pandas' float_format argument
 fstring = '{:,.'+str(prec)+'f}'
@@ -268,7 +268,7 @@ insurance_data[v_swdom_all] = (
     insurance_data[v_switch] & insurance_data[v_dom_all]).astype(int)
 
 ################################################################################
-### Part 2.7: Squared variables
+### Part 2.5: Squared variables
 ################################################################################
 
 # Specify some further variables, which will be squared in the following
@@ -289,7 +289,30 @@ for var in create_squarevars:
     insurance_data[var+suf2] = insurance_data[var]**2
 
 ################################################################################
-### Part 2.6: Subsetting
+### Part 2.6: Interactions
+################################################################################
+
+# Specify some further variables
+v_sex = 'sex'
+
+infint = '_times_'
+
+create_interactions = [[v_rscore, v_tenure], [v_rscore, v_sex],
+                       [v_tool, v_rscore], [v_rscore, v_inc],
+                       [v_tool, v_sex], [v_tool, v_tenure]]
+
+for vars in create_interactions:
+    varname = vars[0]
+    content = insurance_data[vars[0]]
+
+    for var in vars[1:]:
+        varname = varname + infint + var
+        content = content * insurance_data[var]
+
+    insurance_data[varname] = content
+
+################################################################################
+### Part 2.7: Subsetting
 ################################################################################
 
 # Make a version of the data which contains only the rows for chosen plans
@@ -308,9 +331,8 @@ chdir(mdir+fdir)
 
 # Specify names of dominated choice measures, as a dictionary. Each entry should
 # return the corresponding variable.
-dominance_measures = {'Dominated: Coverage': v_dom_pc,
-                      'Dominated: Quality': v_dom_pq,
-                      'Dominated: Both': v_dom_all}
+dominance_measures = {'Coverage': v_dom_pc, 'Quality': v_dom_pq,
+                      'Both': v_dom_all}
 
 # Set up dominated choices measures DataFrame
 domfrac = pd.DataFrame(np.zeros(shape=(len(dominance_measures), 2)))
@@ -389,18 +411,24 @@ print('\nSwitching measures\n',
       switchfrac.to_string(header=['Measure', 'Value']), sep='')
 
 ################################################################################
-### Part 3.3: Determinants of dominated choices
+### Part 3.3: Determinants of dominated choices (regression)
 ################################################################################
 
 # Specify name of year variable
 v_year = 'year'
 
 # Select which variables to use on the RHS
-Xvars = {v_year: 'Year', v_tenure: 'Tenure',
+Xvars = {v_sex: 'Sex', v_tenure: 'Tenure',
          v_tenure+suf2: r'$\text{Tenure}^2$', v_age: 'Age',
          v_age+suf2: r'$\text{Age}^2$', v_inc: 'Income',
          v_inc+suf2: r'$\text{Income}^2$', v_rscore: 'Risk score',
-         v_rscore+suf2: r'$\text{Risk score}^2$', v_tool: 'Comparison tool'}
+         v_rscore+suf2: r'$\text{Risk score}^2$', v_tool: 'Comparison tool',
+         v_rscore+infint+v_tenure: r'Risk score $\times$ tenure',
+         v_rscore+infint+v_sex: r'Risk score $\times$ sex',
+         v_rscore+infint+v_inc: r'Risk score $\times$ income',
+         v_tool+infint+v_rscore: r'Comparison tool $\times$ risk score',
+         v_tool+infint+v_sex: r'Comparison tool $\times$ sex',
+         v_tool+infint+v_tenure: r'Comparison tool $\times$ tenure'}
 
 # Create an intercept
 beta0 = np.ones(shape=(insurance_data_red.shape[0], 1))
@@ -427,7 +455,7 @@ for i, measure in enumerate(dominance_measures):
     y = larry(insurance_data_red[var])
 
     # Run OLS
-    bhat, _, _, p = ols(y, X, cov_est='cluster', clustvar=clusters)
+    bhat, _, _, p = ols(y, X, cov_est='hc1', clustvar=clusters)
 
     # Add outcome name to results DataFrame
     domreg.iloc[0, 2*i:2*i+2] = measure
@@ -456,7 +484,7 @@ domreg = domreg.rename(Xvars)
 
 # Save the table (the reset_index() makes sure the index is includes as a
 # column in the output)
-textable(domreg.reset_index().values, fname)
+textable(domreg.reset_index().values, fname, prec=prec)
 
 ################################################################################
 ### Part 4: Make figures
