@@ -308,8 +308,9 @@ chdir(mdir+fdir)
 
 # Specify names of dominated choice measures, as a dictionary. Each entry should
 # return the corresponding variable.
-dominance_measures = {'Coverage': v_dom_pc, 'Quality': v_dom_pq,
-                      'Both': v_dom_all}
+dominance_measures = {'Dominated: Coverage': v_dom_pc,
+                      'Dominated: Quality': v_dom_pq,
+                      'Dominated: Both': v_dom_all}
 
 # Set up dominated choices measures DataFrame
 domfrac = pd.DataFrame(np.zeros(shape=(len(dominance_measures), 2)))
@@ -487,20 +488,18 @@ fname = 'dominated_choices_bar'
 fig, ax = plt.subplots(1, 1, num=fname, figsize=(6.5, 6.5*(9/16)))
 
 # Plot switching fractions
-bars = ax.bar([x for x in range(len(dominance_measures))],
+bars = ax.bar([x*1.5 for x in range(len(dominance_measures))],
               domfrac.loc[:, 1].values, color=mclr,
               edgecolor=eclr, hatch='')
 
 # Set xticks
-ax.set_xticks([x for x in range(len(dominance_measures))])
+ax.set_xticks([x*1.5 for x in range(len(dominance_measures))])
 
 # Use plot names, change font size
 ax.set_xticklabels(dominance_measures, fontsize=11)
 
 # Don't display tick marks on the horizontal axis
 ax.tick_params(axis='x', bottom='off')
-
-ax.set_xlabel('Category in which chosen plan is dominated', fontsize=11)
 
 # Set vertical axis label
 ax.set_ylabel('Fraction', fontsize=11)
