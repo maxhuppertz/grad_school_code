@@ -34,8 +34,8 @@ def textable(X, fname='table.tex', prec=4):
                     # If not, add an ampersand after the entry
                     delim = r' & '
                 else:
-                    # If it is, add a double backslash
-                    delim = r' \\'
+                    # If it is, add a double backslash and a line break
+                    delim = r' \\' + '\n'
 
                 # Add the entry and delimiter to the row
                 thisrow = thisrow + entry + delim

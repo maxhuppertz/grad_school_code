@@ -336,7 +336,26 @@ for var in fsdomvars:
         insurance_data_red[fsdomvars[var]].groupby([v_id]).shift(periods=-1))
 
 ################################################################################
-### Part 2.6: Squared variables
+### Part 2.7: Tool becomes available next period
+################################################################################
+
+# Specify variable indicating that the tool will be available next period
+v_ftool = 'tool_available_next_period'
+
+# Get the variable by shifting the tool indicator back one period
+insurance_data_red[v_ftool] = (
+    insurance_data_red[v_tool].groupby([v_id]).shift(periods=-1))
+
+# Make an indicator of not having the tool and then getting it
+newtool = (insurance_data_red[v_tool] == 0) & (insurance_data_red[v_ftool] == 1)
+
+# Check whether everything in it is zero
+if newtool.sum() == 0:
+    # If so, display a message to that effect
+    print('\nNo observations for which the tool was newly introduced')
+
+################################################################################
+### Part 2.7: Squared variables
 ################################################################################
 
 # Specify some further variables, which will be squared in the following
@@ -495,7 +514,7 @@ for i, measure in enumerate(switching_measures):
         switchfrac.loc[i*2+j, 1] = insurance_data_red.loc[idx, var].mean()
 
 ################################################################################
-### Part 3.3: Determinants of switching (regression)
+### Part 3.3: Correlates of switching (regression)
 ################################################################################
 
 # Specify name of the year variable
@@ -581,7 +600,7 @@ switchreg = switchreg.rename(Xvars_sw)
 textable(switchreg.reset_index().values, fname=fname_sw, prec=prec)
 
 ################################################################################
-### Part 3.4: Determinants of dominated choices (regression)
+### Part 3.4: Correlates of dominated choices (regression)
 ################################################################################
 
 # Select which variables to use on the RHS for dominance measures
@@ -677,6 +696,70 @@ charmeans[:,0] = charmeans[:,0].astype(int)
 
 # Save tex table
 textable(charmeans, fname=fname_chars, prec=prec)
+
+################################################################################
+### Part 3.6: Correlates of having the tool (regression)
+################################################################################
+
+# Specify which tool indicators to look at
+tool_measures = {'Tool': v_tool}
+
+# Select which variables to use on the RHS for tool access
+Xvars_tool = {v_year: 'Year', v_sex: 'Sex', v_tenure: 'Tenure',
+             v_tenure+suf2: r'$\text{Tenure}^2$', v_age: 'Age',
+             v_age+suf2: r'$\text{Age}^2$', preflog+v_inc: 'Log(income)',
+             v_rscore: 'Risk', v_rscore+suf2: r'$\text{Risk}^2$'}
+
+# Make variables into a matrix
+X_tool = larry(insurance_data_red[list(Xvars_tool)])
+
+# Add the intercept
+X_tool = np.concatenate((beta0, X_tool), axis=1)
+
+# Set up a DataFrame for the dominance results
+toolreg = pd.DataFrame(np.zeros(shape=(X_tool.shape[1]+2,
+                                       len(tool_measures)*2)),
+                       index=['y', 'stat',  'Constant'] + list(Xvars_tool))
+
+# Go through all measures of dominated choices
+for i, measure in enumerate(tool_measures):
+    # Get the variable in question
+    var = tool_measures[measure]
+
+    # Make the LHS variable into a column vector
+    y = larry(insurance_data_red[var])
+
+    # Figure out where y and X are both not missing
+    I = ~np.isnan(y[:,0]) & ~np.isnan(X_tool.sum(axis=1))
+
+    # Run OLS
+    bhat, _, _, p = ols(y[I,:], X_tool[I,:], cov_est='cluster',
+                        clustvar=clusters[I,:])
+
+    # Add outcome name to results DataFrame
+    toolreg.iloc[0, 2*i:2*i+2] = measure
+
+    # Add column labels for beta_har and p-value
+    toolreg.iloc[1, 2*i] = 'b'
+    toolreg.iloc[1, 2*i+1] = 'p'
+
+    # Add results
+    toolreg.iloc[2:, 2*i] = bhat[:, 0]
+    toolreg.iloc[2:, 2*i+1] = p[:, 0]
+
+# Set outcomes and beta_hat / p-values as headers for tool access results
+toolreg = toolreg.T.set_index(['y', 'stat']).T
+
+# Save the result as a LaTeX table
+# Set file name
+fname_tool = 'tool_regressions.tex'
+
+# Rename index objects to LaTeX names
+toolreg = toolreg.rename(Xvars_tool)
+
+# Save the table (the reset_index() makes sure the index is includes as a
+# column in the output)
+textable(toolreg.reset_index().values, fname=fname_tool, prec=prec)
 
 ################################################################################
 ### Part 4: Make figures
@@ -832,7 +915,7 @@ for i, measure in enumerate(switching_measures):
 
 # Make a legend
 ax.legend(loc='lower center', ncol=2, fontsize=8, handlelength=2.5,
-          bbox_to_anchor=(0, -.5, 1, 0))
+          bbox_to_anchor=(0, -.4, 1, 0))
 
 # Set horizontal axis label
 ax.set_xlabel('Year', fontsize=11)
