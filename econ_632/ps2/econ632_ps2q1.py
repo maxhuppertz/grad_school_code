@@ -406,7 +406,8 @@ create_interactions = [[v_rscore, v_tenure], [v_rscore, v_sex],
                        [v_rscore, preflog+v_inc], [v_tool, v_sex],
                        [v_tool, v_tenure], [v_tool, v_switch],
                        [v_tool, v_dom_pc], [v_tool, v_dom_pq],
-                       [v_tool, v_dom_all]]
+                       [v_tool, v_dom_all], [v_tool, v_pre], [v_tool, v_cov],
+                       [v_tool, v_svq]]
 
 # Go through all sets of interactions
 for vars in create_interactions:
@@ -529,14 +530,18 @@ Xvars_sw = {v_year: 'Year', v_sex: 'Sex', v_tenure: 'Tenure',
             v_tenure+suf2: r'$\text{Tenure}^2$', v_age: 'Age',
             v_age+suf2: r'$\text{Age}^2$', preflog+v_inc: 'Log(income)',
             v_rscore: 'Risk', v_rscore+suf2: r'$\text{Risk}^2$', v_tool: 'Tool',
+            v_pre: 'Premium', v_cov: 'Coverage', v_svq: 'Quality',
             v_switch: 'Switch', v_dom_pc: 'Dominated: coverage',
             v_dom_pq: 'Dominated: quality', v_dom_all: 'Dominated: both',
             v_rscore+infint+v_tenure: r'Risk $\times$ tenure',
             v_rscore+infint+v_sex: r'Risk $\times$ sex',
             v_rscore+infint+preflog+v_inc: r'Risk $\times$ log(income)',
-            v_tool+infint+v_rscore: r'Tool $\times$ risk',
             v_tool+infint+v_sex: r'Tool $\times$ sex',
             v_tool+infint+v_tenure: r'Tool $\times$ tenure',
+            v_tool+infint+v_rscore: r'Tool $\times$ risk',
+            v_tool+infint+v_pre: r'Tool $\times$ premium',
+            v_tool+infint+v_cov: r'Tool $\times$ coverage',
+            v_tool+infint+v_svq: r'Tool $\times$ quality',
             v_tool+infint+v_switch: r'Tool $\times$ switch',
             v_tool+infint+v_dom_pc: r'Tool $\times$ dom.: coverage',
             v_tool+infint+v_dom_pq: r'Tool $\times$ dom.: quality',
@@ -1033,20 +1038,19 @@ plt.savefig(fname+ffmt)
 plt.close('all')
 
 ################################################################################
-### Part 4.6: Histograms
+### Part 4.6: Histograms (demographics)
 ################################################################################
 
-# Specify name for histograms
-fname = 'hist'
+# Specify name for histograms of demographic variables
+fname = 'hist_dem'
 
 # Specify variables for which to make histograms
-histvars = {v_pre: 'Premium', v_cov: 'Coverage', v_svq: 'Service quality',
-            v_rscore: 'Risk score', v_age: 'Age', v_tenure: 'Tenure',
-            preflog+v_inc: 'Log(income)', v_pid: 'Plan ID'}
+histvars_dem = {v_age: 'Age', v_tenure: 'Tenure',
+                preflog+v_inc: 'Log(income)', v_rscore: 'Risk score'}
 
 # Specify some variables which should be used as integer valued, i.e. the
 # histogram bins should just be their unique values
-intvars = [v_age, v_tenure, v_pid]
+intvars = [v_age, v_tenure]
 
 # Choose variables to censor
 censor = [v_rscore, v_inc]
@@ -1055,13 +1059,13 @@ censor = [v_rscore, v_inc]
 censat = .01
 
 # Calculate number of rows needed with two columns
-nrows = np.int(np.ceil(len(histvars)/2))
+nrows = np.int(np.ceil(len(histvars_dem)/2))
 
 # Set up the chart
-fig, ax = plt.subplots(nrows, 2, num=fname, figsize=(6.5, 6.5))
+fig, ax = plt.subplots(nrows, 2, num=fname, figsize=(6.5, 6.5*(9/16)))
 
 # Go through all variables to plot
-for i, var in enumerate(histvars):
+for i, var in enumerate(histvars_dem):
     # Get the row and column index in the subplots
     ridx = np.int(np.floor(i/2))
     cidx = i - 2*ridx
@@ -1095,7 +1099,7 @@ for i, var in enumerate(histvars):
         bins = 'auto'
 
     # plot the histogram
-    ax[ridx, cidx].hist(y, label = histvars[var], color = sclr,
+    ax[ridx, cidx].hist(y, label = histvars_dem[var], color = sclr,
                         edgecolor = mclr, density = True, bins = bins,
                         linewidth = .5)
 
@@ -1105,12 +1109,98 @@ for i, var in enumerate(histvars):
         ax[ridx, cidx].set_xticks(list(y.unique()))
 
     # Add a horizontal axis label
-    ax[ridx, cidx].set_xlabel(histvars[var], fontsize=11)
+    ax[ridx, cidx].set_xlabel(histvars_dem[var], fontsize=11)
 
     # Check whether this is at the left side of the graphs
     if cidx == 0:
         # Add a vertical axis label
         ax[ridx, cidx].set_ylabel('Density', fontsize=11)
+
+# Save on whitespace
+fig.tight_layout()
+
+# Save the figure
+plt.savefig(fname+ffmt)
+
+################################################################################
+### Part 4.6: Histograms (plan characteristics)
+################################################################################
+
+# Specify name for histograms
+fname = 'hist_plan'
+
+# Specify variables for which to make histograms
+histvars_plan = {v_pre: 'Premium', v_cov: 'Coverage', v_svq: 'Service quality',
+                 v_pid: 'ID'}
+
+sufcs = ' in the choice set'
+prefcho = "Chosen plan's "
+
+# Specify some variables which should be used as integer valued, i.e. the
+# histogram bins should just be their unique values
+intvars = [v_pid]
+
+# Set up the chart
+fig, ax = plt.subplots(len(histvars_plan), 2, num=fname, figsize=(6.5, 6.5))
+
+# Go through all variables to plot
+for i, var in enumerate(histvars_plan):
+    # Get the row index in the subplots
+    ridx = i
+
+    # Get plan variables, first for the choice set, then chosen quantities
+    y1 = insurance_data[var]
+    y2 = insurance_data_red[var]
+
+    # Check whether this variable should be used as an integer valued one
+    if (intvars.count(var) > 0):
+        # If so, use its values as bins (the left edge of the lowest value is
+        # used, hence the minimum minus .5, and then everything else plus that)
+        bins1 = (
+            [np.amin(y1.unique()) -.5]
+            + list(y1.unique() + .5))
+
+        # Same for chosen version
+        bins2 = (
+            [np.amin(y2.unique()) -.5]
+            + list(y2.unique() + .5))
+
+        # Sort them
+        bins1 = np.sort(bins1)
+        bins2 = np.sort(bins2)
+    else:
+        # Otherwise, use the auto method to find bins
+        bins1 = 'auto'
+        bins2 = 'auto'
+
+    label1 = histvars_plan[var] + sufcs
+    label2 = prefcho + histvars_plan[var]
+
+    # Plot the choice set histogram
+    ax[ridx, 0].hist(y1, label = label1, color = sclr,
+                     edgecolor = mclr, density = True, bins = bins1,
+                     linewidth = .5)
+
+    ax[ridx, 1].hist(y2, label = label2, color = sclr,
+                     edgecolor = mclr, density = True, bins = bins2,
+                     linewidth = .5)
+
+    # Check whether there are few enough bins
+    if (len(bins1) <= 16) and (type(bins1) is not str):
+        # If so, set the ticks to use each value
+        ax[ridx, 0].set_xticks(list(y1.unique()))
+
+    # Check whether there are few enough bins
+    if (len(bins2) <= 16) and (type(bins2) is not str):
+        # If so, set the ticks to use each value
+        ax[ridx, 1].set_xticks(list(y2.unique()))
+
+    # Add a horizontal axis label
+    ax[ridx, 0].set_xlabel(label1, fontsize=11)
+    ax[ridx, 1].set_xlabel(label2, fontsize=11)
+
+    # Add a vertical axis label
+    ax[ridx, 0].set_ylabel('Density', fontsize=11)
 
 # Save on whitespace
 fig.tight_layout()
