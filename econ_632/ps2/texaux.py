@@ -17,10 +17,16 @@ def textable(X, fname='table.tex', prec=4):
             for j in range(k):
                 # Check whether the current entry is a string
                 if type(X[i, j]) != str:
-                    # If not, format it, according to the precision parameter
-                    entry = fstring.format(round(X[i, j], 4))
+                    # If not, check whether it is an integer
+                    if type(X[i, j]) != int:
+                        # If not, format it, according to the precision
+                        # parameter
+                        entry = fstring.format(round(X[i, j], 4))
+                    else:
+                        # If it is an integer, just convert it to a string
+                        entry = str(X[i, j])
                 else:
-                    # If it is, just use it as-is
+                    # If it is, just use it as is
                     entry = X[i, j]
 
                 # Check whether this is the last entry in this row
