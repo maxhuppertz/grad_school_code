@@ -919,8 +919,7 @@ for i, measure in enumerate(switching_measures):
                 linestyle=lstys[i], linewidth=2+j, color=manycolors[i])
 
 # Make a legend
-ax.legend(loc='lower center', ncol=2, fontsize=8, handlelength=2.5,
-          bbox_to_anchor=(0, -.4, 1, 0))
+fig.legend(loc='lower center', ncol=2, fontsize=8, handlelength=2.5)
 
 # Set horizontal axis label
 ax.set_xlabel('Year', fontsize=11)
@@ -932,7 +931,7 @@ ax.set_xlim(np.amin(years[1:]), np.amax(years[1:]))
 ax.set_ylabel('Fraction', fontsize=11)
 
 # Add some space below the figure
-fig.subplots_adjust(bottom=0.3)
+fig.subplots_adjust(bottom=0.22)
 
 # Save the figure, making sure there is no unnecessary whitespace (this is
 # similar to calling fig.tight_layout(), but better in this case, because it
@@ -1131,22 +1130,29 @@ fname = 'hist_plan'
 
 # Specify variables for which to make histograms
 histvars_plan = {v_pre: 'Premium', v_cov: 'Coverage', v_svq: 'Service quality',
-                 v_pid: 'ID'}
+                 v_pid: 'Plan ID'}
 
-sufcs = ' in the choice set'
-prefcho = "Chosen plan's "
+# Prepare legend entries
+lcs = 'Choice set'
+lcho = 'Chosen plan'
 
 # Specify some variables which should be used as integer valued, i.e. the
 # histogram bins should just be their unique values
 intvars = [v_pid]
 
+catvars = [v_pid]
+
+# Calculate number of rows needed with two columns
+nrows = np.int(np.ceil(len(histvars_plan)/2))
+
 # Set up the chart
-fig, ax = plt.subplots(len(histvars_plan), 2, num=fname, figsize=(6.5, 6.5))
+fig, ax = plt.subplots(nrows, 2, num=fname, figsize=(6.5, 1.5* 6.5*(9/16)))
 
 # Go through all variables to plot
 for i, var in enumerate(histvars_plan):
-    # Get the row index in the subplots
-    ridx = i
+    # Get the row and column index in the subplots
+    ridx = np.int(np.floor(i/2))
+    cidx = i - 2*ridx
 
     # Get plan variables, first for the choice set, then chosen quantities
     y1 = insurance_data[var]
@@ -1160,53 +1166,58 @@ for i, var in enumerate(histvars_plan):
             [np.amin(y1.unique()) -.5]
             + list(y1.unique() + .5))
 
-        # Same for chosen version
-        bins2 = (
-            [np.amin(y2.unique()) -.5]
-            + list(y2.unique() + .5))
-
         # Sort them
         bins1 = np.sort(bins1)
-        bins2 = np.sort(bins2)
     else:
         # Otherwise, use the auto method to find bins
         bins1 = 'auto'
-        bins2 = 'auto'
 
-    label1 = histvars_plan[var] + sufcs
-    label2 = prefcho + histvars_plan[var]
+
+    if (catvars.count(var) > 0):
+        setcum = False
+    else:
+        setcum = True
 
     # Plot the choice set histogram
-    ax[ridx, 0].hist(y1, label = label1, color = sclr,
-                     edgecolor = mclr, density = True, bins = bins1,
-                     linewidth = .5)
+    #hgram1 = ax[ridx, cidx].hist(y1, color = sclr, alpha = .8, edgecolor = eclr,
+    #                             density = True, bins = bins1, linewidth = .5,
+    #                             cumulative = setcum)
 
-    ax[ridx, 1].hist(y2, label = label2, color = sclr,
-                     edgecolor = mclr, density = True, bins = bins2,
-                     linewidth = .5)
+    # Plot the chosen plan histogram, using the same bins
+    #hgram2 = ax[ridx, cidx].hist(y2, color = mclr, alpha = .3, edgecolor = eclr,
+    #                             density = True, bins = hgram1[1], fill = True,
+    #                             linewidth = .5, cumulative = setcum)
+    hgram1 = ax[ridx, cidx].plot(np.sort(y1),
+                                 np.linspace(0, 1, len(y1), endpoint=False),
+                                 color=sclr, linestyle = lstys[0])
 
+    hgram2 = ax[ridx, cidx].plot(np.sort(y2),
+                                 np.linspace(0, 1, len(y2), endpoint=False),
+                                 color=mclr, linestyle = lstys[1])
     # Check whether there are few enough bins
     if (len(bins1) <= 16) and (type(bins1) is not str):
         # If so, set the ticks to use each value
-        ax[ridx, 0].set_xticks(list(y1.unique()))
-
-    # Check whether there are few enough bins
-    if (len(bins2) <= 16) and (type(bins2) is not str):
-        # If so, set the ticks to use each value
-        ax[ridx, 1].set_xticks(list(y2.unique()))
+        ax[ridx, cidx].set_xticks(list(y1.unique()))
 
     # Add a horizontal axis label
-    ax[ridx, 0].set_xlabel(label1, fontsize=11)
-    ax[ridx, 1].set_xlabel(label2, fontsize=11)
+    ax[ridx, cidx].set_xlabel(histvars_plan[var], fontsize=11)
 
-    # Add a vertical axis label
-    ax[ridx, 0].set_ylabel('Density', fontsize=11)
+    # Check whether this is at the left side of the graphs
+    if cidx == 0:
+        # Add a vertical axis label
+        ax[ridx, cidx].set_ylabel('Density', fontsize=11)
 
-# Save on whitespace
-fig.tight_layout()
+# Add a legend
+#fig.legend(handles=[hgram1[2][0], hgram2[2][0]], labels=[lcs, lcho],
+#           loc='lower center', fontsize=8, ncol=2)
+fig.legend(handles=[hgram1[0], hgram2[0]], labels=[lcs, lcho],
+           loc='lower center', fontsize=8, ncol=2)
+
+# Add some space below the figure
+fig.subplots_adjust(bottom=0.13, hspace=.3)
 
 # Save the figure
-plt.savefig(fname+ffmt)
+plt.savefig(fname+ffmt, bbox_inches='tight')
 
 # Print a message that this is done
 print('Done')
