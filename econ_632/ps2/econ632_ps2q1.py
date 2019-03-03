@@ -782,7 +782,10 @@ eclr = 'black'
 # Put both in a list
 colors = [mclr, sclr]
 
-# Make an extended palette of colors
+# Make an extended palette of color. These are all taken from UM's style
+# guide[1], and have cute names.
+#
+# [1]:  https://vpcomm.umich.edu/brand/style-guide/design-principles/colors
 manycolors = [mclr, sclr, '#7a121c', '#655a52', '#cc6600', '#83b2a8', '#575294',
               '#9b9a6d']
 
