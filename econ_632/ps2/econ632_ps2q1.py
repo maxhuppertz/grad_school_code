@@ -837,7 +837,7 @@ ax.tick_params(axis='x', bottom='off')
 ax.set_ylabel('Fraction', fontsize=11)
 
 # Add a legend
-ax.legend((bars[0], bars[1]), ('Without tool', 'With tool'), fontsize=11)
+ax.legend((bars[0], bars[1]), ('Without tool', 'With tool'), fontsize=9)
 
 # Make sure all labels are visible (otherwise, they might get cut off)
 fig.tight_layout()
@@ -883,7 +883,7 @@ ax.tick_params(axis='x', bottom='off', pad=20)
 ax.set_ylabel('Fraction', fontsize=11)
 
 # Add a legend
-ax.legend((bars[0], bars[1]), ('Without tool', 'With tool'), fontsize=11)
+ax.legend((bars[0], bars[1]), ('Without tool', 'With tool'), fontsize=9)
 
 # Make sure all labels are visible (otherwise, they might get cut off)
 fig.tight_layout()
@@ -934,7 +934,7 @@ for i, measure in enumerate(switching_measures):
                 linestyle=lstys[i], linewidth=2+j, color=manycolors[i])
 
 # Make a legend
-fig.legend(loc='lower center', ncol=2, fontsize=8, handlelength=2.5)
+fig.legend(loc='lower center', ncol=2, fontsize=9, handlelength=2.5)
 
 # Set horizontal axis label
 ax.set_xlabel('Year', fontsize=11)
@@ -946,7 +946,7 @@ ax.set_xlim(np.amin(years[1:]), np.amax(years[1:]))
 ax.set_ylabel('Fraction', fontsize=11)
 
 # Add some space below the figure
-fig.subplots_adjust(bottom=0.22)
+fig.subplots_adjust(bottom=0.24)
 
 # Save the figure, making sure there is no unnecessary whitespace (this is
 # similar to calling fig.tight_layout(), but better in this case, because it
@@ -982,7 +982,7 @@ for i, measure in enumerate(dominance_measures):
             color=manycolors[i])
 
 # Make a legend
-ax.legend(handlelength=2.5, fontsize=11)
+ax.legend(fontsize=9)
 
 # Set horizontal axis limits
 ax.set_xlim(np.amin(years[1:]), np.amax(years[1:]))
@@ -1031,7 +1031,7 @@ for i, measure in enumerate(dominance_measures):
             linestyle=lstys[i], linewidth=2, color=manycolors[i])
 
 # Make a legend
-ax.legend(handlelength=2.5, fontsize=11)
+ax.legend(handlelength=2.5, fontsize=9)
 
 # Set horizontal axis limits
 ax.set_xlim(np.amin(tenures), np.amax(tenures))
@@ -1233,10 +1233,10 @@ for i, var in enumerate(histvars_plan):
 # Add a legend, both for the EDFs and histograms
 fig.legend(handles=[edf1[0], edf2[0], hgram1[2][0], hgram2[2][0]],
            labels=[lcs, lcho, lcs, lcho],
-           loc='lower center', fontsize=8, ncol=2)
+           loc='lower center', fontsize=9, ncol=2)
 
 # Add some space below the figure
-fig.subplots_adjust(bottom=0.16, hspace=.3)
+fig.subplots_adjust(bottom=0.17, hspace=.3)
 
 # Save the figure
 plt.savefig(fname+ffmt, bbox_inches='tight')
