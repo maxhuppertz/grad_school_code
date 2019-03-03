@@ -336,7 +336,7 @@ for var in fsdomvars:
         insurance_data_red[fsdomvars[var]].groupby([v_id]).shift(periods=-1))
 
 ################################################################################
-### Part 2.7: Tool becomes available next period
+### Part 2.6: Tool becomes available next period
 ################################################################################
 
 # Specify variable indicating that the tool will be available next period
@@ -355,7 +355,17 @@ if newtool.sum() == 0:
     print('\nNo observations for which the tool was newly introduced')
 
 ################################################################################
-### Part 2.7: Squared variables
+### Part 2.7: New entrants
+################################################################################
+
+# Specify name for entry variable
+v_entry = 'new_entrant'
+
+# Generate the variable as an integer
+insurance_data_red[v_entry] = (insurance_data_red[v_tenure] == 1).astype(int)
+
+################################################################################
+### Part 2.8: Squared variables
 ################################################################################
 
 # Specify some further variables, which will be squared in the following
@@ -376,7 +386,7 @@ for var in create_squarevars:
     insurance_data_red[var+suf2] = insurance_data_red[var]**2
 
 ################################################################################
-### Part 2.8: Taking logs
+### Part 2.9: Taking logs
 ################################################################################
 
 # Specify which variables to convert to logs
@@ -391,7 +401,7 @@ for var in create_logs:
     insurance_data_red[preflog+var] = np.log(insurance_data_red[var])
 
 ################################################################################
-### Part 2.9: Interactions
+### Part 2.10: Interactions
 ################################################################################
 
 # Specify some further variables
@@ -1125,7 +1135,7 @@ fig.tight_layout()
 plt.savefig(fname+ffmt)
 
 ################################################################################
-### Part 4.6: Histograms (plan characteristics)
+### Part 4.7: Histograms (plan characteristics)
 ################################################################################
 
 # Specify name for histograms
@@ -1196,11 +1206,11 @@ for i, var in enumerate(histvars_plan):
     else:
         # Otherwise, plot empirical distribution functions
         edf1 = ax[ridx, cidx].plot(np.sort(y1),
-                                     np.linspace(0, 1, len(y1), endpoint=False),
+                                     np.linspace(0, 1, len(y1), endpoint=True),
                                      color=sclr, linestyle = lstys[0])
 
         edf2 = ax[ridx, cidx].plot(np.sort(y2),
-                                     np.linspace(0, 1, len(y2), endpoint=False),
+                                     np.linspace(0, 1, len(y2), endpoint=True),
                                      color=mclr, linestyle = lstys[1])
 
     # Add a horizontal axis label
