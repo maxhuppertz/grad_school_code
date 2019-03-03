@@ -117,7 +117,7 @@ def ols(y, X, get_cov=True, cov_est='hc1', get_t=True, get_p=True,
             # to get that, I have to convert the square root of the diagonal
             # elements of V_hat into a proper vector first and transpose them,
             # since Numpy loves its row vectors for some reason)
-            t = beta_hat / np.array(np.sqrt(np.diag(V_hat)),ndmin=2).transpose()
+            t = beta_hat / larry(np.sqrt(np.diag(V_hat)))
 
             # Check whether to calculate p-values
             if get_p:
