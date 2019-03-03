@@ -1158,46 +1158,47 @@ for i, var in enumerate(histvars_plan):
     y1 = insurance_data[var]
     y2 = insurance_data_red[var]
 
-    # Check whether this variable should be used as an integer valued one
-    if (intvars.count(var) > 0):
-        # If so, use its values as bins (the left edge of the lowest value is
-        # used, hence the minimum minus .5, and then everything else plus that)
-        bins1 = (
-            [np.amin(y1.unique()) -.5]
-            + list(y1.unique() + .5))
-
-        # Sort them
-        bins1 = np.sort(bins1)
-    else:
-        # Otherwise, use the auto method to find bins
-        bins1 = 'auto'
-
-
+    # Check whether the variable is categorical
     if (catvars.count(var) > 0):
-        setcum = False
+        # If so, make a histogram
+        # Check whether this variable should be used as an integer valued one
+        if (intvars.count(var) > 0):
+            # If so, use its values as bins (the left edge of the lowest value is
+            # used, hence the minimum minus .5, and then everything else plus that)
+            bins1 = (
+                [np.amin(y1.unique()) -.5]
+                + list(y1.unique() + .5))
+
+            # Sort them
+            bins1 = np.sort(bins1)
+        else:
+            # Otherwise, use the auto method to find bins
+            bins1 = 'auto'
+
+        # Plot the choice set histogram
+        hgram1 = ax[ridx, cidx].hist(y1, color = sclr, alpha = .8,
+                                     edgecolor = eclr, density = True,
+                                     bins = bins1, linewidth = .5,)
+
+        # Plot the chosen plan histogram, using the same bins
+        hgram2 =ax[ridx, cidx].hist(y2, color = mclr, alpha = .3,
+                                     edgecolor = eclr, density = True,
+                                     bins = hgram1[1], fill = True,
+                                     linewidth = .5)
+
+        # Check whether there are few enough bins
+        if (len(bins1) <= 16) and (type(bins1) is not str):
+            # If so, set the ticks to use each value
+            ax[ridx, cidx].set_xticks(list(y1.unique()))
     else:
-        setcum = True
+        # Otherwise, plot empirical distribution functions
+        edf1 = ax[ridx, cidx].plot(np.sort(y1),
+                                     np.linspace(0, 1, len(y1), endpoint=False),
+                                     color=sclr, linestyle = lstys[0])
 
-    # Plot the choice set histogram
-    #hgram1 = ax[ridx, cidx].hist(y1, color = sclr, alpha = .8, edgecolor = eclr,
-    #                             density = True, bins = bins1, linewidth = .5,
-    #                             cumulative = setcum)
-
-    # Plot the chosen plan histogram, using the same bins
-    #hgram2 = ax[ridx, cidx].hist(y2, color = mclr, alpha = .3, edgecolor = eclr,
-    #                             density = True, bins = hgram1[1], fill = True,
-    #                             linewidth = .5, cumulative = setcum)
-    hgram1 = ax[ridx, cidx].plot(np.sort(y1),
-                                 np.linspace(0, 1, len(y1), endpoint=False),
-                                 color=sclr, linestyle = lstys[0])
-
-    hgram2 = ax[ridx, cidx].plot(np.sort(y2),
-                                 np.linspace(0, 1, len(y2), endpoint=False),
-                                 color=mclr, linestyle = lstys[1])
-    # Check whether there are few enough bins
-    if (len(bins1) <= 16) and (type(bins1) is not str):
-        # If so, set the ticks to use each value
-        ax[ridx, cidx].set_xticks(list(y1.unique()))
+        edf2 = ax[ridx, cidx].plot(np.sort(y2),
+                                     np.linspace(0, 1, len(y2), endpoint=False),
+                                     color=mclr, linestyle = lstys[1])
 
     # Add a horizontal axis label
     ax[ridx, cidx].set_xlabel(histvars_plan[var], fontsize=11)
@@ -1207,14 +1208,13 @@ for i, var in enumerate(histvars_plan):
         # Add a vertical axis label
         ax[ridx, cidx].set_ylabel('Density', fontsize=11)
 
-# Add a legend
-#fig.legend(handles=[hgram1[2][0], hgram2[2][0]], labels=[lcs, lcho],
-#           loc='lower center', fontsize=8, ncol=2)
-fig.legend(handles=[hgram1[0], hgram2[0]], labels=[lcs, lcho],
+# Add a legend, both for the EDFs and histograms
+fig.legend(handles=[edf1[0], edf2[0], hgram1[2][0], hgram2[2][0]],
+           labels=[lcs, lcho, lcs, lcho],
            loc='lower center', fontsize=8, ncol=2)
 
 # Add some space below the figure
-fig.subplots_adjust(bottom=0.13, hspace=.3)
+fig.subplots_adjust(bottom=0.16, hspace=.3)
 
 # Save the figure
 plt.savefig(fname+ffmt, bbox_inches='tight')
