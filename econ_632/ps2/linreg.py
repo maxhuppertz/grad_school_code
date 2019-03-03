@@ -115,8 +115,7 @@ def ols(y, X, get_cov=True, cov_est='hc1', get_t=True, get_p=True,
         if get_t:
             # Calculate t-statistics (I like having them as a column vector, but
             # to get that, I have to convert the square root of the diagonal
-            # elements of V_hat into a proper vector first and transpose them,
-            # since Numpy loves its row vectors for some reason)
+            # elements of V_hat into a proper column vector first)
             t = beta_hat / larry(np.sqrt(np.diag(V_hat)))
 
             # Check whether to calculate p-values
