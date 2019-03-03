@@ -934,7 +934,7 @@ for i, measure in enumerate(switching_measures):
                 linestyle=lstys[i], linewidth=2+j, color=manycolors[i])
 
 # Make a legend
-fig.legend(loc='lower center', ncol=2, fontsize=9, handlelength=2.5)
+fig.legend(loc='lower center', ncol=2, fontsize=9, handlelength=5)
 
 # Set horizontal axis label
 ax.set_xlabel('Year', fontsize=11)
@@ -1031,7 +1031,7 @@ for i, measure in enumerate(dominance_measures):
             linestyle=lstys[i], linewidth=2, color=manycolors[i])
 
 # Make a legend
-ax.legend(handlelength=2.5, fontsize=9)
+ax.legend(fontsize=9)
 
 # Set horizontal axis limits
 ax.set_xlim(np.amin(tenures), np.amax(tenures))
