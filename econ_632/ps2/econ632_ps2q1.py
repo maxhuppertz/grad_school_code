@@ -358,6 +358,9 @@ if newtool.sum() == 0:
 ### Part 2.7: New entrants
 ################################################################################
 
+# Specify name of tenure variable
+v_tenure = 'years_enrolled'
+
 # Specify name for entry variable
 v_entry = 'new_entrant'
 
@@ -369,7 +372,6 @@ insurance_data_red[v_entry] = (insurance_data_red[v_tenure] == 1).astype(int)
 ################################################################################
 
 # Specify some further variables, which will be squared in the following
-v_tenure = 'years_enrolled'
 v_age = 'age'
 v_inc = 'income'
 v_rscore = 'risk_score'
@@ -1058,11 +1060,12 @@ fname = 'hist_dem'
 
 # Specify variables for which to make histograms
 histvars_dem = {v_age: 'Age', v_tenure: 'Tenure',
-                preflog+v_inc: 'Log(income)', v_rscore: 'Risk score'}
+                preflog+v_inc: 'Log(income)', v_rscore: 'Risk score',
+                v_year: 'Year', v_tool: 'Comparison tool'}
 
 # Specify some variables which should be used as integer valued, i.e. the
 # histogram bins should just be their unique values
-intvars = [v_age, v_tenure]
+intvars = [v_age, v_tenure, v_year, v_tool]
 
 # Choose variables to censor
 censor = [v_rscore, v_inc]
@@ -1074,7 +1077,7 @@ censat = .01
 nrows = np.int(np.ceil(len(histvars_dem)/2))
 
 # Set up the chart
-fig, ax = plt.subplots(nrows, 2, num=fname, figsize=(6.5, 6.5*(9/16)))
+fig, ax = plt.subplots(nrows, 2, num=fname, figsize=(6.5, 1.5*6.5*(9/16)))
 
 # Go through all variables to plot
 for i, var in enumerate(histvars_dem):
@@ -1119,6 +1122,12 @@ for i, var in enumerate(histvars_dem):
     if (len(bins) <= 16) and (type(bins) is not str):
         # If so, set the ticks to use each value
         ax[ridx, cidx].set_xticks(list(y.unique()))
+
+        # Check if there are more than 5 bins
+        if len(bins) >= 5:
+            # If so, add some rotation to their labels
+            ax[ridx, cidx].set_xticklabels(list(y.unique()), rotation = 45,
+                                           horizontalalignment = 'right')
 
     # Add a horizontal axis label
     ax[ridx, cidx].set_xlabel(histvars_dem[var], fontsize=11)
