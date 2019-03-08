@@ -450,6 +450,27 @@ for vars in create_interactions:
 chdir(mdir+fdir)
 
 ################################################################################
+### Part 3.2: Correlation between premium, coverage, and service quality
+################################################################################
+
+# Specify which variables to include in the correlations, plus a name for the
+# resulting table, as a dictionary
+corrvars = {v_pre: 'Premium', v_cov: 'Coverage', v_svq: 'Quality'}
+
+# Make a DataFrame of their correlations, both in the choice set and among
+# chosen plans only
+corrtab = pd.concat((insurance_data[list(corrvars)].corr(),
+                     insurance_data_red[list(corrvars)].corr()), axis=1,
+                     levels=corrnames)
+
+# Specify a file name
+fname_corrs = 'corrtab.tex'
+
+# Save the table, making sure to rename the index, and include it in the table
+textable(corrtab.rename(corrvars).reset_index().values,
+         fname=fname_corrs, prec=prec)
+
+################################################################################
 ### Part 3.1: Dominated choices
 ################################################################################
 
@@ -1312,4 +1333,4 @@ fig.subplots_adjust(bottom=0.17, hspace=.3)
 plt.savefig(fname+ffmt, bbox_inches='tight')
 
 # Print a message that this is done
-print('Done')
+print('\nDone')
