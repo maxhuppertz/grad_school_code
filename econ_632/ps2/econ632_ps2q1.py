@@ -406,8 +406,9 @@ for var in create_logs:
 ### Part 2.10: Interactions
 ################################################################################
 
-# Specify some further variables
+# Specify some further variables which are part of interactions
 v_sex = 'sex'
+v_year = 'year'
 
 # Specify an infix for interaction terms
 infint = '_X_'
@@ -419,7 +420,8 @@ create_interactions = [[v_rscore, v_tenure], [v_rscore, v_sex],
                        [v_tool, v_tenure], [v_tool, v_switch],
                        [v_tool, v_dom_pc], [v_tool, v_dom_pq],
                        [v_tool, v_dom_all], [v_tool, v_pre], [v_tool, v_cov],
-                       [v_tool, v_svq]]
+                       [v_tool, v_svq], [v_tool, v_year], [v_tool, v_age],
+                       [v_tool, preflog+v_inc]]
 
 # Go through all sets of interactions
 for vars in create_interactions:
@@ -529,9 +531,6 @@ for i, measure in enumerate(switching_measures):
 ################################################################################
 ### Part 3.3: Correlates of switching (regression)
 ################################################################################
-
-# Specify name of the year variable
-v_year = 'year'
 
 # Specify switching measures to look at
 switching_measures_reg = {'Any': v_fswitch, 'Coverage': v_fswdom_pc,
@@ -715,7 +714,7 @@ charmeans[:,0] = charmeans[:,0].astype(int)
 textable(charmeans, fname=fname_chars, prec=prec)
 
 ################################################################################
-### Part 3.6: Correlates of having the tool (regression)
+### Part 3.6: Correlates of tool access (regression)
 ################################################################################
 
 # Specify which tool indicators to look at
@@ -738,7 +737,7 @@ toolreg = pd.DataFrame(np.zeros(shape=(X_tool.shape[1]+2,
                                        len(tool_measures)*2)),
                        index=['y', 'stat',  'Constant'] + list(Xvars_tool))
 
-# Go through all measures of dominated choices
+# Go through all measures of tool access
 for i, measure in enumerate(tool_measures):
     # Get the variable in question
     var = tool_measures[measure]
@@ -777,6 +776,77 @@ toolreg = toolreg.rename(Xvars_tool)
 # Save the table (the reset_index() makes sure the index is includes as a
 # column in the output)
 textable(toolreg.reset_index().values, fname=fname_tool, prec=prec)
+
+################################################################################
+### Part 3.7: Correlated of plan characteristics (regression)
+################################################################################
+
+# Specify which tool indicators to look at
+plan_chars = {'Premium': v_pre, 'Coverage': v_cov, 'Quality': v_svq}
+
+# Select which variables to use on the RHS for plan characteristics
+Xvars_plan = {v_year: 'Year', v_sex: 'Sex', v_tenure: 'Tenure',
+              v_tenure+suf2: r'$\text{Tenure}^2$', v_age: 'Age',
+              v_age+suf2: r'$\text{Age}^2$', preflog+v_inc: 'Log(income)',
+              v_rscore: 'Risk', v_rscore+suf2: r'$\text{Risk}^2$',
+              v_tool: 'Comparison tool',
+              v_tool+infint+v_year: r'Tool $\times$ year',
+              v_tool+infint+v_sex: r'Tool $\times$ sex',
+              v_tool+infint+v_tenure: r'Tool $\times$ tenure',
+              v_tool+infint+v_age: r'Tool $\times$ age',
+              v_tool+infint+preflog+v_inc: r'Tool $\times$ log(income)',
+              v_tool+infint+v_rscore: r'Tool $\times$ risk'}
+
+# Make variables into a matrix
+X_plan = larry(insurance_data_red[list(Xvars_plan)])
+
+# Add the intercept
+X_plan = np.concatenate((beta0, X_plan), axis=1)
+
+# Set up a DataFrame for the dominance results
+planreg = pd.DataFrame(np.zeros(shape=(X_plan.shape[1]+2,
+                                       len(plan_chars)*2)),
+                       index=['y', 'stat',  'Constant'] + list(Xvars_plan))
+
+# Go through all plan characteristics
+for i, char in enumerate(plan_chars):
+    # Get the variable in question
+    var = plan_chars[char]
+
+    # Make the LHS variable into a column vector
+    y = larry(insurance_data_red[var])
+
+    # Figure out where y and X are both not missing
+    I = ~np.isnan(y[:,0]) & ~np.isnan(X_plan.sum(axis=1))
+
+    # Run OLS
+    bhat, _, _, p = ols(y[I,:], X_plan[I,:], cov_est='cluster',
+                        clustvar=clusters[I,:])
+
+    # Add outcome name to results DataFrame
+    planreg.iloc[0, 2*i:2*i+2] = char
+
+    # Add column labels for beta_har and p-value
+    planreg.iloc[1, 2*i] = 'b'
+    planreg.iloc[1, 2*i+1] = 'p'
+
+    # Add results
+    planreg.iloc[2:, 2*i] = bhat[:, 0]
+    planreg.iloc[2:, 2*i+1] = p[:, 0]
+
+# Set outcomes and beta_hat / p-values as headers for tool access results
+planreg = planreg.T.set_index(['y', 'stat']).T
+
+# Save the result as a LaTeX table
+# Set file name
+fname_plan = 'plan_regressions.tex'
+
+# Rename index objects to LaTeX names
+planreg = planreg.rename(Xvars_plan)
+
+# Save the table (the reset_index() makes sure the index is includes as a
+# column in the output)
+textable(planreg.reset_index().values, fname=fname_plan, prec=prec)
 
 ################################################################################
 ### Part 4: Make figures
