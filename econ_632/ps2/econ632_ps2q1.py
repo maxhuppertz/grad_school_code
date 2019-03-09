@@ -460,8 +460,7 @@ corrvars = {v_pre: 'Premium', v_cov: 'Coverage', v_svq: 'Quality'}
 # Make a DataFrame of their correlations, both in the choice set and among
 # chosen plans only
 corrtab = pd.concat((insurance_data[list(corrvars)].corr(),
-                     insurance_data_red[list(corrvars)].corr()), axis=1,
-                     levels=corrnames)
+                     insurance_data_red[list(corrvars)].corr()), axis=1)
 
 # Specify a file name
 fname_corrs = 'corrtab.tex'
