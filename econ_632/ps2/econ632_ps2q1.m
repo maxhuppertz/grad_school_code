@@ -72,14 +72,20 @@ v_pre = 'premium';  % Premium
 v_cov = 'plan_coverage';  % Coverage
 v_svq = 'plan_service_quality';  % Service quality
 
-% Get a copy of the data to use for an outside option
-p0_data = insurance_data_red;
+% Specify whether to include an outside option in the data set
+include_outopt = 0;
 
-% Set its plan ID, premium, coverage, and service quality to zero
-p0_data{:, {v_pid v_pre v_cov v_svq}} = 0;
+% Check whether an outside option is needed
+if include_outopt == 1
+    % Get a copy of the data to make the outside option
+    p0_data = insurance_data_red;
 
-% Add it to the data set
-%insurance_data = [insurance_data; p0_data];
+    % Set its plan ID, premium, coverage, and service quality to zero
+    p0_data{:, {v_pid v_pre v_cov v_svq}} = 0;
+
+    % Add it to the data set
+    insurance_data = [insurance_data; p0_data];
+end
 
 % Update indicator for a plan being chosen
 cidx = insurance_data{:, {v_chosen}} == insurance_data{:, {v_pid}};
@@ -217,10 +223,15 @@ lower = zeros(1, gmax) - Inf;
 % Replace lower bounds on diagonal elements of the random coefficient
 % covariance matrix as zero
 lower(sdiagmin:sdiagmax) = 0;
+
+% Replace lower bound on the correlation between the coefficients on
+% coverage and service quality as -1
 lower(sdiagmax+1) = -1;
 
-% Upper bounds are all positive infinity
+% Set upper bounds to positive infinity
 upper = zeros(1, gmax) + Inf;
+
+% Set upper bound on the random coefficient correlation to 1
 upper(sdiagmax+1) = 1;
 
 % Perform MLE, stop the time it takes to run. I use constrained
