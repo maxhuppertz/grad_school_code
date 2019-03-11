@@ -76,9 +76,6 @@ qp(3,:) = qp(3,:) * condV3 + condmu3;
 %%% Part 3: Conditional choice probability function
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Get number of choice situations
-nsit = sum(cidx);
-
 % Make sure alpha is a column vector
 if size(alpha, 1) == 1
     alpha = alpha.';
@@ -115,12 +112,6 @@ function ccp = cond_cp(b, w)
     
     % Divide numerator by denominator, multiply by weight
     ccp = (ccp_num ./ ccp_dnm) * w;
-    
-    % Set NaN values to zero
-    ccp(isnan(ccp)) = 0;
-    
-    % Set Inf values to zero
-    ccp(isinf(ccp)) = 0;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -139,13 +130,4 @@ L = sum(cell2mat(L), 2);
 % Get negative log likelihood by taking the log, and summing up across
 % choice situations
 L = -sum(log(L));
-
-% Get only the real part of the log likelihood
-L = real(L);
-
-% Check whether the likelihood is NaN or Inf
-if isnan(L) || isinf(L)
-    % If so, set it to zero
-    L = 0;
-end
 end

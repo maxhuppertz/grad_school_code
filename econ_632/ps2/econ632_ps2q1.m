@@ -37,39 +37,70 @@ cidx = insurance_data{:, {v_chosen}} == insurance_data{:, {v_pid}};
 % Get only values for chosen plans, as a new table
 insurance_data_red = insurance_data(cidx, :);
 
-% Get shifted version of plan ID variable
-shifted_plan = circshift(insurance_data_red{:, {v_pid}}, 1);
+% Get shifted version of chosen plan ID variable
+shifted_choice = circshift(insurance_data_red{:, {v_chosen}}, 1);
 
-% Check whether people switched plans
-switched = (shifted_plan ~= insurance_data_red{:, {v_pid}});
+% Specify name for that variable in the data set
+v_shifted_choice = strcat(v_pid, '_shifted');
 
-% Specify name for plan retainment variable
-v_ret = 'retained';
-
-% Add the variable to the data set
-insurance_data_red = addvars(insurance_data_red, ~switched, ...
-    'NewVariableNames', v_ret);
+% Add it to the data set
+insurance_data_red = addvars(insurance_data_red, shifted_choice, ...
+    'NewVariableNames', v_shifted_choice);
 
 % Specify name of individual ID variable
 v_id = 'indiv_id';
 
+% Get shifted version of individual ID variable
+shifted_id = circshift(insurance_data_red{:, {v_id}}, 1);
+
+% Specify name for it in the data set
+v_shifted_id = strcat(v_id, '_shifted');
+
+% Add it to the data set
+insurance_data_red = addvars(insurance_data_red, shifted_id, ...
+    'NewVariableNames', v_shifted_id);
+
 % Specify name of choice situation ID
 v_csid = 'choice_sit';
 
-% Add plan retainment indicator to full data set, by joining on the
-% individual and plan ID variables
+% Add shifted plan and individual IDs to main data set
 insurance_data = join(insurance_data, ...
-    insurance_data_red(:, {v_id, v_csid, v_ret}));
+    insurance_data_red(:, {v_id, v_csid, v_shifted_id, v_shifted_choice}));
 
-% Note that the plan retainment indicator should be one only for the
-% actually chosen plan, so enforce that
-insurance_data{:, {v_ret}} = (insurance_data{:, {v_ret}} & cidx);
+% Specify name of switching indicator, that is, a variable which is one for
+% any plan that is not the same as the one chosen during the previous
+% period, and also for any plan that is the first one anyone chooses
+v_switch = 'switched_plans';
+
+% Calculate the indicator
+switched = ...
+    (insurance_data{:, {v_shifted_id}} ~= insurance_data{:, {v_id}}) | ...
+    (insurance_data{:, {v_shifted_choice}} ~= insurance_data{:, {v_pid}});
+
+% Add it to the data set
+insurance_data = addvars(insurance_data, switched, ...
+    'NewVariableNames', v_switch);
+
+% Specify name for (analogous) plan retention variable
+v_ret = 'retained_plan';
+
+% Add it to the data set
+insurance_data = addvars(insurance_data, ~switched, ...
+    'NewVariableNames', v_ret);
 
 % Specify name of comparison tool access indicator
 v_tool = 'has_comparison_tool';
 
-% Specify name for tool access and plan retention interaction
-v_ret_tool = strcat(v_ret, '_times_', v_tool);
+% Specify name for tool access and plan switching interaction
+v_switch_tool = strcat(v_switch, '_times_', v_tool);
+
+% Add the interaction to the data set
+insurance_data = addvars(insurance_data, ...
+    insurance_data{:, {v_switch}} .* insurance_data{:, {v_tool}}, ...
+    'NewVariableNames', v_switch_tool);
+
+% Specify name for tool access and plan retention variable
+v_ret_tool = strcat(v_ret, '_times', v_tool);
 
 % Add the interaction to the data set
 insurance_data = addvars(insurance_data, ...
@@ -89,15 +120,25 @@ insurance_data = addvars(insurance_data, ...
 % Specify name of plan premium variable
 v_pre = 'premium';
 
+% Specify name for log premium variable
+v_logpre = 'log_premium';
+
+% Add variable to the data set
+insurance_data{:, {v_logpre}} = log(insurance_data{:, {v_pre}});
+
 % Specify name of age variable
 v_age = 'age';
 
-v_pre_age = strcat(v_pre, '_times_', v_age);
-v_pre_loginc = strcat(v_pre, '_times_', v_loginc);
+% Specify name of risk score variable
+v_risk = 'risk_score';
+
+% Specify name for matrix of demographics interacted with premium
 vars_pre_dem = 'premium_times_demographics';
+
+% Add variables to the data
 insurance_data = addvars(insurance_data, ...
-    insurance_data{:, {v_age v_loginc}} ...
-    .* (insurance_data{:, {v_pre}} * ones(1,2)), ...
+    insurance_data{:, {v_age v_inc v_risk}} ...
+    .* (insurance_data{:, {v_pre}} * ones(1,3)), ...
     'NewVariableNames', vars_pre_dem);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -111,8 +152,11 @@ cd(mdir)
 v_cov = 'plan_coverage';  % Coverage
 v_svq = 'plan_service_quality';  % Service quality
 
-% Get quadrature points and weights
-[qp, qw] = nwspgr('KPN', 3, 4);
+% Set precision for sparse grids integration
+sgprec = 4;
+
+% Get sparse grids quadrature points and weights
+[qp, qw] = nwspgr('KPN', 3, sgprec);
 
 % Transpose them
 qp = qp.';
@@ -127,20 +171,43 @@ X = insurance_data{:, {v_pre, v_cov, v_svq, ...  % Plan characteristics
 sit_id = insurance_data{:, {v_csid}};
 
 % Set optimization options
-options = optimset('GradObj','off','HessFcn','off','Display','off', ...
+options = optimset('GradObj','off','HessFcn','off', ... 'Display','off', ...
     'TolFun',1e-6,'TolX',1e-6);
-mu_beta0 = [-.2, .5, .5];
-sigma0 = [1, 1, 1, -.2];
-alpha0 = [.5, -.1];
-gamma0 = [10, 20];
 
-% Perform MLE
+% Set initial values
+mu_beta0 = [-.1, .2, .05];
+sigma0 = [.2, .4, .02, -.05];
+alpha0 = [2, -.5];
+gamma0 = [.02, .02, .02];
+
+% Divide some parts of X by 1000
+X(:,[1, end-length(gamma0):end]) = X(:,[1, end-length(gamma0):end]) / 1000;
+
+% Calculate some counters, which will be helpful for telling fminunc which
+% parts of the parameter vector it uses (which is just a single column
+% vector) correspond to which parts of the input vectors for the log
+% likelihood function (which takes several arguments)
+bmax = length(mu_beta0);  % End of beta
+sdiagmin = length(mu_beta0)+1;  % Start of diagonal elements of Sigma
+sdiagmax = length(mu_beta0)*2;  % End of diagonal elements of Sigma
+amin = length(mu_beta0)+length(sigma0)+1;  % Start of alpha
+amax = amin+length(alpha0)-1;  % End of alpha
+gmin = amax+1;  % Start of gamma
+gmax = gmin+length(gamma0)-1;  % End of gamma
+
+%subset = insurance_data{:, {v_id}} <= 300;
+%X = X(subset, :);
+%cidx = cidx(subset, :);
+%sit_id = sit_id(subset, :);
+
+% Perform MLE, stop the time it takes to run
 tic
 [theta_hat,~,~,~,~,I] = fminunc( ...
-    @(theta)ll_structural(theta(1:3), ...  % mu_beta
-    [theta(4:6), 0, 0, theta(7)], ... % sigma
-    theta(8:9), ...  % alpha
-    theta(10:11), ... % gamma
+    @(theta)ll_structural(theta(1:bmax), ...  % mu_beta
+    [theta(sdiagmin:sdiagmax), ...  % Diagonal elements of Sigma
+    0, 0, theta(sdiagmax+1)], ... % Off-diagonal elements of Sigma
+    theta(amin:amax), ...  % alpha
+    theta(gmin:gmax), ... % gamma
     X, sit_id, cidx, qp, qw), ...
     [mu_beta0, sigma0, alpha0, gamma0], ... % initial values
     options);
