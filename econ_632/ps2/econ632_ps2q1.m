@@ -79,7 +79,7 @@ p0_data = insurance_data_red;
 p0_data{:, {v_pid v_pre v_cov v_svq}} = 0;
 
 % Add it to the data set
-insurance_data = [insurance_data; p0_data];
+%insurance_data = [insurance_data; p0_data];
 
 % Update indicator for a plan being chosen
 cidx = insurance_data{:, {v_chosen}} == insurance_data{:, {v_pid}};
@@ -140,19 +140,23 @@ v_logpre = 'log_premium';
 % Add variable to the data set
 insurance_data{:, {v_logpre}} = log(insurance_data{:, {v_pre}});
 
-% Specify name of age variable
+% Specify various other variables
 v_age = 'age';
-
-% Specify name of risk score variable
 v_risk = 'risk_score';
+v_year = 'year';
+v_sex = 'sex';
+v_tenure = 'years_enrolled';
+
+% Specify which variables to interact with the plan premium
+vars_dem = {v_age, v_inc, v_risk};
 
 % Specify name for matrix of demographics interacted with premium
 vars_pre_dem = 'premium_times_demographics';
 
 % Add variables to the data
 insurance_data = addvars(insurance_data, ...
-    insurance_data{:, {v_age v_inc v_risk}} ...
-    .* (insurance_data{:, {v_pre}} * ones(1,3)), ...
+    insurance_data{:, vars_dem} ...
+    .* (insurance_data{:, {v_pre}} * ones(1,length(vars_dem))), ...
     'NewVariableNames', vars_pre_dem);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -167,9 +171,6 @@ sgprec = 4;
 
 % Get sparse grids quadrature points
 [qp, qw] = nwspgr('KPN', 3, 4);
-
-% Specify number of quadrature points for Monte Carlo integration
-np = 500;
 
 % Make data set
 X = insurance_data{:, {v_pre, v_cov, v_svq, ...  % Plan characteristics
@@ -187,7 +188,7 @@ options = optimset('GradObj','off','HessFcn','off', ... 'Display','off', ...
 mu_beta0 = [-.1, .2, .05];
 sigma0 = [.2, .4, .02, -.05];
 alpha0 = [2, -.5];
-gamma0 = [.2, .2, .2];
+gamma0 = ones(1, length(vars_dem)) * .2;
 
 % Divide some parts of X by 1000
 X(:,[1, end-length(gamma0):end]) = X(:,[1, end-length(gamma0):end]) / 1000;
@@ -289,10 +290,13 @@ for i=1:length(alpha0)
 end
 
 % Add labels for the elements of gamma
-for i=1:length(gamma0)
-    D(k,1) = {strcat('gamma_', num2str(i))};
-    k = k + 1;
-end
+%for i=1:length(gamma0)
+%    D(k,1) = {strcat('gamma_', num2str(i))};
+%    k = k + 1;
+%end
+
+% Add labels for demographics (interacted with plan premium)
+D(k:end,1) = [vars_dem].';
 
 % Add theta_hat and its standard error to the results
 D(2:end,2:end) = num2cell([theta_hat', SE_a]);
