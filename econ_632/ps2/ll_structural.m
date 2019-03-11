@@ -1,5 +1,24 @@
 function L = ll_structural(mu_beta, sigma, alpha, gamma, X, sit_id, ...
     cidx, qp, qw)
+% Calculates the log-likelihood of a simple model of insurance plan choice,
+% allowing for switching cost, as well as correlated tastes for plan
+% coverage and service quality
+%
+% Inputs
+% mu_beta: [d,1] vector, expected value for random coefficients on plan
+%          premium, coverage, and service quality
+% sigma: [d^2,1] vector, components of the covariance matrix for those
+%        random coefficients
+% alpha: [2,1] vector, coefficients on switching cost and switching cost
+%        interacted with access to a comparison tool
+% gamma: [k,1] vector, coefficients on demographics interacted with plan
+%        premium
+% X: [N,d+2+k] matrix, data on plan premium, coverage, and service quality,
+%    a plan retention indicator, the plan retention indicator interacted
+%    with a tool access indicator, and demographics interacted with plan
+%    premium, in that order
+% sit_id: [nsit,1] vector, choice situation ID
+% cidx: [nsit,1] vector, indicates chosen plans
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Part 1: Get covariance matrix
@@ -29,51 +48,7 @@ for i = 1:length(mu_beta)-1
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Part 2: Scale quadrature points
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% Make sure mu_beta is a column vector
-if size(mu_beta, 1) == 1
-    mu_beta = mu_beta.';
-end
-
-% Get the number of quadrature points
-[~, np] = size(qp);
-
-% The first element of beta will be integrated over last, and just uses its
-% marginal distribution
-qp(1,:) = qp(1,:) * Sigma(1,1) + mu_beta(1);
-
-% The second element will be integrated over second to last, and has to use
-% its conditional distribution, conditioning on the first element
-%
-% Calculate conditional mean
-condmu2 = mu_beta(2) + (Sigma(2,1) / Sigma(1,1)) * (qp(1,:) - mu_beta(1));
-
-% Calculate conditional variance
-condV2 = Sigma(2,2) - (Sigma(2,1)/Sigma(2,2))*Sigma(1,2);
-
-% Scale quadrature points
-qp(2,:) = qp(2,:) * condV2 + condmu2;
-
-% The third element will be integrated over first, and has to use its
-% conditional distribution, conditioning on the first and second elements
-%
-% Stack scaled quadrature points for the other two elements
-stackedqp12 = [qp(1,:);qp(2,:)];
-
-% Calculate conditional mean
-condmu3 = mu_beta(3) + (Sigma(3,1:2) / Sigma(1:2,1:2)) ...
-    * (stackedqp12 - mu_beta(1:2) * ones(1,np));
-
-% Calculate conditional variance
-condV3 = Sigma(3,3) - (Sigma(3,1:2) / Sigma(1:2,1:2)) * Sigma(1:2,3);
-
-% Scale quadrature points
-qp(3,:) = qp(3,:) * condV3 + condmu3;
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Part 3: Conditional choice probability function
+%%% Part 2: Define conditional choice probability function
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Make sure alpha is a column vector
@@ -88,46 +63,85 @@ end
 
 % Set up a function to calculate the weighted conditional choice
 % probability for a given vector beta = b and quadrature weight w
-function ccp = cond_cp(b, w)
+function ccp = cond_cp(b)
     % Get vector of all parameters
     theta = [b; alpha; gamma];
-    
+
     % Get maximum value of parts inside the exponential for each choice
     % situation. This is needed to make an overflow adjustment.
     A = accumarray(sit_id, X * theta, [], @max);
-    
+
     % Calculate numerator, using only chosen quantities, subtracting the
     % maximum within choice situation. This prevents the expression being
     % evaluated as Inf
     ccp_num = exp(X(cidx, :) * theta - A);
-    
+
     % Calculate parts of the denominator, using all quantities, subtracting
     % the maximum within choice situation (the indexing works out such that
     % the maximum is repeated exactly as many times as needed). Again, this
     % prevents infinity
     ccp_dnm = exp(X * theta - A(sit_id));
-    
+
     % Add up values within choice situation to get actual denominator
     ccp_dnm = accumarray(sit_id, ccp_dnm);
-    
-    % Divide numerator by denominator, multiply by weight
-    ccp = (ccp_num ./ ccp_dnm) * w;
+
+    % Divide numerator by denominator
+    ccp = (ccp_num ./ ccp_dnm);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Part 4: Perform integration, get log likelihood
+%%% Part 3: Perform Monte Carlo integration, get log likelihood
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Get weighted conditional choice probabilities for all quadrature points
-% and weights, which will create an nsit X np cell array, where nsit is the
-% number of choice situations
-L = arrayfun(@(i)cond_cp(qp(:,i), qw(i)), (1:np), 'UniformOutput', false);
+% Use the chol() function's second output to check whether Sigma is
+% positive definite
+[C,p] = chol(Sigma);
 
-% Perform the sparse grids integration, by summing up within the rows of
-% the array (also converts to a matrix, since that's easier to handle)
-L = sum(cell2mat(L), 2);
+% Check whether the second output is zero, indicating that Sigma is not
+% positive definite, which will make it impossible to draw from the implied
+% distribution
+if p > 0
+    % If so, set the likelihood to zero
+    L = 0;
+else
+    % Make sure mu_beta is a column vector
+    if size(mu_beta,1) == 1
+        mu_beta = mu_beta.';
+    end
 
-% Get negative log likelihood by taking the log, and summing up across
-% choice situations
-L = -sum(log(L));
+    % Make sure the quadrature points are an array of column vectors
+    if size(qp,1) > size(qp,2)
+        qp = qp.';
+    end
+
+    % Get number of quadrature points
+    np = size(qp, 2);
+    
+    % Make sure the quadrature weights are np x 1
+    if size(qw,1) < size(qw,2)
+        qw = qw.';
+    end
+    
+    % Scale quadrature points
+    qp = mu_beta + C * qp;
+    
+    %for i=1:np
+    %    qp(:,i) = mu_beta + C * qp(:,i);
+    %end
+        
+    % Get weighted conditional choice probabilities for all quadrature
+    % points, which will create an nsit X np cell array, where nsit is the
+    % number of choice situations
+    L = arrayfun(@(i)cond_cp(qp(:,i)), (1:np), 'UniformOutput', false);
+    
+    % Perform the sparse grids integration, by getting the weighted average
+    % within each row of the array. This converts the array to a matrix
+    % before doing the integration, since those are a bit easier to work
+    % with than cell arrays.
+    L = cell2mat(L) * qw;
+    
+    % Get negative log likelihood by taking the log, summing up across
+    % choice situations, and multiplying by -1
+    L = -sum(log(L));
+end
 end

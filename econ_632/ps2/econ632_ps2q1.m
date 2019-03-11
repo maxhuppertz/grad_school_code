@@ -67,6 +67,23 @@ v_csid = 'choice_sit';
 insurance_data = join(insurance_data, ...
     insurance_data_red(:, {v_id, v_csid, v_shifted_id, v_shifted_choice}));
 
+% Specify name of plan premium , coverage and service quality variables
+v_pre = 'premium';  % Premium
+v_cov = 'plan_coverage';  % Coverage
+v_svq = 'plan_service_quality';  % Service quality
+
+% Get a copy of the data to use for an outside option
+p0_data = insurance_data_red;
+
+% Set its plan ID, premium, coverage, and service quality to zero
+p0_data{:, {v_pid v_pre v_cov v_svq}} = 0;
+
+% Add it to the data set
+insurance_data = [insurance_data; p0_data];
+
+% Update indicator for a plan being chosen
+cidx = insurance_data{:, {v_chosen}} == insurance_data{:, {v_pid}};
+
 % Specify name of switching indicator, that is, a variable which is one for
 % any plan that is not the same as the one chosen during the previous
 % period, and also for any plan that is the first one anyone chooses
@@ -117,9 +134,6 @@ v_loginc = 'log_income';
 insurance_data = addvars(insurance_data, ...
     log(insurance_data{:, {v_inc}}), 'NewVariableNames', v_loginc);
 
-% Specify name of plan premium variable
-v_pre = 'premium';
-
 % Specify name for log premium variable
 v_logpre = 'log_premium';
 
@@ -148,19 +162,14 @@ insurance_data = addvars(insurance_data, ...
 % Change back to main directory
 cd(mdir)
 
-% Specify name of plan coverage and service quality variables
-v_cov = 'plan_coverage';  % Coverage
-v_svq = 'plan_service_quality';  % Service quality
-
 % Set precision for sparse grids integration
 sgprec = 4;
 
-% Get sparse grids quadrature points and weights
-[qp, qw] = nwspgr('KPN', 3, sgprec);
+% Get sparse grids quadrature points
+[qp, qw] = nwspgr('KPN', 3, 4);
 
-% Transpose them
-qp = qp.';
-qw = qw.';
+% Specify number of quadrature points for Monte Carlo integration
+np = 500;
 
 % Make data set
 X = insurance_data{:, {v_pre, v_cov, v_svq, ...  % Plan characteristics
@@ -178,7 +187,7 @@ options = optimset('GradObj','off','HessFcn','off', ... 'Display','off', ...
 mu_beta0 = [-.1, .2, .05];
 sigma0 = [.2, .4, .02, -.05];
 alpha0 = [2, -.5];
-gamma0 = [.02, .02, .02];
+gamma0 = [.2, .2, .2];
 
 % Divide some parts of X by 1000
 X(:,[1, end-length(gamma0):end]) = X(:,[1, end-length(gamma0):end]) / 1000;
@@ -195,23 +204,46 @@ amax = amin+length(alpha0)-1;  % End of alpha
 gmin = amax+1;  % Start of gamma
 gmax = gmin+length(gamma0)-1;  % End of gamma
 
+% optional subsetting
 %subset = insurance_data{:, {v_id}} <= 300;
 %X = X(subset, :);
 %cidx = cidx(subset, :);
 %sit_id = sit_id(subset, :);
 
-% Perform MLE, stop the time it takes to run
+% Make vector of lower bounds on parameter, set those to negative infinity
+lower = zeros(1, gmax) - Inf;
+
+% Replace lower bounds on diagonal elements of the random coefficient
+% covariance matrix as zero
+lower(sdiagmin:sdiagmax) = 0;
+lower(sdiagmax+1) = -1;
+
+% Upper bounds are all positive infinity
+upper = zeros(1, gmax) + Inf;
+upper(sdiagmax+1) = 1;
+
+% Perform MLE, stop the time it takes to run. I use constrained
+% optimization because the diagonal elements of the random coefficient
+% covariance matrix have to be positive.
 tic
-[theta_hat,~,~,~,~,I] = fminunc( ...
+[theta_hat,ll,~,~,~,~,I] = fmincon( ...
     @(theta)ll_structural(theta(1:bmax), ...  % mu_beta
     [theta(sdiagmin:sdiagmax), ...  % Diagonal elements of Sigma
-    0, 0, theta(sdiagmax+1)], ... % Off-diagonal elements of Sigma
+    0, 0, theta(sdiagmax+1) ...
+    * sqrt(theta(sdiagmin+1) ...
+    * theta(sdiagmin+2))], ...  % Off-diagonal elements of Sigma
     theta(amin:amax), ...  % alpha
-    theta(gmin:gmax), ... % gamma
+    theta(gmin:gmax), ...  % gamma
     X, sit_id, cidx, qp, qw), ...
-    [mu_beta0, sigma0, alpha0, gamma0], ... % initial values
-    options);
+    [mu_beta0, sigma0, alpha0, gamma0], ...  % Initial values
+    [], [], [], [], ...  % Linear constraints, of which there are none
+    lower, upper, ...  % Lower and upper bounds on parameters
+    [], ...  % Non-linear constraints, of which there are none
+    options);  % Other optimization options
 time = toc;
+
+% Display log likelihood
+disp(strcat('Log-likelihood', num2str(-ll)))
 
 % Get analytic standard errors, based on properties of correctly specified
 % MLE (variance is the negative inverse of Fisher information, estimate
