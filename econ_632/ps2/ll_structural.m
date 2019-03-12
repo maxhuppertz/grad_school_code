@@ -1,5 +1,5 @@
 function L = ll_structural(mu_beta, sigma, alpha, gamma, X, sit_id, ...
-    cidx, qp, qw)
+    cidx, qp, qw, density_weights)
 % Calculates the log-likelihood of a simple model of insurance plan choice,
 % allowing for switching cost, as well as correlated tastes for plan
 % coverage and service quality
@@ -19,13 +19,22 @@ function L = ll_structural(mu_beta, sigma, alpha, gamma, X, sit_id, ...
 %    premium, in that order
 % sit_id: [nsit,1] vector, choice situation ID
 % cidx: [nsit,1] vector, indicates chosen plans
+% qp: [d,np] matrix, quadrature points to use for sparse grids integration
+% qw: [np,1] vector, quadrature weights to use for sparse grids integration
+%
+% Outputs
+% L: scalar, log-likelihood of the model for the current set of parameters,
+%    given the data
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Part 1: Get covariance matrix
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Get number of dimensions of mu_beta
+d = length(mu_beta);
+
 % Start by getting diagonal elements
-Sigma = diag(sigma(1:length(mu_beta)));
+Sigma = diag(sigma(1:d));
 
 % Fill in off-diagonal elements
 %
@@ -48,7 +57,8 @@ for i = 1:length(mu_beta)-1
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Part 2: Define conditional choice probability function
+%%% Part 2: Define conditional choice probability function and density
+%%%         weight function
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Make sure alpha is a column vector
@@ -84,25 +94,34 @@ function ccp = cond_cp(b)
 
     % Add up values within choice situation to get actual denominator
     ccp_dnm = accumarray(sit_id, ccp_dnm);
-
+    
     % Divide numerator by denominator
-    ccp = (ccp_num ./ ccp_dnm);
+    ccp = (ccp_num ./ ccp_dnm);  % * f;
+end
+
+% Define a function to calculate the multivariat normal density at a given
+% point, which is necessary when calculating density weights
+function dens = f(b)
+    % Calculate density at this point
+    dens = exp(-.5 * ((b - mu_beta).' / Sigma) * (b - mu_beta)) ...
+        / sqrt(((2*pi)^d) * det(Sigma));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Part 3: Perform Monte Carlo integration, get log likelihood
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Use the chol() function's second output to check whether Sigma is
-% positive definite
+% Get a Cholesky factor of Sigma, which will be needed to scale the
+% quadrature points. Also keep the chol() function's second output to check
+% whether Sigma is positive definite.
 [C,p] = chol(Sigma);
 
 % Check whether the second output is zero, indicating that Sigma is not
 % positive definite, which will make it impossible to draw from the implied
 % distribution
 if p > 0
-    % If so, set the likelihood to zero
-    L = 0;
+    % If so, set the likelihood to NaN
+    L = NaN(1);
 else
     % Make sure mu_beta is a column vector
     if size(mu_beta,1) == 1
@@ -117,28 +136,38 @@ else
     % Get number of quadrature points
     np = size(qp, 2);
     
-    % Make sure the quadrature weights are np x 1
-    if size(qw,1) < size(qw,2)
-        qw = qw.';
-    end
-    
     % Scale quadrature points
-    qp = mu_beta + C * qp;
+    qp = mu_beta * ones(1,np) + C * qp;
     
-    %for i=1:np
-    %    qp(:,i) = mu_beta + C * qp(:,i);
-    %end
-        
     % Get weighted conditional choice probabilities for all quadrature
     % points, which will create an nsit X np cell array, where nsit is the
     % number of choice situations
     L = arrayfun(@(i)cond_cp(qp(:,i)), (1:np), 'UniformOutput', false);
     
     % Perform the sparse grids integration, by getting the weighted average
-    % within each row of the array. This converts the array to a matrix
-    % before doing the integration, since those are a bit easier to work
-    % with than cell arrays.
-    L = cell2mat(L) * qw;
+    % within each row of the array. The following code converts the array
+    % to a matrix before doing the integration, since those are a bit
+    % easier to work with than cell arrays.
+    %
+    % Check whether to use density weights
+    if density_weights == 1
+        % If so, calculate them
+        dw = arrayfun(@(i)f(qp(:,i)), (1:np).');
+        
+        % Rescale them so they sum to one
+        dw = dw / sum(dw);
+        
+        % Perform the integration
+        L = cell2mat(L) * dw;
+    else
+        % Otherwise, make sure the quadrature weights are np x 1
+        if size(qw,1) < size(qw,2)
+            qw = qw.';
+        end
+        
+        % Perform the integration
+        L = cell2mat(L) * qw;
+    end
     
     % Get negative log likelihood by taking the log, summing up across
     % choice situations, and multiplying by -1

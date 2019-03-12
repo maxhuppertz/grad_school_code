@@ -176,7 +176,7 @@ cd(mdir)
 sgprec = 4;
 
 % Get sparse grids quadrature points
-[qp, qw] = nwspgr('KPN', 3, 4);
+[qp, qw] = nwspgr('KPN', 3, sgprec);
 
 % Make data set
 X = insurance_data{:, {v_pre, v_cov, v_svq, ...  % Plan characteristics
@@ -186,18 +186,45 @@ X = insurance_data{:, {v_pre, v_cov, v_svq, ...  % Plan characteristics
 % Get choice situation ID as vector
 sit_id = insurance_data{:, {v_csid}};
 
+% Set general tolerance for solver (see below)
+gtol = 1e-14;
+
 % Set optimization options
-options = optimset('GradObj','off','HessFcn','off', ... 'Display','off', ...
-    'TolFun',1e-6,'TolX',1e-6);
+options = optimoptions('fmincon', ...  % Which solver to apply these to
+    'Algorithm', 'interior-point', ...  % Which solution algorithm to use
+    'OptimalityTolerance', gtol, 'FunctionTolerance', gtol, ...
+    'StepTolerance', gtol, ...  % Various tolerances
+    'SpecifyObjectiveGradient', false);
 
 % Set initial values
-mu_beta0 = [-.1, .2, .05];
-sigma0 = [.2, .4, .02, -.05];
-alpha0 = [2, -.5];
-gamma0 = ones(1, length(vars_dem)) * .2;
+mu_beta0 = [-.1, .2, 2];
+sigma0 = [.2, 1, .5, 0, 0, -.6];
+alpha0 = [4, -.5];
+gamma0 = [0.4, -0.3, -1.4];
 
 % Divide some parts of X by 1000
 X(:,[1, end-length(gamma0):end]) = X(:,[1, end-length(gamma0):end]) / 1000;
+
+% Choose whether to use only a subset of the data
+use_subset = 1;
+
+% Check whether subsetting is necessary
+if use_subset == 1
+    % Specify how many individuals to use in the subset sample
+    n_subset = 1000;
+    
+    % Get the subset of people, by using only the first n_subset ones
+    subset = insurance_data{:, {v_id}} <= n_subset;
+    
+    % Subset the data set
+    X = X(subset, :);
+    
+    % Subset the choice index
+    cidx = cidx(subset, :);
+    
+    % Subset the choice situation ID
+    sit_id = sit_id(subset, :);
+end
 
 % Calculate some counters, which will be helpful for telling fminunc which
 % parts of the parameter vector it uses (which is just a single column
@@ -211,12 +238,6 @@ amax = amin+length(alpha0)-1;  % End of alpha
 gmin = amax+1;  % Start of gamma
 gmax = gmin+length(gamma0)-1;  % End of gamma
 
-% optional subsetting
-%subset = insurance_data{:, {v_id}} <= 300;
-%X = X(subset, :);
-%cidx = cidx(subset, :);
-%sit_id = sit_id(subset, :);
-
 % Make vector of lower bounds on parameter, set those to negative infinity
 lower = zeros(1, gmax) - Inf;
 
@@ -226,13 +247,13 @@ lower(sdiagmin:sdiagmax) = 0;
 
 % Replace lower bound on the correlation between the coefficients on
 % coverage and service quality as -1
-lower(sdiagmax+1) = -1;
+%lower(sdiagmax+1) = -1;
 
 % Set upper bounds to positive infinity
 upper = zeros(1, gmax) + Inf;
 
 % Set upper bound on the random coefficient correlation to 1
-upper(sdiagmax+1) = 1;
+%upper(sdiagmax+1) = 1;
 
 % Perform MLE, stop the time it takes to run. I use constrained
 % optimization because the diagonal elements of the random coefficient
@@ -240,13 +261,10 @@ upper(sdiagmax+1) = 1;
 tic
 [theta_hat,ll,~,~,~,~,I] = fmincon( ...
     @(theta)ll_structural(theta(1:bmax), ...  % mu_beta
-    [theta(sdiagmin:sdiagmax), ...  % Diagonal elements of Sigma
-    0, 0, theta(sdiagmax+1) ...
-    * sqrt(theta(sdiagmin+1) ...
-    * theta(sdiagmin+2))], ...  % Off-diagonal elements of Sigma
+    theta(sdiagmin:amin-1), ...  % Sigma
     theta(amin:amax), ...  % alpha
     theta(gmin:gmax), ...  % gamma
-    X, sit_id, cidx, qp, qw), ...
+    X, sit_id, cidx, qp, qw, 1), ...
     [mu_beta0, sigma0, alpha0, gamma0], ...  % Initial values
     [], [], [], [], ...  % Linear constraints, of which there are none
     lower, upper, ...  % Lower and upper bounds on parameters
@@ -255,7 +273,8 @@ tic
 time = toc;
 
 % Display log likelihood
-disp(strcat('Log-likelihood', num2str(-ll)))
+disp(strcat('Log-likelihood: ', num2str(-ll)))
+disp('\n')
 
 % Get analytic standard errors, based on properties of correctly specified
 % MLE (variance is the negative inverse of Fisher information, estimate
@@ -291,8 +310,12 @@ end
 
 % Add labels for the off-diagonal elements by hand, since these aren't
 % always all estimated, and I don't want to figure out how to automate this
-D(k,1) = {'Sigma_23'};
+D(k,1) = {'Sigma_12'};
 k = k + 1;  % Keep track of the rows!
+D(k,1) = {'Sigma_13'};
+k = k + 1;
+D(k,1) = {'Sigma_23'};
+k = k + 1;
 
 % Add labels for the elements of alpha
 for i=1:length(alpha0)
@@ -300,17 +323,17 @@ for i=1:length(alpha0)
     k = k + 1;
 end
 
-% Add labels for the elements of gamma
-%for i=1:length(gamma0)
-%    D(k,1) = {strcat('gamma_', num2str(i))};
-%    k = k + 1;
-%end
-
 % Add labels for demographics (interacted with plan premium)
 D(k:end,1) = [vars_dem].';
 
+% Set number of digits to display results
+rdig = 4;
+
 % Add theta_hat and its standard error to the results
-D(2:end,2:end) = num2cell([theta_hat', SE_a]);
+D(2:end,2:end) = num2cell(round([theta_hat.', SE_a], rdig));
+
+% Set display format
+format long g
 
 % Display the results
 disp(D)
