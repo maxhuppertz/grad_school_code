@@ -253,7 +253,7 @@ gmin = amax+1;  % Start of gamma
 gmax = gmin+length(gamma0)-1;  % End of gamma
 
 % It helps to scale all variables such that they are of roughly the same
-% order of magnitude, and preferably small-ish. I scale all variable to be
+% order of magnitude, and preferably small-ish. I scale all variables to be
 % roughly between 0 and 2.
 %
 % Divide premium by 1000
