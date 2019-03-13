@@ -200,33 +200,22 @@ options = optimoptions('fmincon', ...  % Which solver to apply these to
     'Algorithm', 'interior-point', ...  % Which solution algorithm to use
     'OptimalityTolerance', otol, 'FunctionTolerance', ftol, ...
     'StepTolerance', stol, ...  % Various tolerances
+    'MaxFunctionEvaluations', 6000, ...  % Maximum number of evaluations
     'SpecifyObjectiveGradient', false);
 
 % Set initial values
 %
 % Mean of random coefficients, mu_beta
-mu_beta0 = [-.3, .5, .02];
+mu_beta0 = [-74.9019, 5.2131, 2.0523];
 
 % Lower Cholesky factor of random coefficient covariance matrix, C_Sigma
-Csigma0 = [.2, .2, .2, .2, .2, .2];
+Csigma0 = [1.4772, .1924, 1.6111, -2.0582, 28.2505, 7.3254];
 
 % Coefficient on plan retainment and plan retainment times tool, alpha
-alpha0 = [4, -1.5];
+alpha0 = [3.9967, -.6528];
 
 % Coefficient on demographics interacted with premium, gamma
-gamma0 = [-.3, -.1, -.2];
-
-% Divide premium by 1000
-X(:,1) = X(:,1) / 1000;
-
-% Divide service quality by 100
-X(:,length(mu_beta0)) = X(:,length(mu_beta0)) / 100;
-
-% Divide age and income interacted with premium by 10000
-X(:,end-length(gamma0):end-1) = X(:,end-length(gamma0):end-1) / 10000;
-
-% Divide risk score interacted with premium by 100000
-X(:,end:end) = X(:,end:end) / 100000;
+gamma0 = [-2.8844, -1.123, -29.051];
 
 % Choose whether to use only a subset of the data
 use_subset = 0;
@@ -262,6 +251,22 @@ amin = Csodiagmax+1;  % Start of alpha
 amax = amin+length(alpha0)-1;  % End of alpha
 gmin = amax+1;  % Start of gamma
 gmax = gmin+length(gamma0)-1;  % End of gamma
+
+% It helps to scale all variables such that they are of roughly the same
+% order of magnitude, and preferably small-ish. I scale all variable to be
+% roughly between 0 and 2.
+%
+% Divide premium by 1000
+X(:,1) = X(:,1) / 1000;
+
+% Divide service quality by 100
+X(:,length(mu_beta0)) = X(:,length(mu_beta0)) / 100;
+
+% Divide age and income interacted with premium by 10000
+X(:,end-length(gamma0)+1:end-1) = X(:,end-length(gamma0)+1:end-1) / 10000;
+
+% Divide risk score interacted with premium by 100000
+X(:,end) = X(:,end) / 100000;
 
 % Make vector of lower bounds on parameters, set those to negative infinity
 lower = zeros(1, gmax) - Inf;
