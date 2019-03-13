@@ -186,32 +186,55 @@ X = insurance_data{:, {v_pre, v_cov, v_svq, ...  % Plan characteristics
 % Get choice situation ID as vector
 sit_id = insurance_data{:, {v_csid}};
 
-% Set general tolerance for solver (see below)
-gtol = 1e-14;
+% Set function tolerance for solver
+ftol = 1e-10;
+
+% Set optimality tolerance for solver
+otol = 1e-6;
+
+% Set step tolerance level for solver
+stol = 1e-10;
 
 % Set optimization options
 options = optimoptions('fmincon', ...  % Which solver to apply these to
     'Algorithm', 'interior-point', ...  % Which solution algorithm to use
-    'OptimalityTolerance', gtol, 'FunctionTolerance', gtol, ...
-    'StepTolerance', gtol, ...  % Various tolerances
+    'OptimalityTolerance', otol, 'FunctionTolerance', ftol, ...
+    'StepTolerance', stol, ...  % Various tolerances
     'SpecifyObjectiveGradient', false);
 
 % Set initial values
-mu_beta0 = [-.1, .2, 2];
-sigma0 = [.2, 1, .5, 0, 0, -.6];
-alpha0 = [4, -.5];
-gamma0 = [0.4, -0.3, -1.4];
+%
+% Mean of random coefficients, mu_beta
+mu_beta0 = [-.3, .5, .02];
 
-% Divide some parts of X by 1000
-X(:,[1, end-length(gamma0):end]) = X(:,[1, end-length(gamma0):end]) / 1000;
+% Lower Cholesky factor of random coefficient covariance matrix, C_Sigma
+Csigma0 = [.2, .2, .2, .2, .2, .2];
+
+% Coefficient on plan retainment and plan retainment times tool, alpha
+alpha0 = [4, -1.5];
+
+% Coefficient on demographics interacted with premium, gamma
+gamma0 = [-.3, -.1, -.2];
+
+% Divide premium by 1000
+X(:,1) = X(:,1) / 1000;
+
+% Divide service quality by 100
+X(:,length(mu_beta0)) = X(:,length(mu_beta0)) / 100;
+
+% Divide age and income interacted with premium by 10000
+X(:,end-length(gamma0):end-1) = X(:,end-length(gamma0):end-1) / 10000;
+
+% Divide risk score interacted with premium by 100000
+X(:,end:end) = X(:,end:end) / 100000;
 
 % Choose whether to use only a subset of the data
-use_subset = 1;
+use_subset = 0;
 
 % Check whether subsetting is necessary
 if use_subset == 1
     % Specify how many individuals to use in the subset sample
-    n_subset = 1000;
+    n_subset = 50;
     
     % Get the subset of people, by using only the first n_subset ones
     subset = insurance_data{:, {v_id}} <= n_subset;
@@ -231,29 +254,24 @@ end
 % vector) correspond to which parts of the input vectors for the log
 % likelihood function (which takes several arguments)
 bmax = length(mu_beta0);  % End of beta
-sdiagmin = length(mu_beta0)+1;  % Start of diagonal elements of Sigma
-sdiagmax = length(mu_beta0)*2;  % End of diagonal elements of Sigma
-amin = length(mu_beta0)+length(sigma0)+1;  % Start of alpha
+Csdiagmin = length(mu_beta0)+1;  % Start of diagonal elements of C_Sigma
+Csdiagmax = length(mu_beta0)*2;  % End of diagonal elements of C_Sigma
+Csodiagmin = Csdiagmax+1;  % Start of off-diagonal elements of C_Sigma
+Csodiagmax = length(mu_beta0)+length(Csigma0);  % End of off-diag. C_Sigma
+amin = Csodiagmax+1;  % Start of alpha
 amax = amin+length(alpha0)-1;  % End of alpha
 gmin = amax+1;  % Start of gamma
 gmax = gmin+length(gamma0)-1;  % End of gamma
 
-% Make vector of lower bounds on parameter, set those to negative infinity
+% Make vector of lower bounds on parameters, set those to negative infinity
 lower = zeros(1, gmax) - Inf;
 
 % Replace lower bounds on diagonal elements of the random coefficient
-% covariance matrix as zero
-lower(sdiagmin:sdiagmax) = 0;
-
-% Replace lower bound on the correlation between the coefficients on
-% coverage and service quality as -1
-%lower(sdiagmax+1) = -1;
+% covariance matrix as slightly above zero, to enfore strict inequality
+lower(Csdiagmin:Csdiagmax) = 1e-6;
 
 % Set upper bounds to positive infinity
 upper = zeros(1, gmax) + Inf;
-
-% Set upper bound on the random coefficient correlation to 1
-%upper(sdiagmax+1) = 1;
 
 % Perform MLE, stop the time it takes to run. I use constrained
 % optimization because the diagonal elements of the random coefficient
@@ -261,11 +279,12 @@ upper = zeros(1, gmax) + Inf;
 tic
 [theta_hat,ll,~,~,~,~,I] = fmincon( ...
     @(theta)ll_structural(theta(1:bmax), ...  % mu_beta
-    theta(sdiagmin:amin-1), ...  % Sigma
+    [theta(Csdiagmin:Csdiagmax), ...  % C_sigma diagonal
+    theta(Csodiagmin:Csodiagmax)], ...  % C_Sigma off-diagonal
     theta(amin:amax), ...  % alpha
     theta(gmin:gmax), ...  % gamma
-    X, sit_id, cidx, qp, qw, 1), ...
-    [mu_beta0, sigma0, alpha0, gamma0], ...  % Initial values
+    X, sit_id, cidx, qp, qw, 0), ...  % Non-parameter inputs
+    [mu_beta0, Csigma0, alpha0, gamma0], ...  % Initial values
     [], [], [], [], ...  % Linear constraints, of which there are none
     lower, upper, ...  % Lower and upper bounds on parameters
     [], ...  % Non-linear constraints, of which there are none
@@ -274,7 +293,7 @@ time = toc;
 
 % Display log likelihood
 disp(strcat('Log-likelihood: ', num2str(-ll)))
-disp('\n')
+fprintf('\n')
 
 % Get analytic standard errors, based on properties of correctly specified
 % MLE (variance is the negative inverse of Fisher information, estimate
@@ -302,20 +321,19 @@ for i=1:length(mu_beta0)
     k = k + 1;
 end
 
-% Add labels for the diagonal elements of Sigma
+% Add labels for the diagonal elements of C_Sigma
 for i=1:length(mu_beta0)
-    D(k,1) = {strcat('Sigma_', num2str(i), num2str(i))};
+    D(k,1) = {strcat('C_Sigma_', num2str(i), num2str(i))};
     k = k + 1;
 end
 
-% Add labels for the off-diagonal elements by hand, since these aren't
-% always all estimated, and I don't want to figure out how to automate this
-D(k,1) = {'Sigma_12'};
-k = k + 1;  % Keep track of the rows!
-D(k,1) = {'Sigma_13'};
-k = k + 1;
-D(k,1) = {'Sigma_23'};
-k = k + 1;
+% Add labels for the off-diagonal elements of C_Sigma
+for i=1:length(mu_beta0)-1
+    for j=i+1:length(mu_beta0)
+        D(k,1) = {strcat('C_Sigma_',num2str(j),num2str(i))};
+        k = k + 1;
+    end
+end
 
 % Add labels for the elements of alpha
 for i=1:length(alpha0)
@@ -335,8 +353,44 @@ D(2:end,2:end) = num2cell(round([theta_hat.', SE_a], rdig));
 % Set display format
 format long g
 
-% Display the results
-disp(D)
-
 % Display how much time the estimation took
 disp(['Time elapsed: ', num2str(time), ' seconds'])
+fprintf('\n')
+
+% Display the results
+disp('Parameter estimates:')
+disp(D)
+
+% Get part of the estimates corresponding to covariance Cholesky factor
+sigma_hat = [theta_hat(Csdiagmin:Csdiagmax), ...
+    theta_hat(Csodiagmin:Csodiagmax)];
+
+% Get number of dimensions of mu_beta
+d = length(mu_beta0);
+
+% Get diagonal elements of Cholesky factor
+C_hat = diag(sigma_hat(1:d));
+
+% Fill in (lower triangular) off-diagonal elements
+%
+% Set up a counter for the elements in the sigma vector
+k = 1;
+
+% Go through all but the last rows of the covariance matrix
+for i = 1:d-1
+    % Go through all elements of that row past the diagonal
+    for j = i+1:d
+        % Replace the j,i element
+        C_hat(j,i) = sigma_hat(d + k);
+        
+        % Increase the element counter
+        k = k + 1;
+    end
+end
+
+% Get covariance matrix from Cholesky factor
+Sigma_hat = C_hat*C_hat.';
+
+% Display estimated covariance matrix
+disp('Covariance estimate:')
+disp(round(Sigma_hat, rdig))

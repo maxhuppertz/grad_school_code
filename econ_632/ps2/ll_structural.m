@@ -21,6 +21,8 @@ function L = ll_structural(mu_beta, sigma, alpha, gamma, X, sit_id, ...
 % cidx: [nsit,1] vector, indicates chosen plans
 % qp: [d,np] matrix, quadrature points to use for sparse grids integration
 % qw: [np,1] vector, quadrature weights to use for sparse grids integration
+% density_weights: scalar in {0,1}, indicator whether to calculate density
+%                  weights instead of using the supplied quadrature weights
 %
 % Outputs
 % L: scalar, log-likelihood of the model for the current set of parameters,
@@ -33,28 +35,28 @@ function L = ll_structural(mu_beta, sigma, alpha, gamma, X, sit_id, ...
 % Get number of dimensions of mu_beta
 d = length(mu_beta);
 
-% Start by getting diagonal elements
-Sigma = diag(sigma(1:d));
+% Get diagonal elements of Cholesky factor
+C = diag(sigma(1:d));
 
-% Fill in off-diagonal elements
+% Fill in (lower triangular) off-diagonal elements
 %
 % Set up a counter for the elements in the sigma vector
 k = 1;
 
 % Go through all but the last rows of the covariance matrix
-for i = 1:length(mu_beta)-1
+for i = 1:d-1
     % Go through all elements of that row past the diagonal
-    for j = i+1:length(mu_beta)
-        % Replace the i,j element with the covariance element
-        Sigma(i,j) = sigma(length(mu_beta) + k);
-        
-        % Since this is symmetric, replace the j,i element as well
-        Sigma(j,i) = sigma(length(mu_beta) + k);
+    for j = i+1:d
+        % Replace the j,i element
+        C(j,i) = sigma(d + k);
         
         % Increase the element counter
         k = k + 1;
     end
 end
+
+% Get covariance matrix from Cholesky factor
+Sigma = C * C.';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Part 2: Define conditional choice probability function and density
@@ -76,7 +78,7 @@ end
 function ccp = cond_cp(b)
     % Get vector of all parameters
     theta = [b; alpha; gamma];
-
+    
     % Get maximum value of parts inside the exponential for each choice
     % situation. This is needed to make an overflow adjustment.
     A = accumarray(sit_id, X * theta, [], @max);
@@ -96,7 +98,7 @@ function ccp = cond_cp(b)
     ccp_dnm = accumarray(sit_id, ccp_dnm);
     
     % Divide numerator by denominator
-    ccp = (ccp_num ./ ccp_dnm);  % * f;
+    ccp = (ccp_num ./ ccp_dnm);
 end
 
 % Define a function to calculate the multivariat normal density at a given
@@ -111,66 +113,53 @@ end
 %%% Part 3: Perform Monte Carlo integration, get log likelihood
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Get a Cholesky factor of Sigma, which will be needed to scale the
-% quadrature points. Also keep the chol() function's second output to check
-% whether Sigma is positive definite.
-[C,p] = chol(Sigma);
-
-% Check whether the second output is zero, indicating that Sigma is not
-% positive definite, which will make it impossible to draw from the implied
-% distribution
-if p > 0
-    % If so, set the likelihood to NaN
-    L = NaN(1);
-else
-    % Make sure mu_beta is a column vector
-    if size(mu_beta,1) == 1
-        mu_beta = mu_beta.';
-    end
-
-    % Make sure the quadrature points are an array of column vectors
-    if size(qp,1) > size(qp,2)
-        qp = qp.';
-    end
-
-    % Get number of quadrature points
-    np = size(qp, 2);
-    
-    % Scale quadrature points
-    qp = mu_beta * ones(1,np) + C * qp;
-    
-    % Get weighted conditional choice probabilities for all quadrature
-    % points, which will create an nsit X np cell array, where nsit is the
-    % number of choice situations
-    L = arrayfun(@(i)cond_cp(qp(:,i)), (1:np), 'UniformOutput', false);
-    
-    % Perform the sparse grids integration, by getting the weighted average
-    % within each row of the array. The following code converts the array
-    % to a matrix before doing the integration, since those are a bit
-    % easier to work with than cell arrays.
-    %
-    % Check whether to use density weights
-    if density_weights == 1
-        % If so, calculate them
-        dw = arrayfun(@(i)f(qp(:,i)), (1:np).');
-        
-        % Rescale them so they sum to one
-        dw = dw / sum(dw);
-        
-        % Perform the integration
-        L = cell2mat(L) * dw;
-    else
-        % Otherwise, make sure the quadrature weights are np x 1
-        if size(qw,1) < size(qw,2)
-            qw = qw.';
-        end
-        
-        % Perform the integration
-        L = cell2mat(L) * qw;
-    end
-    
-    % Get negative log likelihood by taking the log, summing up across
-    % choice situations, and multiplying by -1
-    L = -sum(log(L));
+% Make sure mu_beta is a column vector
+if size(mu_beta,1) == 1
+    mu_beta = mu_beta.';
 end
+
+% Make sure the quadrature points are an array of column vectors
+if size(qp,1) > size(qp,2)
+    qp = qp.';
+end
+
+% Get number of quadrature points
+np = size(qp, 2);
+
+% Scale quadrature points
+qp = mu_beta * ones(1,np) + C.' * qp;
+
+% Get weighted conditional choice probabilities for all quadrature
+% points, which will create an nsit X np cell array, where nsit is the
+% number of choice situations
+L = arrayfun(@(i)cond_cp(qp(:,i)), (1:np), 'UniformOutput', false);
+
+% Perform the sparse grids integration, by getting the weighted average
+% within each row of the array. The following code converts the array
+% to a matrix before doing the integration, since those are a bit
+% easier to work with than cell arrays.
+%
+% Check whether to use density weights
+if density_weights == 1
+    % If so, calculate them
+    dw = arrayfun(@(i)f(qp(:,i)), (1:np).');
+
+    % Rescale them so they sum to one
+    dw = dw / sum(dw);
+
+    % Perform the integration
+    L = cell2mat(L) * dw;
+else
+    % Otherwise, make sure the quadrature weights are np x 1
+    if size(qw,1) < size(qw,2)
+        qw = qw.';
+    end
+
+    % Perform the integration
+    L = cell2mat(L) * qw;
+end
+
+% Get negative log likelihood by taking the log, summing up across
+% choice situations, and multiplying by -1
+L = -sum(log(L));
 end
