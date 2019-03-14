@@ -160,6 +160,9 @@ else
 end
 
 % Get negative log likelihood by taking the log, summing up across
-% choice situations, and multiplying by -1
-L = -sum(log(L));
+% choice situations, and multiplying by -1. (The real() bit is necessary
+% because quadrature weights may be negative, which can make this a
+% complex number, which fmincon will not know how to handle.)
+L = real(-sum(log(L)));
+
 end

@@ -154,16 +154,66 @@ v_sex = 'sex';
 v_tenure = 'years_enrolled';
 
 % Specify which variables to interact with the plan premium
-vars_dem = {v_age, v_inc, v_risk};
+vars_pre_dem = {v_inc v_risk};
 
 % Specify name for matrix of demographics interacted with premium
-vars_pre_dem = 'premium_times_demographics';
+varn_pre_dem = 'premium_times_demographics';
 
 % Add variables to the data
 insurance_data = addvars(insurance_data, ...
-    insurance_data{:, vars_dem} ...
-    .* (insurance_data{:, {v_pre}} * ones(1,length(vars_dem))), ...
-    'NewVariableNames', vars_pre_dem);
+    insurance_data{:, vars_pre_dem} ...
+    .* (insurance_data{:, {v_pre}} * ones(1,length(vars_pre_dem))), ...
+    'NewVariableNames', varn_pre_dem);
+
+% Specify variables to interact with coverage
+vars_cov_dem = {v_age v_risk};
+
+% Specify name for matrix of demographics interacted with coverage
+varn_cov_dem = 'coverage_times_demographics';
+
+% Add variables to the data set
+insurance_data = addvars(insurance_data, ...
+    insurance_data{:, vars_cov_dem} ...
+    .* (insurance_data{:, {v_cov}} * ones(1,length(vars_cov_dem))), ...
+    'NewVariableNames', varn_cov_dem);
+
+% Specify variables to interact with plan retainment
+vars_ret_dem = {v_tenure};
+
+% Specify name for the matrix of variables
+varn_ret_dem = 'retainment_times_demographics';
+
+% Add plan to the data
+insurance_data = addvars(insurance_data, ...
+    insurance_data{:, vars_ret_dem} ...
+    .* (insurance_data{:, {v_ret}} * ones(1,length(vars_ret_dem))), ...
+    'NewVariableNames', varn_ret_dem);
+
+% Get unique values of plan ID variable
+plans = unique(insurance_data{:, {v_pid}});
+
+% Specify name for set of plan dummies
+varn_pland = 'plan_dummies';
+
+% Set up plan dummies
+vars_pland = zeros(size(insurance_data,1), length(plans)-1);
+
+% Set up plan ID counter
+k=1;
+
+% Go through all plan ID values except the first
+for plan=min(plans)+1:max(plans)
+    % Replace indicator for the current plan
+    vars_pland(:,k) = ...
+        insurance_data{:,{v_pid}} == plan;
+    
+    % Increase counter
+    k = k + 1;
+end
+
+% Add dummies to the data
+insurance_data = addvars(insurance_data, ...
+    vars_pland, 'NewVariableNames', varn_pland);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Part 2: Structural estimation
@@ -181,7 +231,7 @@ sgprec = 4;
 % Make data set
 X = insurance_data{:, {v_pre, v_cov, v_svq, ...  % Plan characteristics
     v_ret, v_ret_tool, ...  % Switching cost and tool access
-    vars_pre_dem}};  % Demographics interacted with plan premium
+    varn_pland}};%varn_pre_dem, varn_cov_dem, varn_ret_dem}};  % Demographics
 
 % Get choice situation ID as vector
 sit_id = insurance_data{:, {v_csid}};
@@ -195,27 +245,30 @@ otol = 1e-6;
 % Set step tolerance level for solver
 stol = 1e-10;
 
+% Set the constraint tolerance level for solver
+ctol = 1e-10;
+
 % Set optimization options
 options = optimoptions('fmincon', ...  % Which solver to apply these to
     'Algorithm', 'interior-point', ...  % Which solution algorithm to use
     'OptimalityTolerance', otol, 'FunctionTolerance', ftol, ...
-    'StepTolerance', stol, ...  % Various tolerances
-    'MaxFunctionEvaluations', 6000, ...  % Maximum number of evaluations
+    'StepTolerance', stol, 'ConstraintTolerance', ctol, ...  % Tolerances
+    'MaxFunctionEvaluations', 3000, ...  % Maximum number of evaluations
     'SpecifyObjectiveGradient', false);
 
 % Set initial values
 %
 % Mean of random coefficients, mu_beta
-mu_beta0 = [-74.9019, 5.2131, 2.0523];
+mu_beta0 = [-.2, .04, .04];
 
 % Lower Cholesky factor of random coefficient covariance matrix, C_Sigma
-Csigma0 = [1.4772, .1924, 1.6111, -2.0582, 28.2505, 7.3254];
+Csigma0 = [.4, .2, .1, -.3, .2, -.02];
 
 % Coefficient on plan retainment and plan retainment times tool, alpha
-alpha0 = [3.9967, -.6528];
+alpha0 = [4, -.8];
 
 % Coefficient on demographics interacted with premium, gamma
-gamma0 = [-2.8844, -1.123, -29.051];
+gamma0 = zeros(1, length(plans)-1);
 
 % Choose whether to use only a subset of the data
 use_subset = 0;
@@ -223,7 +276,7 @@ use_subset = 0;
 % Check whether subsetting is necessary
 if use_subset == 1
     % Specify how many individuals to use in the subset sample
-    n_subset = 50;
+    n_subset = 300;
     
     % Get the subset of people, by using only the first n_subset ones
     subset = insurance_data{:, {v_id}} <= n_subset;
@@ -252,21 +305,10 @@ amax = amin+length(alpha0)-1;  % End of alpha
 gmin = amax+1;  % Start of gamma
 gmax = gmin+length(gamma0)-1;  % End of gamma
 
-% It helps to scale all variables such that they are of roughly the same
-% order of magnitude, and preferably small-ish. I scale all variables to be
-% roughly between 0 and 2.
+% It helps to scale all variables such that they are interpretable
 %
-% Divide premium by 1000
-X(:,1) = X(:,1) / 1000;
-
-% Divide service quality by 100
-X(:,length(mu_beta0)) = X(:,length(mu_beta0)) / 100;
-
-% Divide age and income interacted with premium by 10000
-X(:,end-length(gamma0)+1:end-1) = X(:,end-length(gamma0)+1:end-1) / 10000;
-
-% Divide risk score interacted with premium by 100000
-X(:,end) = X(:,end) / 100000;
+% Multiply coverage by 100, so it can be measured in points
+X(:,2) = X(:,2)*100;
 
 % Make vector of lower bounds on parameters, set those to negative infinity
 lower = zeros(1, gmax) - Inf;
@@ -346,8 +388,11 @@ for i=1:length(alpha0)
     k = k + 1;
 end
 
-% Add labels for demographics (interacted with plan premium)
-D(k:end,1) = [vars_dem].';
+% Add labels for plan dummies to the results
+for i=2:length(plans)
+    D(k,1) = {strcat('plan_', num2str(i))};
+    k = k + 1;
+end
 
 % Set number of digits to display results
 rdig = 4;
