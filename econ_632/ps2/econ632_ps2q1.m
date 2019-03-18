@@ -166,7 +166,7 @@ insurance_data = addvars(insurance_data, ...
     'NewVariableNames', varn_pre_dem);
 
 % Specify variables to interact with coverage
-vars_cov_dem = {v_age v_risk};
+vars_cov_dem = {v_inc v_risk};
 
 % Specify name for matrix of demographics interacted with coverage
 varn_cov_dem = 'coverage_times_demographics';
@@ -176,6 +176,18 @@ insurance_data = addvars(insurance_data, ...
     insurance_data{:, vars_cov_dem} ...
     .* (insurance_data{:, {v_cov}} * ones(1,length(vars_cov_dem))), ...
     'NewVariableNames', varn_cov_dem);
+
+% Specify variables to interact with service quality
+vars_svq_dem = {v_inc v_risk};
+
+% Specify name for matrix of demographics interacted with coverage
+varn_svq_dem = 'quality_times_demographics';
+
+% Add variables to the data set
+insurance_data = addvars(insurance_data, ...
+    insurance_data{:, vars_svq_dem} ...
+    .* (insurance_data{:, {v_svq}} * ones(1,length(vars_svq_dem))), ...
+    'NewVariableNames', varn_svq_dem);
 
 % Specify variables to interact with plan retainment
 vars_ret_dem = {v_tenure};
@@ -223,7 +235,7 @@ insurance_data = addvars(insurance_data, ...
 cd(mdir)
 
 % Set precision for sparse grids integration
-sgprec = 4;
+sgprec = 6;
 
 % Get sparse grids quadrature points
 [qp, qw] = nwspgr('KPN', 3, sgprec);
@@ -231,44 +243,24 @@ sgprec = 4;
 % Make data set
 X = insurance_data{:, {v_pre, v_cov, v_svq, ...  % Plan characteristics
     v_ret, v_ret_tool, ...  % Switching cost and tool access
-    varn_pland}};%varn_pre_dem, varn_cov_dem, varn_ret_dem}};  % Demographics
+    varn_pre_dem, varn_cov_dem, varn_svq_dem}};  % Demographics
 
 % Get choice situation ID as vector
 sit_id = insurance_data{:, {v_csid}};
 
-% Set function tolerance for solver
-ftol = 1e-10;
-
-% Set optimality tolerance for solver
-otol = 1e-6;
-
-% Set step tolerance level for solver
-stol = 1e-10;
-
-% Set the constraint tolerance level for solver
-ctol = 1e-10;
-
-% Set optimization options
-options = optimoptions('fmincon', ...  % Which solver to apply these to
-    'Algorithm', 'interior-point', ...  % Which solution algorithm to use
-    'OptimalityTolerance', otol, 'FunctionTolerance', ftol, ...
-    'StepTolerance', stol, 'ConstraintTolerance', ctol, ...  % Tolerances
-    'MaxFunctionEvaluations', 3000, ...  % Maximum number of evaluations
-    'SpecifyObjectiveGradient', false);
-
 % Set initial values
 %
 % Mean of random coefficients, mu_beta
-mu_beta0 = [-.2, .04, .04];
+mu_beta0 = [-63.3, 7.7, 3.1];
 
 % Lower Cholesky factor of random coefficient covariance matrix, C_Sigma
-Csigma0 = [.4, .2, .1, -.3, .2, -.02];
+Csigma0 = [-29.7, -91.8, .3, 25.7, 30.5, 7.7];
 
 % Coefficient on plan retainment and plan retainment times tool, alpha
-alpha0 = [4, -.8];
+alpha0 = [4.0, -.6];
 
 % Coefficient on demographics interacted with premium, gamma
-gamma0 = zeros(1, length(plans)-1);
+gamma0 = [-12.9, -71.8, -3.2, -3.5, -1.0, -1.4];
 
 % Choose whether to use only a subset of the data
 use_subset = 0;
@@ -276,7 +268,7 @@ use_subset = 0;
 % Check whether subsetting is necessary
 if use_subset == 1
     % Specify how many individuals to use in the subset sample
-    n_subset = 300;
+    n_subset = 1000;
     
     % Get the subset of people, by using only the first n_subset ones
     subset = insurance_data{:, {v_id}} <= n_subset;
@@ -305,10 +297,37 @@ amax = amin+length(alpha0)-1;  % End of alpha
 gmin = amax+1;  % Start of gamma
 gmax = gmin+length(gamma0)-1;  % End of gamma
 
-% It helps to scale all variables such that they are interpretable
+% Set function tolerance for solver
+ftol = 1e-14;
+
+% Set optimality tolerance for solver
+otol = 1e-4;
+
+% Set step tolerance level for solver
+stol = 1e-14;
+
+vmul = 300;  % Default is 100
+
+% Set optimization options
+options = optimoptions('fminunc', ...  % Which solver to apply these to
+    'Algorithm', 'quasi-newton', ...  % Which solution algorithm to use
+    'OptimalityTolerance', otol, 'FunctionTolerance', ftol, ...
+    'StepTolerance', stol, ...  % Tolerances
+    'MaxFunctionEvaluations', vmul*gmax, ...  % Max. function evaluations
+    'Display', 'iter');
+
+% It helps to scale all variables such that they are of about equal order
+% of magnitude
 %
-% Multiply coverage by 100, so it can be measured in points
-X(:,2) = X(:,2)*100;
+% Make a vector of scaling factors
+scX = [1/1000, 1, 1/100, ...  % mu_beta
+    1, 1, ...  % alpha
+    1/(1000*100), 1/(1000*100), ...  % Interactions with premium
+    1/100, 1/100, ...  % Interactions with risk score
+    1/(100*100), 1/(100*100)];  % Interactions with service quality
+
+% Scale X accordingly
+X = (ones(length(X),1) * scX) .* X;
 
 % Make vector of lower bounds on parameters, set those to negative infinity
 lower = zeros(1, gmax) - Inf;
@@ -324,7 +343,7 @@ upper = zeros(1, gmax) + Inf;
 % optimization because the diagonal elements of the random coefficient
 % covariance matrix have to be positive.
 tic
-[theta_hat,ll,~,~,~,~,I] = fmincon( ...
+[theta_hat,ll,~,~,~,I] = fminunc( ...
     @(theta)ll_structural(theta(1:bmax), ...  % mu_beta
     [theta(Csdiagmin:Csdiagmax), ...  % C_sigma diagonal
     theta(Csodiagmin:Csodiagmax)], ...  % C_Sigma off-diagonal
@@ -332,9 +351,6 @@ tic
     theta(gmin:gmax), ...  % gamma
     X, sit_id, cidx, qp, qw, 0), ...  % Non-parameter inputs
     [mu_beta0, Csigma0, alpha0, gamma0], ...  % Initial values
-    [], [], [], [], ...  % Linear constraints, of which there are none
-    lower, upper, ...  % Lower and upper bounds on parameters
-    [], ...  % Non-linear constraints, of which there are none
     options);  % Other optimization options
 time = toc;
 
@@ -388,11 +404,16 @@ for i=1:length(alpha0)
     k = k + 1;
 end
 
-% Add labels for plan dummies to the results
-for i=2:length(plans)
-    D(k,1) = {strcat('plan_', num2str(i))};
+for i=1:length(gamma0)
+    D(k,1) = {strcat('gamma_', num2str(i))};
     k = k + 1;
 end
+
+% Add labels for plan dummies to the results
+%for i=2:length(plans)
+    %D(k,1) = {strcat('plan_', num2str(i))};
+    %k = k + 1;
+%end
 
 % Set number of digits to display results
 rdig = 4;
@@ -419,7 +440,7 @@ sigma_hat = [theta_hat(Csdiagmin:Csdiagmax), ...
 d = length(mu_beta0);
 
 % Get diagonal elements of Cholesky factor
-C_hat = diag(sigma_hat(1:d));
+C_hat = diag(exp(sigma_hat(1:d)));
 
 % Fill in (lower triangular) off-diagonal elements
 %

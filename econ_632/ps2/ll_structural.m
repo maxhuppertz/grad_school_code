@@ -36,7 +36,7 @@ function L = ll_structural(mu_beta, sigma, alpha, gamma, X, sit_id, ...
 d = length(mu_beta);
 
 % Get diagonal elements of Cholesky factor
-C = diag(sigma(1:d));
+C = diag(exp(sigma(1:d)));
 
 % Fill in (lower triangular) off-diagonal elements
 %
@@ -165,4 +165,9 @@ end
 % complex number, which fmincon will not know how to handle.)
 L = real(-sum(log(L)));
 
+% If this is for some reason evaluated to be infinity, replace it with a
+% large number instead
+if isinf(L)
+    L = 10e14;
+end
 end
