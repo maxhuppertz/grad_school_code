@@ -377,7 +377,7 @@ for subdir in [fdir, ddir]:
 
         # If this is the data directory, ensure download later on
         if subdir == ddir:
-            download_enfore = True
+            download_enforce = True
 
 ################################################################################
 ### Part 2.2: Download/load data

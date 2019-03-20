@@ -119,7 +119,7 @@ if size(mu_beta,1) == 1
 end
 
 % Make sure the quadrature points are an array of column vectors
-if size(qp,1) > size(qp,2)
+if size(qp,1) ~= d
     qp = qp.';
 end
 

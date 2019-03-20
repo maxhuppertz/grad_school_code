@@ -216,8 +216,7 @@ k=1;
 % Go through all plan ID values except the first
 for plan=min(plans)+1:max(plans)
     % Replace indicator for the current plan
-    vars_pland(:,k) = ...
-        insurance_data{:,{v_pid}} == plan;
+    vars_pland(:,k) = insurance_data{:,{v_pid}} == plan;
     
     % Increase counter
     k = k + 1;
@@ -235,7 +234,7 @@ insurance_data = addvars(insurance_data, ...
 cd(mdir)
 
 % Set precision for sparse grids integration
-sgprec = 6;
+sgprec = 4;
 
 % Get sparse grids quadrature points
 [qp, qw] = nwspgr('KPN', 3, sgprec);
@@ -251,16 +250,19 @@ sit_id = insurance_data{:, {v_csid}};
 % Set initial values
 %
 % Mean of random coefficients, mu_beta
-mu_beta0 = [-63.3, 7.7, 3.1];
+mu_beta0 = [-10.3, 9.4, 1.3]*0;
 
 % Lower Cholesky factor of random coefficient covariance matrix, C_Sigma
-Csigma0 = [-29.7, -91.8, .3, 25.7, 30.5, 7.7];
+Csigma0 = [1.7, 2.1, -5.0, ...
+    -5.8, -4.2, -3.0]*0;
 
 % Coefficient on plan retainment and plan retainment times tool, alpha
-alpha0 = [4.0, -.6];
+alpha0 = [3.8, -1.1]*0;
 
 % Coefficient on demographics interacted with premium, gamma
-gamma0 = [-12.9, -71.8, -3.2, -3.5, -1.0, -1.4];
+gamma0 = [-0.3, -5.6, ...
+    -0.6, 3.8, ...
+    0.7, 0.7]*0;
 
 % Choose whether to use only a subset of the data
 use_subset = 0;
@@ -268,7 +270,7 @@ use_subset = 0;
 % Check whether subsetting is necessary
 if use_subset == 1
     % Specify how many individuals to use in the subset sample
-    n_subset = 1000;
+    n_subset = 300;
     
     % Get the subset of people, by using only the first n_subset ones
     subset = insurance_data{:, {v_id}} <= n_subset;
@@ -301,33 +303,57 @@ gmax = gmin+length(gamma0)-1;  % End of gamma
 ftol = 1e-14;
 
 % Set optimality tolerance for solver
-otol = 1e-4;
+otol = 1e-6;
 
 % Set step tolerance level for solver
 stol = 1e-14;
 
+% Set muliplier on number of variables used to get maximum number of
+% iterations
 vmul = 300;  % Default is 100
+
+% Get current parallel pool, don't create one if there is none
+checkpool = gcp('nocreate');
+
+% Check whether no parallel pool is open
+if isempty(checkpool)
+    % If so, start a parallel pool on the local profile
+    parpool('local');
+end
 
 % Set optimization options
 options = optimoptions('fminunc', ...  % Which solver to apply these to
     'Algorithm', 'quasi-newton', ...  % Which solution algorithm to use
+    'HessUpdate', 'bfgs', ...
+    'UseParallel', true, ...
     'OptimalityTolerance', otol, 'FunctionTolerance', ftol, ...
     'StepTolerance', stol, ...  % Tolerances
     'MaxFunctionEvaluations', vmul*gmax, ...  % Max. function evaluations
-    'Display', 'iter');
+    'Display', 'iter');  % Display options
 
 % It helps to scale all variables such that they are of about equal order
 % of magnitude
 %
-% Make a vector of scaling factors
-scX = [1/1000, 1, 1/100, ...  % mu_beta
-    1, 1, ...  % alpha
-    1/(1000*100), 1/(1000*100), ...  % Interactions with premium
-    1/100, 1/100, ...  % Interactions with risk score
-    1/(100*100), 1/(100*100)];  % Interactions with service quality
+% Set master scaling factor
+msc = 100;
 
-% Scale X accordingly
-X = (ones(length(X),1) * scX) .* X;
+% Get number of dimensions of mu_beta
+d = length(mu_beta0);
+
+% Make scaling vectors for elements of parameter vector
+a1 = [1/1000, 1, 1/100,];  % mu_beta
+a21 = ones(1,d);  % Diagonal C_Sigma
+a22 = ones(1,d);  % Off-diag. C_Sigma
+a3 = [1, 1] * msc;  % alpha
+a4 = [a1(1)*1/100, a1(1)*1/100, ...  % Interactions with premium
+    a1(2)*1/100, a1(2)*1/100, ...  % Interactions with risk score
+    a1(3)*1/100, a1(3)*1/100] * msc;  % Interactions with service quality;
+
+% Scale mu_beta scaling vector by master scale factor
+a1 = [1/1000, 1, 1/100,] * msc;
+
+% Put all adjustment factors into a vector for later use
+theta_adj = [a1, a21, a22, a3, a4];
 
 % Make vector of lower bounds on parameters, set those to negative infinity
 lower = zeros(1, gmax) - Inf;
@@ -343,12 +369,12 @@ upper = zeros(1, gmax) + Inf;
 % optimization because the diagonal elements of the random coefficient
 % covariance matrix have to be positive.
 tic
-[theta_hat,ll,~,~,~,I] = fminunc( ...
-    @(theta)ll_structural(theta(1:bmax), ...  % mu_beta
+[theta_hat,ll,~,~,G,I] = fminunc( ...
+    @(theta)ll_structural(theta(1:bmax).*a1, ...  % mu_beta
     [theta(Csdiagmin:Csdiagmax), ...  % C_sigma diagonal
     theta(Csodiagmin:Csodiagmax)], ...  % C_Sigma off-diagonal
-    theta(amin:amax), ...  % alpha
-    theta(gmin:gmax), ...  % gamma
+    theta(amin:amax).*a3, ...  % alpha
+    theta(gmin:gmax).*a4, ...  % gamma
     X, sit_id, cidx, qp, qw, 0), ...  % Non-parameter inputs
     [mu_beta0, Csigma0, alpha0, gamma0], ...  % Initial values
     options);  % Other optimization options
@@ -358,21 +384,30 @@ time = toc;
 disp(strcat('Log-likelihood: ', num2str(-ll)))
 fprintf('\n')
 
+% Get inverse of Fisher information; don't display potential warnings about
+% this not being invertible
+warning('off', 'MATLAB:singularMatrix')
+V = inv(I);
+warning('on', 'MATLAB:singularMatrix')
+
 % Get analytic standard errors, based on properties of correctly specified
 % MLE (variance is the negative inverse of Fisher information, estimate
 % this using sample analogue)
-V = inv(I);
-SE_a = sqrt(diag(V));
+SE_a = sqrt(diag(V));  %sqrt(diag(V))./(theta_adj.');
+
+% Get alternative estimator, based on the score outer product (this will
+% always work)
+SE_sop = sqrt(diag(G*G.'));  % sqrt(diag(G*G.'))./(theta_adj.');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Part 3: Display the results
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Set up a cell array to display the results
-D = cell(length(theta_hat)+1,3);
+D = cell(length(theta_hat)+1,4);
 
 % Add headers
-D(1,:) = {'Parameter', 'Estimate', 'SE'};
+D(1,:) = {'Parameter', 'Estimate', 'SE_ih', 'SE_sop'};
 
 % Fill in the first column of the cell array with coefficient labels
 % Set up a counter to mark which row needs to be filled in next
@@ -404,22 +439,19 @@ for i=1:length(alpha0)
     k = k + 1;
 end
 
+% Add labels for elements of gamma
 for i=1:length(gamma0)
     D(k,1) = {strcat('gamma_', num2str(i))};
     k = k + 1;
 end
 
-% Add labels for plan dummies to the results
-%for i=2:length(plans)
-    %D(k,1) = {strcat('plan_', num2str(i))};
-    %k = k + 1;
-%end
-
 % Set number of digits to display results
 rdig = 4;
 
+%theta_hat = theta_hat .* theta_adj;
+
 % Add theta_hat and its standard error to the results
-D(2:end,2:end) = num2cell(round([theta_hat.', SE_a], rdig));
+D(2:end,2:end) = num2cell(round([theta_hat.', SE_a, SE_sop], rdig));
 
 % Set display format
 format long g
@@ -435,9 +467,6 @@ disp(D)
 % Get part of the estimates corresponding to covariance Cholesky factor
 sigma_hat = [theta_hat(Csdiagmin:Csdiagmax), ...
     theta_hat(Csodiagmin:Csodiagmax)];
-
-% Get number of dimensions of mu_beta
-d = length(mu_beta0);
 
 % Get diagonal elements of Cholesky factor
 C_hat = diag(exp(sigma_hat(1:d)));
