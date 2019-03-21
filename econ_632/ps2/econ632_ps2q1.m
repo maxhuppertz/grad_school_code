@@ -250,19 +250,19 @@ sit_id = insurance_data{:, {v_csid}};
 % Set initial values
 %
 % Mean of random coefficients, mu_beta
-mu_beta0 = [-10.3, 9.4, 1.3]*0;
+mu_beta0 = [-0.03, 0.22, 0.02];
 
 % Lower Cholesky factor of random coefficient covariance matrix, C_Sigma
-Csigma0 = [1.7, 2.1, -5.0, ...
-    -5.8, -4.2, -3.0]*0;
+Csigma0 = [-4.90, 1.23, -12.26, ...
+    0.03, 0.02, 1.14];
 
 % Coefficient on plan retainment and plan retainment times tool, alpha
-alpha0 = [3.8, -1.1]*0;
+alpha0 = [3.78, -0.62];
 
 % Coefficient on demographics interacted with premium, gamma
-gamma0 = [-0.3, -5.6, ...
-    -0.6, 3.8, ...
-    0.7, 0.7]*0;
+gamma0 = [-0.00, -0.00, ...
+    0.01, 0.07, ...
+    0.00, 0.00];
 
 % Choose whether to use only a subset of the data
 use_subset = 0;
@@ -310,7 +310,7 @@ stol = 1e-14;
 
 % Set muliplier on number of variables used to get maximum number of
 % iterations
-vmul = 300;  % Default is 100
+vmul = 350;  % Default is 100
 
 % Get current parallel pool, don't create one if there is none
 checkpool = gcp('nocreate');
@@ -329,28 +329,27 @@ options = optimoptions('fminunc', ...  % Which solver to apply these to
     'OptimalityTolerance', otol, 'FunctionTolerance', ftol, ...
     'StepTolerance', stol, ...  % Tolerances
     'MaxFunctionEvaluations', vmul*gmax, ...  % Max. function evaluations
-    'Display', 'iter');  % Display options
+    'Display', 'iter', ...  % Display options
+    'FiniteDifferenceType', 'central');
 
 % It helps to scale all variables such that they are of about equal order
 % of magnitude
 %
 % Set master scaling factor
-msc = 100;
+msc = 1;
 
 % Get number of dimensions of mu_beta
 d = length(mu_beta0);
 
 % Make scaling vectors for elements of parameter vector
-a1 = [1/1000, 1, 1/100,];  % mu_beta
+a1 = ones(1,d);  % mu_beta
 a21 = ones(1,d);  % Diagonal C_Sigma
 a22 = ones(1,d);  % Off-diag. C_Sigma
-a3 = [1, 1] * msc;  % alpha
-a4 = [a1(1)*1/100, a1(1)*1/100, ...  % Interactions with premium
-    a1(2)*1/100, a1(2)*1/100, ...  % Interactions with risk score
-    a1(3)*1/100, a1(3)*1/100] * msc;  % Interactions with service quality;
+a3 = ones(1,2) * msc;  % alpha
+a4 = ones(1,6) * msc;  % Interactions with premium, risk score, and quality
 
 % Scale mu_beta scaling vector by master scale factor
-a1 = [1/1000, 1, 1/100,] * msc;
+a1 = a1 * msc;
 
 % Put all adjustment factors into a vector for later use
 theta_adj = [a1, a21, a22, a3, a4];
@@ -371,8 +370,8 @@ upper = zeros(1, gmax) + Inf;
 tic
 [theta_hat,ll,~,~,G,I] = fminunc( ...
     @(theta)ll_structural(theta(1:bmax).*a1, ...  % mu_beta
-    [theta(Csdiagmin:Csdiagmax), ...  % C_sigma diagonal
-    theta(Csodiagmin:Csodiagmax)], ...  % C_Sigma off-diagonal
+    [theta(Csdiagmin:Csdiagmax).*a21, ...  % C_sigma diagonal
+    theta(Csodiagmin:Csodiagmax).*a22], ...  % C_Sigma off-diagonal
     theta(amin:amax).*a3, ...  % alpha
     theta(gmin:gmax).*a4, ...  % gamma
     X, sit_id, cidx, qp, qw, 0), ...  % Non-parameter inputs
@@ -387,17 +386,23 @@ fprintf('\n')
 % Get inverse of Fisher information; don't display potential warnings about
 % this not being invertible
 warning('off', 'MATLAB:singularMatrix')
-V = inv(I);
-warning('on', 'MATLAB:singularMatrix')
+warning('off', 'MATLAB:nearlySingularMatrix')
+V1 = inv(I);
 
 % Get analytic standard errors, based on properties of correctly specified
 % MLE (variance is the negative inverse of Fisher information, estimate
 % this using sample analogue)
-SE_a = sqrt(diag(V));  %sqrt(diag(V))./(theta_adj.');
+SE_a = sqrt(diag(V1));
 
-% Get alternative estimator, based on the score outer product (this will
-% always work)
-SE_sop = sqrt(diag(G*G.'));  % sqrt(diag(G*G.'))./(theta_adj.');
+% Get alternative estimator, based on the score outer product. Since this
+% is the last dubious inversion, turn warnings back on afterwards.
+V2 = inv(G*G.');
+warning('on', 'MATLAB:singularMatrix')
+warning('on', 'MATLAB:nearlySingularMatrix')
+
+% Get analytic standard errors, again using properties of correctly
+% specified MLE
+SE_sop = sqrt(diag(V2));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Part 3: Display the results
