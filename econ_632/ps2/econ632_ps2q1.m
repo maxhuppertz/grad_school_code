@@ -234,7 +234,7 @@ insurance_data = addvars(insurance_data, ...
 cd(mdir)
 
 % Set precision for sparse grids integration
-sgprec = 4;
+sgprec = 10;
 
 % Get sparse grids quadrature points
 [qp, qw] = nwspgr('KPN', 3, sgprec);
@@ -253,8 +253,8 @@ sit_id = insurance_data{:, {v_csid}};
 mu_beta0 = [-0.03, 0.22, 0.02];
 
 % Lower Cholesky factor of random coefficient covariance matrix, C_Sigma
-Csigma0 = [-4.90, 1.23, -12.26, ...
-    0.03, 0.02, 1.14];
+Csigma0 = [-4.90, 1.23, -12.26, ...  % Diagonal elements
+    0.03, 0.02, 1.14];  % Off-diagonal elements
 
 % Coefficient on plan retainment and plan retainment times tool, alpha
 alpha0 = [3.78, -0.62];
@@ -270,7 +270,7 @@ use_subset = 0;
 % Check whether subsetting is necessary
 if use_subset == 1
     % Specify how many individuals to use in the subset sample
-    n_subset = 300;
+    n_subset = 100;
     
     % Get the subset of people, by using only the first n_subset ones
     subset = insurance_data{:, {v_id}} <= n_subset;
@@ -308,9 +308,9 @@ otol = 1e-6;
 % Set step tolerance level for solver
 stol = 1e-14;
 
-% Set muliplier on number of variables used to get maximum number of
+% Set multiplier on number of variables used to get maximum number of
 % iterations
-vmul = 350;  % Default is 100
+vmul = 500;  % Default is 100
 
 % Get current parallel pool, don't create one if there is none
 checkpool = gcp('nocreate');
