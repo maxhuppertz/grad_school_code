@@ -1,4 +1,4 @@
-function L = ll(C, S, xi, V0, theta, P, beta, tolEV)
+function L = ll(C, S, chi, V0, theta, P, beta, tolEV)
 % Computes the (negative) log-likelihood
 %
 % Inputs
@@ -60,11 +60,11 @@ for i=1:J
     % In situations where the current option is being chosen, replace the
     % entry in the first column with the value function for being in the
     % observed state, and making the given choice
-    W(cidx,1) = V(xi(cidx),i);
+    W(cidx,1) = V(chi(cidx),i);
     
     % Replace the column corresponding to this choice with the value
     % function for being in the observed state, and making the given choice
-    W(:,i+1) = V(xi,i);
+    W(:,i+1) = V(chi,i);
 end
 
 % Get the row-wise maximum, which will be useful for preventing overflow

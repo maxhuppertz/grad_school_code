@@ -196,7 +196,7 @@ C = entry_data{:, {v_act}};
 
 % Get vector of observed states, i.e. market state - past action
 % combinations
-xi = entry_data{:, {v_stt}};
+chi = entry_data{:, {v_stt}};
 
 % Set up initial guess for the elements of theta
 theta0 = randn(3,1)*100;
@@ -236,7 +236,7 @@ end
 % Run MLE, record the time it takes to run
 tic
 [theta_hat,~,~,~,G,I] = fminunc( ...
-    @(theta)ll(C, S, xi, V0, theta, P, beta, tolEV), ...
+    @(theta)ll(C, S, chi, V0, theta, P, beta, tolEV), ...
     theta0, options);
 time = toc;
 
@@ -263,7 +263,7 @@ disp(['MLE time:', ' ', num2str(time), ' seconds'])
 % Create an initial population for the particle swarm solver
 %
 % Set number of initial points
-Nps = 50;
+Nps = 100;
 
 % Set mean value for initial points
 mups = zeros(1,length(theta0));
@@ -285,7 +285,7 @@ options_ps = optimoptions('particleswarm', ...  % Which solver
 % Run particle swarm, record the time it takes to run
 tic
 theta_hat_ps = particleswarm( ...
-    @(theta)ll(C, S, xi, V0, theta, P, beta, tolEV), ...
+    @(theta)ll(C, S, chi, V0, theta, P, beta, tolEV), ...
     3, [], [], options_ps);
 time = toc;
 
