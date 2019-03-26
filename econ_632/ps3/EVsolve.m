@@ -20,7 +20,7 @@ function EV = EVsolve(V0, U, P, beta, tolEV)
 %                     market state - past action combinatin, of which there
 %                     are K*J. The [i,j] element gives the value of being
 %                     in state i, and choosing action j.
-%
+
 % Set convergence indicator to zero
 converged = 0;
 

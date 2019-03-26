@@ -153,7 +153,7 @@ for i=1:J
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Part 3: Structural estimation
+%%% Part 3: Structural estimation (MLE)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Change back to main directory
@@ -162,15 +162,25 @@ cd(mdir)
 % Set discount factor
 beta = .95;
 
+% Make vector to base flow utilities off of, for the case in which the firm
+% enters a market. Has to be such that S * theta = U.
 S = [ones(K*J,1), [(1:K), (1:K)].', [ones(1,K), zeros(1,K)].'];
 
+% Set up initial guess for value function iteration
 V0 = zeros(K*J,J);
 
+% Set tolerance for value function iteration
 tolEV = 10^(-14);
 
-l = entry_data{:, {v_act}};
+% Get vector of observed choices
+C = entry_data{:, {v_act}};
 
+% Get vector of observed states, i.e. market state - past action
+% combinations
 xi = entry_data{:, {v_stt}};
+
+% Set up initial guess for the elements of theta
+theta0 = randn(3,1)*100;
 
 % Set function tolerance for solver
 ftol = 10^(-14);
@@ -184,7 +194,7 @@ stol = 10^(-14);
 % Set variable multiplier (for MLE)
 vmul = 500;
 
-% Set optimization options
+% Set optimization options for fminunc
 options = optimoptions('fminunc', ...  % Which solver to apply these to
     'Algorithm', 'quasi-newton', ...  % Which solution algorithm to use
     'HessUpdate', 'bfgs', ...  % Hessian method
@@ -204,11 +214,11 @@ if isempty(checkpool)
     parpool('local');
 end
 
-% Run MLE
+% Run MLE, record the time it takes
 tic
 [theta_hat,~,~,~,G,I] = fminunc( ...
-    @(theta)ll(l, S, xi, V0, theta, P, beta, tolEV), ...
-    randn(3,1)*100, options);
+    @(theta)ll(C, S, xi, V0, theta, P, beta, tolEV), ...
+    theta0, options);
 time = toc;
 
 % Get covariance matrix as inverse of the Fisher information
@@ -220,28 +230,47 @@ SE_a = sqrt(diag(V_hat));
 % Set display format
 format long g
 
-% Display the results
+% Display the MLE results
 fprintf('\n')
 disp('MLE results')
 fprintf('\n')
 disp(round([theta_hat, SE_a],4))
 disp(['MLE time:', ' ', num2str(time), ' seconds'])
 
-initpop = 5 * randn(20,3) + ones(20,1) * [1 3 2];
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Part 4: Robustness check (particle swarm)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Create an initial population for the particle swarm solver
+%
+% Set number of initial points
+Nps = 50;
+
+% Set mean value for initial points
+mups = zeros(1,length(theta0));
+
+% Set standard deviation for initial points
+sdps = 10;
+
+% Create initial population as N(mups,sdps^2) random variables
+initpop = 5 * randn(Nps,length(theta0)) + ones(Nps,1) * mups;
+
+% Create optimization options for particle swarm
 options_ps = optimoptions('particleswarm', ...  % Which solver
     'InitialSwarmMatrix', initpop, ...  % Starting population
     'FunctionTolerance', ftol, ...  % Tolerance
     'UseParallel', true, ...  % Parallel computing
+    'SwarmSize', Nps, ...  % Swarm size, has to be at least Nps
     'Display', 'off');  % Display options
 
-% Run particle swarm
+% Run particle swarm, record the time is takes
 tic
 theta_hat_ps = particleswarm( ...
-    @(theta)ll(l, S, xi, V0, theta, P, beta, tolEV), ...
+    @(theta)ll(C, S, xi, V0, theta, P, beta, tolEV), ...
     3, [], [], options_ps);
 time = toc;
 
-% Display the results
+% Display the particle swarm results
 fprintf('\n')
 disp('Particle swarm results')
 fprintf('\n')

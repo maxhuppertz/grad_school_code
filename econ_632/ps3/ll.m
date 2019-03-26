@@ -25,10 +25,6 @@ function L = ll(C, S, xi, V0, theta, P, beta, tolEV)
 % 
 % Outputs
 % L: scalar, negative log-likelihood
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Part 1: Log-likelihood
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Make sure theta is a column vector
 if size(theta,1) < size(theta,2)
