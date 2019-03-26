@@ -139,10 +139,11 @@ use_tprob = (entry_data{:, {v_mkt}} == backshifted_id);
 %%% Part 2: Estimate transition probabilities
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Get market current and next period's market states as a matrix
+mkt_trans = entry_data{:, {v_stt_x, v_backshifted_x}};
+
 % Count transitions between market states
-p = accumarray( ...
-    entry_data{use_tprob, {v_stt_x, v_backshifted_x}}, ...
-    ones(sum(use_tprob),1));
+p = accumarray(mkt_trans(use_tprob,:), ones(sum(use_tprob),1));
 
 % Get transition probabilities, by dividing by the row sum
 p = p ./ (sum(p,2) * ones(1,K));
@@ -234,7 +235,7 @@ if isempty(checkpool)
 end
 
 % Run MLE, record the time it takes to run
-tic
+tic;
 [theta_hat,~,~,~,G,I] = fminunc( ...
     @(theta)ll(C, S, chi, V0, theta, P, beta, tolEV), ...
     theta0, options);
@@ -257,7 +258,92 @@ disp(round([theta_hat, SE_a],4))
 disp(['MLE time:', ' ', num2str(time), ' seconds'])
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Part 4: Robustness check (particle swarm)
+%%% Part 4: Robustness check 1 - bootstrap
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Set number of bootstrap iterations
+B = 5000;
+
+% Set up vector of bootstrap estimates
+T = zeros(B,length(theta0));
+
+% Get market ID values
+markets = unique(entry_data{:, {v_mkt}});
+
+% Get maximum market ID value
+M = max(markets);
+
+% Specify number of periods each market is observed
+taumax = 100;
+
+% Go through all bootstrap iterations, record the time this takes
+tic;
+parfor b=1:B
+    % Set random number generator's seed, for reproducibility
+    rng(b)
+    
+    % Draw bootstrap sample, by getting indices of markets
+    mi = randi([1,M],M,1);
+    
+    % Get indices of periods within market, which always range from 1 to
+    % taumax; stack them, one for each market
+    ii = kron(ones(M,1),(1:taumax).');
+    
+    % Stack market indices, taumax times for each market, and convert them
+    % to the leading digit of the corresponding row ID
+    mi = kron((mi - 1) * taumax,ones(taumax,1));
+    
+    % Add the two to get row indices for bootstrap sample
+    I = mi + ii;
+    
+    % Get market transitions for the bootstrap sample
+    mkt_trans_b = mkt_trans(I,:);
+    
+    % Count transitions between market states; luckily, the first period is
+    % still located in the same place for each bootstrap market
+    pb = accumarray( ...
+        mkt_trans_b(use_tprob,:), ...
+        ones(sum(use_tprob),1));
+
+    % Get transition probabilities, by dividing by the row sum
+    pb = pb ./ (sum(pb,2) * ones(1,K));
+
+    % Set up a cell array for transition probabilities between states
+    Pb = cell(J,1);
+
+    % Make a J by J identity matrix might save some broadcast overhead)
+    l = eye(J);
+    
+    % Go through all actions
+    for i=1:J
+        % Add the conditional transition probabilities to the array. Get
+        % stacked probabilities conditional on i.
+        pbstack = [pb;pb];
+
+        % Use Kronecker product to add zeros where needed
+        Pb{i,1} = kron(l(i,:),pbstack);
+    end
+    
+    % Run MLE on the bootstrap sample
+    T(b,:) = fminunc( ...
+        @(theta)ll(C(I,:), S, chi(I,:), V0, theta, Pb, beta, tolEV), ...
+        theta0, options);
+end
+% Stop the time
+time = toc;
+
+% Get the bootstrapped standard errors
+SE_b = sqrt(sum((T - ones(B,1) * theta_hat.').^2,1) / B);
+
+% Display the bootstrap results
+fprintf('\n')
+disp('Bootstrap results')
+fprintf('\n')
+disp(round(SE_b.',4))
+disp(['Bootstrap time:', ' ', num2str(time), ' seconds'])
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Part 4: Robustness check 2 - particle swarm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Create an initial population for the particle swarm solver
@@ -283,7 +369,7 @@ options_ps = optimoptions('particleswarm', ...  % Which solver
     'Display', 'off');  % Display options
 
 % Run particle swarm, record the time it takes to run
-tic
+tic;
 theta_hat_ps = particleswarm( ...
     @(theta)ll(C, S, chi, V0, theta, P, beta, tolEV), ...
     3, [], [], options_ps);
