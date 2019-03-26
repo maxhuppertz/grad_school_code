@@ -36,21 +36,16 @@ while converged == 0
     % function for the next period (this is [state, action] indexed)
     v = U + beta * V0;
     
-    % Exponentiate, sum up across actions (hence along the second axis,
+    % Exponentiate, sum up across actions (hence along the second axis),
     % then take the log. Each element of the resulting column vector
-    % corresponds to a given state
+    % corresponds to a given state.
     v = logsumexp_safe(v,2);
     
     % Go through all possible choices
     for i=1:J
         % Iterate value function for each state, conditional on the current
         % choice. The only thing that changes is the conditional
-        % probability matrix. The way this works is that the transition
-        % probabilities between the x part of the state are always the
-        % same, regardless of the i_{-1} part of the state. The only
-        % difference is that, depending on the current period's i, next
-        % period's state will either have i_{-1} = 0, or i_{-1} = 1, with
-        % certainty. So I can 
+        % probability matrix.
         V1(:,i) = cell2mat(P(i)) * v;
     end
     

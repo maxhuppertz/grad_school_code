@@ -28,6 +28,12 @@ entry_data = readtable(fname_data);
 % Specify action ID variable
 v_act = 'i';
 
+% Get unique values of action variable
+actions = unique(entry_data{:, {v_act}});
+
+% Count the total number of actions
+J = length(actions);
+
 % Actions are labeled 0 and 1, which cannot be used to index the columns of
 % a matrix. (It will later become clear why that would be useful.) Specify
 % a name for an index version of the action variable.
@@ -37,72 +43,89 @@ v_cidx = strcat(v_act, '_idx');
 entry_data = addvars(entry_data, entry_data{:, {v_act}} + 1, ...
     'NewVariableNames', v_cidx);
 
+% Get a shifted (forward, by one period) version of the action
 shifted_act = circshift(entry_data{:, {v_act}}, 1);
 
+% Specify a name for this as a variable
 v_shifted_act = strcat('shifted_', v_act);
 
+% Add it to the data set
 entry_data = addvars(entry_data, shifted_act, ...
     'NewVariableNames', v_shifted_act);
 
 % Specify name of market ID variable
 v_mkt = 'Market';
 
+% Get a shifted (forward, by one period) version of this variable
 shifted_mkt = circshift(entry_data{:, {v_mkt}}, 1);
 
+% Specify a name for the variable
 v_shifted_mkt = strcat('shifted_', v_mkt);
 
+% Add it to the data set
 entry_data = addvars(entry_data, shifted_mkt, ...
     'NewVariableNames', v_shifted_mkt);
 
-is_in = (entry_data{:, {v_shifted_act}} == 1) ...
-    & (entry_data{:, {v_mkt}} == entry_data{:, {v_shifted_mkt}});
+% Tag the first period in each market
+fper = (entry_data{:, {v_mkt}} ~= entry_data{:, {v_shifted_mkt}});
 
+% Get an indicator for whether a firm is currently in a market
+is_in = (entry_data{:, {v_shifted_act}} == 1) & ~fper;
+
+% Specify a name for the variable
 v_is_in = 'in_market';
 
+% Add variable to the data set
 entry_data = addvars(entry_data, is_in, 'NewVariableNames', v_is_in);
 
-% Specify name of state ID variable
+% Specify name of market state variable (x)
 v_stt_x = 'x';
 
-% Get unique values of action variable
-actions = unique(entry_data{:, {v_act}});
+% Get unique values of market state variable
+mktstates = unique(entry_data{:, {v_stt_x}});
 
-% Count the total number of actions
-J = length(actions);
+% Count number of market states
+K = length(mktstates);
 
-% Get unique values of state variable
-states = unique(entry_data{:, {v_stt_x}});
-
-% Count number of states
-K = length(states);
-
-% Get stacked state variable. This will be equal to the state variable -
-% i.e. 1, 2, 3, 4, 5 - if i = 0, and equal to the state variable plus 6,
-% i.e. 6, 7, 8, 9, 10, otherwise, that is, if i = 1.
+% Get combined market state - action variable. This will be equal to the
+% market state variable - i.e. 1, 2, 3, 4, 5 - if i = 0, and equal to the
+% market state variable plus 5, i.e. 6, 7, 8, 9, 10, otherwise, that is, if
+% i = 1. This is needed to calculate transition probabilities, which may
+% depend on both the current market state, and the observed action.
 stt_act = entry_data{:, {v_act}} * K + entry_data{:, {v_stt_x}};
 
-% Specify a name for the stacked state variable
+% Specify a name for the combined market state action variable
 v_stt_act = 'action_x_combination';
 
-% Add the stacked state to the data set
+% Add the variable to the data set
 entry_data = addvars(entry_data, stt_act, ...
     'NewVariableNames', v_stt_act);
 
+% Get complete state variable. A state is a combination of a market state
+% and a past action, which is the same as the being in the market
+% indicator. This will equal the market state - 1, 2, 3, 4, 5 - if i_{-1} =
+% 0, and equal the market state plus 5 - 6, 7, 8, 9, 10 - otherwise. Note
+% that this is not the same as the combined market state action variable,
+% because that depends on the current market state and contemporary action,
+% whereas this depends on the current market state and last period's
+% action.
 stt = entry_data{:, {v_stt_x}} + entry_data{:, {v_is_in}} * K;
 
+% Specify a name for the variable
 v_stt = 'state';
 
+% Add it to the data set
 entry_data = addvars(entry_data, stt, 'NewVariableNames', v_stt);
 
-% Get version of state ID shifted back by one period
-backshifted_stt = circshift(entry_data{:, {v_stt_x}}, -1);
+% Get version of state variable shifted back by one period
+backshifted_x = circshift(entry_data{:, {v_stt_x}}, -1);
 
 % Specify name for shifted state variable
-v_backshifted_stt = strcat('backshifted_', v_stt_x);
+v_backshifted_x = strcat('backshifted_', v_stt_x);
 
 % Add the shifted state to the data set
-entry_data = addvars(entry_data, backshifted_stt, ...
-    'NewVariableNames', v_backshifted_stt);
+entry_data = addvars(entry_data, backshifted_x, ...
+    'NewVariableNames', v_backshifted_x);
 
 % Get version of market ID shifted back by one period
 backshifted_id = circshift(entry_data{:, {v_mkt}}, -1);
@@ -116,19 +139,17 @@ use_tprob = (entry_data{:, {v_mkt}} == backshifted_id);
 %%% Part 2: Estimate transition probabilities
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Count transitions between states, conditional on the action chosen, i.e.
-% conditional on i = 0 or i = 1. This can be done using accumarray,
-% realizing that transitions from state 4 to state 5 when i = 1 can be
-% counted as transitions from stacked state 9 to state 5.
+% Count transitions between market states
 p = accumarray( ...
-    entry_data{use_tprob, {v_stt_act, v_backshifted_stt}}, ...
+    entry_data{use_tprob, {v_stt_x, v_backshifted_x}}, ...
     ones(sum(use_tprob),1));
 
 % Get transition probabilities, by dividing by the row sum
 p = p ./ (sum(p,2) * ones(1,K));
 
-% Set up a cell array for conditional transition probabilities (conditional
-% on choosing action i)
+% Set up a cell array for transition probabilities between complete states
+% (i.e. market state - action combinations) conditional on the chosen
+% action
 P = cell(J,1);
 
 % Make a J by J identity matrix
@@ -137,16 +158,14 @@ l = eye(J);
 % Go through all actions
 for i=1:J
     % Add the conditional transition probabilities to the array. The way
-    % this works is that, when i = 0, the probabilities of transitioning to
-    % any state next period are independent of i_{-1}. Also, for any
-    % stacked state 6, 7, 8, 9, or 10, the probability of transitioning to
-    % it is zero, conditional on choosing i = 0. So I can just stack the P
+    % this works is that, when i = 0, for any state 6, 7, 8, 9, or 10, the
+    % probability of transitioning to it is zero. So I can just stack the P
     % matrix twice, and add an array of zeros of equal size next to it, to
     % get the conditional transition probabilities. This Kronecker product
     % does exactly that.
     %
     % Get stacked probabilities conditional on i
-    pstack = [p(K*(i-1)+1:K*i,:);p(K*(i-1)+1:K*i,:)];
+    pstack = [p;p];
     
     % Use Kronecker product to add zeros where needed
     P{i,1} = kron(l(i,:),pstack);
@@ -214,7 +233,7 @@ if isempty(checkpool)
     parpool('local');
 end
 
-% Run MLE, record the time it takes
+% Run MLE, record the time it takes to run
 tic
 [theta_hat,~,~,~,G,I] = fminunc( ...
     @(theta)ll(C, S, xi, V0, theta, P, beta, tolEV), ...
@@ -263,7 +282,7 @@ options_ps = optimoptions('particleswarm', ...  % Which solver
     'SwarmSize', Nps, ...  % Swarm size, has to be at least Nps
     'Display', 'off');  % Display options
 
-% Run particle swarm, record the time is takes
+% Run particle swarm, record the time it takes to run
 tic
 theta_hat_ps = particleswarm( ...
     @(theta)ll(C, S, xi, V0, theta, P, beta, tolEV), ...
