@@ -1,11 +1,26 @@
 function EV = EVsolve(V0, U, P, beta, tolEV)
 % Solves for the expected value function
+%
+% Inputs
+% V0: [K*J,J] matrix, initial guess for the value function
+% U: [K*J,J] matrix, flow utilities for each state and each action, where
+%                    states are indexed by rows, and action are indexed by
+%                    columns. (That is, the [i,j] element is the flow
+%                    utility of being in state i and choosing action j.)
+% P: {1,J} array, conditional transition probabilities. The j-th element
+%                 has to be a [K*J,K*J] matrix giving the transition
+%                 probabilites between all states, conditional on choosing
+%                 the j-th possible action.
+% beta: scalar, discount factor
+% tolEV: scalar, tolerance for value function iteration
+%
 % Outputs
-% EV: [K,J] matrix, resulting value function. K is the number of states,
-%                   and J is the number of actions. The [i,j] element is
-%                   the value function for being in state i and making
-%                   choice j.
-
+% EV: [K*J,J] matrix, resulting value function. K is the number of market
+%                     states, and J is the number of actions. A state is a
+%                     market state - past action combinatin, of which there
+%                     are K*J. The [i,j] element gives the value of being
+%                     in state i, and choosing action j.
+%
 % Set convergence indicator to zero
 converged = 0;
 

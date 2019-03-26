@@ -1,4 +1,31 @@
-function [L,G] = ll(C, S, Z, V0, theta, P, beta, tolEV)
+function L = ll(C, S, xi, V0, theta, P, beta, tolEV)
+% Computes the (negative) log-likelihood
+%
+% Inputs
+% C: [N,1] vector, observed choices
+% S: [K*J,3] matrix, contains all components of flow utility for each
+%                    possible state, for each action. Since a state is a
+%                    market state - past choice combination, and there are
+%                    K market states and J choices, there are K*J possible
+%                    states. Flow utility is zero if the firm chooses not
+%                    to enter the market, and a constant plus a coefficient
+%                    on the market state plus a coefficient on the past
+%                    choice if the firm enters the market. S allows me to
+%                    calculate a matrix of flow utilities for each possible
+%                    choice, given the current state.
+% xi: [N,1] vector, observed state
+% V0: [K*J,J] matrix, initial guess for the value function
+% theta: [3,1] vector, parameters for flow utility
+% P: {1,J} array, conditional transition probabilities. The j-th element
+%                 has to be a [K*J,K*J] matrix giving the transition
+%                 probabilites between all states, conditional on choosing
+%                 the j-th possible action.
+% beta: scalar, discount factor
+% tolEV: scalar, tolerance for value function iteration
+% 
+% Outputs
+% L: scalar, negative log-likelihood
+%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Part 1: Log-likelihood
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -13,8 +40,6 @@ J = length(unique(C));
 
 % Set up flow utilities
 U = zeros(size(V0));
-
-%theta(1:2) = exp(theta(1:2));
 
 % Replace flow utilities in the case of option 2 being chosen
 U(:,J) = S * theta;
@@ -31,8 +56,6 @@ N = length(C);
 % Set up matrix of value for given data set
 W = zeros(N,1+J);
 
-g = zeros(N,2);
-
 % Go through all posible options
 for i=1:J
     % Make an index indicating where the current option is being chosen
@@ -41,14 +64,11 @@ for i=1:J
     % In situations where the current option is being chosen, replace the
     % entry in the first column with the value function for being in the
     % observed state, and making the given choice
-    W(cidx,1) = V(Z(cidx),i);
+    W(cidx,1) = V(xi(cidx),i);
     
     % Replace the column corresponding to this choice with the value
     % function for being in the observed state, and making the given choice
-    W(:,i+1) = V(Z,i);
-    
-    g(cidx,1) = Z(cidx) - 5 * (Z(cidx) > 5);
-    g(cidx,2) = (Z(cidx) <= 5);
+    W(:,i+1) = V(xi,i);
 end
 
 % Get the row-wise maximum, which will be useful for preventing overflow
@@ -59,22 +79,4 @@ L = exp(W(:,1) - A) ./ sum(exp(W(:,2:end) - A * ones(1,J)),2);
 
 % Get the negative log-likelihood
 L = -sum(log(L));
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Part 2: Gradient
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-D = exp( sum(W(:,2:end), 2) - 2*A) ...
-    ./ (exp(W(:,2) - A) + exp(W(:,3) - A)).^2;
-
-G = zeros(3,1);
-
-G(1,1) = sum(D,1);
-
-G(2,1) = sum(g(:,1) .* D,1);
-
-G(3,1) = sum(g(:,2) .* D,1);
-
-G = -G;
-
 end

@@ -162,7 +162,7 @@ cd(mdir)
 % Set discount factor
 beta = .95;
 
-X = [ones(K*J,1), [(1:K), (1:K)].', [ones(1,K), zeros(1,K)].'];
+S = [ones(K*J,1), [(1:K), (1:K)].', [ones(1,K), zeros(1,K)].'];
 
 V0 = zeros(K*J,J);
 
@@ -170,7 +170,7 @@ tolEV = 10^(-14);
 
 l = entry_data{:, {v_act}};
 
-Z = entry_data{:, {v_stt}};
+xi = entry_data{:, {v_stt}};
 
 % Set function tolerance for solver
 ftol = 10^(-14);
@@ -207,7 +207,7 @@ end
 % Run MLE
 tic
 [theta_hat,~,~,~,G,I] = fminunc( ...
-    @(theta)ll(l, X, Z, V0, theta, P, beta, tolEV), ...
+    @(theta)ll(l, S, xi, V0, theta, P, beta, tolEV), ...
     randn(3,1)*100, options);
 time = toc;
 
@@ -237,7 +237,7 @@ options_ps = optimoptions('particleswarm', ...  % Which solver
 % Run particle swarm
 tic
 theta_hat_ps = particleswarm( ...
-    @(theta)ll(l, X, Z, V0, theta, P, beta, tolEV), ...
+    @(theta)ll(l, S, xi, V0, theta, P, beta, tolEV), ...
     3, [], [], options_ps);
 time = toc;
 
