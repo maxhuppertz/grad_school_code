@@ -25,25 +25,44 @@ fname_data = 'firm_entry.csv';
 % Load data set, as a table
 entry_data = readtable(fname_data);
 
-% Specify name of state ID variable
-v_state = 'x';
+% Specify action ID variable
+v_act = 'i';
 
-% Get version of state ID shifted back by one period
-shifted_state = circshift(entry_data{:, {v_state}}, -1);
+% Actions are labeled 0 and 1, which cannot be used to index the columns of
+% a matrix. (It will later become clear why that would be useful.) Specify
+% a name for an index version of the action variable.
+v_cidx = strcat(v_act, '_idx');
+
+% Add the index version to the data
+entry_data = addvars(entry_data, entry_data{:, {v_act}} + 1, ...
+    'NewVariableNames', v_cidx);
+
+shifted_act = circshift(entry_data{:, {v_act}}, 1);
+
+v_shifted_act = strcat('shifted_', v_act);
+
+entry_data = addvars(entry_data, shifted_act, ...
+    'NewVariableNames', v_shifted_act);
 
 % Specify name of market ID variable
-v_mid = 'Market';
+v_mkt = 'Market';
 
-% Get 'backshifted' version of market ID
-shifted_id = circshift(entry_data{:, {v_mid}}, -1);
+shifted_mkt = circshift(entry_data{:, {v_mkt}}, 1);
 
-% Mark observations which should be used when estimating transition
-% probabilities. This excludes the last observation for a given market,
-% since the following state is unobserved.
-use_tprob = (entry_data{:, {v_mid}} == shifted_id);
+v_shifted_mkt = strcat('shifted_', v_mkt);
 
-% Specify action variable
-v_act = 'i';
+entry_data = addvars(entry_data, shifted_mkt, ...
+    'NewVariableNames', v_shifted_mkt);
+
+is_in = (entry_data{:, {v_shifted_act}} == 1) ...
+    & (entry_data{:, {v_mkt}} == entry_data{:, {v_shifted_mkt}});
+
+v_is_in = 'in_market';
+
+entry_data = addvars(entry_data, is_in, 'NewVariableNames', v_is_in);
+
+% Specify name of state ID variable
+v_stt_x = 'x';
 
 % Get unique values of action variable
 actions = unique(entry_data{:, {v_act}});
@@ -52,51 +71,89 @@ actions = unique(entry_data{:, {v_act}});
 J = length(actions);
 
 % Get unique values of state variable
-states = unique(entry_data{:, {v_state}});
+states = unique(entry_data{:, {v_stt_x}});
 
 % Count number of states
 K = length(states);
 
-% Make a transition matrix
-P = zeros(K,K*J);
+% Get stacked state variable. This will be equal to the state variable -
+% i.e. 1, 2, 3, 4, 5 - if i = 0, and equal to the state variable plus 6,
+% i.e. 6, 7, 8, 9, 10, otherwise, that is, if i = 1.
+stt_act = entry_data{:, {v_act}} * K + entry_data{:, {v_stt_x}};
 
-% Set up an action counter, starting at zero
-k = 0;
+% Specify a name for the stacked state variable
+v_stt_act = 'action_x_combination';
+
+% Add the stacked state to the data set
+entry_data = addvars(entry_data, stt_act, ...
+    'NewVariableNames', v_stt_act);
+
+stt = entry_data{:, {v_stt_x}} + entry_data{:, {v_is_in}} * K;
+
+v_stt = 'state';
+
+entry_data = addvars(entry_data, stt, 'NewVariableNames', v_stt);
+
+% Get version of state ID shifted back by one period
+backshifted_stt = circshift(entry_data{:, {v_stt_x}}, -1);
+
+% Specify name for shifted state variable
+v_backshifted_stt = strcat('backshifted_', v_stt_x);
+
+% Add the shifted state to the data set
+entry_data = addvars(entry_data, backshifted_stt, ...
+    'NewVariableNames', v_backshifted_stt);
+
+% Get version of market ID shifted back by one period
+backshifted_id = circshift(entry_data{:, {v_mkt}}, -1);
+
+% Mark observations which should be used when estimating transition
+% probabilities. This excludes the last observation for a given market,
+% since the following state is unobserved.
+use_tprob = (entry_data{:, {v_mkt}} == backshifted_id);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Part 2: Estimate transition probabilities
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Count transitions between states, conditional on the action chosen, i.e.
+% conditional on i = 0 or i = 1. This can be done using accumarray,
+% realizing that transitions from state 4 to state 5 when i = 1 can be
+% counted as transitions from stacked state 9 to state 5.
+p = accumarray( ...
+    entry_data{use_tprob, {v_stt_act, v_backshifted_stt}}, ...
+    ones(sum(use_tprob),1));
+
+% Get transition probabilities, by dividing by the row sum
+p = p ./ (sum(p,2) * ones(1,K));
+
+% Set up a cell array for conditional transition probabilities (conditional
+% on choosing action i)
+P = cell(J,1);
+
+% Make a J by J identity matrix
+l = eye(J);
 
 % Go through all actions
-for c = min(actions):max(actions)
-    % Make an indicator for this action
-    Ic = (entry_data{:, {v_act}} == c) & use_tprob;
+for i=1:J
+    % Add the conditional transition probabilities to the array. The way
+    % this works is that, when i = 0, the probabilities of transitioning to
+    % any state next period are independent of i_{-1}. Also, for any
+    % stacked state 6, 7, 8, 9, or 10, the probability of transitioning to
+    % it is zero, conditional on choosing i = 0. So I can just stack the P
+    % matrix twice, and add an array of zeros of equal size next to it, to
+    % get the conditional transition probabilities. This Kronecker product
+    % does exactly that.
+    %
+    % Get stacked probabilities conditional on i
+    pstack = [p(K*(i-1)+1:K*i,:);p(K*(i-1)+1:K*i,:)];
     
-    % Count the number of times the action was chosen
-    nc = sum(Ic);
-    
-    % Go through all 'from' states
-    for i = min(states):max(states)
-        % Make an indicator for this action being chosen
-        ti = (entry_data{:, {v_state}} == i) & Ic & use_tprob;
-        
-        % Count how often this action was chosen
-        ni = sum(ti);
-        
-        % Go through all 'to' states
-        for j = min(states):max(states)
-            % Count the number of transitions from - to
-            tij = (entry_data{:, {v_state}} == i) ...
-                & (shifted_state == j) & Ic & use_tprob;
-            
-            % Replace the entry in the transition matrix as the sum
-            P(i,k+j) = sum(tij);
-        end
-        % Convert sums to estimated probabilities
-        P(i,k+1:k+K) = P(i,k+1:k+K) / ni;
-    end
-    % Increase the action counter
-    k = k + K;
+    % Use Kronecker product to add zeros where needed
+    P{i,1} = kron(l(i,:),pstack);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Part 2: Structural estimation
+%%% Part 3: Structural estimation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Change back to main directory
@@ -104,3 +161,89 @@ cd(mdir)
 
 % Set discount factor
 beta = .95;
+
+X = [ones(K*J,1), [(1:K), (1:K)].', [ones(1,K), zeros(1,K)].'];
+
+V0 = zeros(K*J,J);
+
+tolEV = 10^(-14);
+
+l = entry_data{:, {v_act}};
+
+Z = entry_data{:, {v_stt}};
+
+% Set function tolerance for solver
+ftol = 10^(-14);
+
+% Set optimality tolerance for solver
+otol = 10^(-14);
+
+% Set step tolerance level for solver
+stol = 10^(-14);
+
+% Set variable multiplier (for MLE)
+vmul = 500;
+
+% Set optimization options
+options = optimoptions('fminunc', ...  % Which solver to apply these to
+    'Algorithm', 'quasi-newton', ...  % Which solution algorithm to use
+    'HessUpdate', 'bfgs', ...  % Hessian method
+    'UseParallel', true, ...  % Parallel computing
+    'OptimalityTolerance', otol, 'FunctionTolerance', ftol, ...
+    'StepTolerance', stol, ...  % Tolerances
+    'MaxFunctionEvaluations', vmul*3, ... % Max. function evaluations
+    'FiniteDifferenceType', 'central', ...  % Finite difference method
+    'Display', 'off', 'SpecifyObjectiveGradient', false);
+
+% Get current parallel pool, don't create one if there is none
+checkpool = gcp('nocreate');
+
+% Check whether no parallel pool is open
+if isempty(checkpool)
+    % If so, start a parallel pool on the local profile
+    parpool('local');
+end
+
+% Run MLE
+tic
+[theta_hat,~,~,~,G,I] = fminunc( ...
+    @(theta)ll(l, X, Z, V0, theta, P, beta, tolEV), ...
+    randn(3,1)*100, options);
+time = toc;
+
+% Get covariance matrix as inverse of the Fisher information
+V_hat = inv(I);
+
+% Get analytical standard errors
+SE_a = sqrt(diag(V_hat));
+
+% Set display format
+format long g
+
+% Display the results
+fprintf('\n')
+disp('MLE results')
+fprintf('\n')
+disp(round([theta_hat, SE_a],4))
+disp(['MLE time:', ' ', num2str(time), ' seconds'])
+
+initpop = 5 * randn(20,3) + ones(20,1) * [1 3 2];
+options_ps = optimoptions('particleswarm', ...  % Which solver
+    'InitialSwarmMatrix', initpop, ...  % Starting population
+    'FunctionTolerance', ftol, ...  % Tolerance
+    'UseParallel', true, ...  % Parallel computing
+    'Display', 'off');  % Display options
+
+% Run particle swarm
+tic
+theta_hat_ps = particleswarm( ...
+    @(theta)ll(l, X, Z, V0, theta, P, beta, tolEV), ...
+    3, [], [], options_ps);
+time = toc;
+
+% Display the results
+fprintf('\n')
+disp('Particle swarm results')
+fprintf('\n')
+disp(round(theta_hat_ps.',4))
+disp(['Particle swarm time: ', num2str(time), ' seconds'])
