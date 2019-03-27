@@ -41,10 +41,7 @@ U = zeros(size(V0));
 U(:,J) = S * theta;
 
 % Use value function iteration to get expected value function
-EV = EVsolve(V0, U, P, beta, tolEV);
-
-% Add flow utility to get actual value function
-V = U + beta * EV;
+V = Vsolve(V0, U, P, beta, tolEV);
 
 % Get number of choice situations
 N = length(C);

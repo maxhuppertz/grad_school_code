@@ -139,7 +139,7 @@ use_tprob = (entry_data{:, {v_mkt}} == backshifted_id);
 %%% Part 2: Estimate transition probabilities
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Get market current and next period's market states as a matrix
+% Get current and next period's market states as a matrix
 mkt_trans = entry_data{:, {v_stt_x, v_backshifted_x}};
 
 % Count transitions between market states
@@ -343,7 +343,7 @@ disp(round(SE_b.',4))
 disp(['Bootstrap time:', ' ', num2str(time), ' seconds'])
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Part 4: Robustness check 2 - particle swarm
+%%% Part 5: Robustness check 2 - particle swarm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Create an initial population for the particle swarm solver
@@ -381,3 +381,89 @@ disp('Particle swarm results')
 fprintf('\n')
 disp(round(theta_hat_ps.',4))
 disp(['Particle swarm time: ', num2str(time), ' seconds'])
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Part 6: Counterfactuals
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Get right eigenvectors of the transition matrix
+[vec,lambda] = eig(p.');
+
+% Get the index of the eigenvector associated with the unit eigenvalue
+statidx = (round(diag(lambda),5) == 1);
+
+% Get the associated eigenvector
+statdist = vec(:,statidx);
+
+% Normalize it
+statdist = statdist / sum(statdist,1);
+
+% Specify number of entry costs delta to plot
+nplot = 1000;
+
+% Set up vector of resulting entry probabilities
+rho = zeros(nplot,1);
+
+% Set up minimum and maximum entry cost
+delta_min = -10;
+delta_max = 20;
+
+% Make a vector of entry costs
+delta = linspace(delta_min, delta_max, nplot);
+
+% Save the first two elements of the estimated coefficient vector as their
+% own vector, to save some overhead
+t_hat12 = theta_hat(1:2);
+
+% Go through all points to plos
+parfor i = 1:nplot
+    % Get the counterfactual coefficient vector
+    theta_tilde = [t_hat12;delta(i)];
+    
+    % Calculate the entry probability for the current entry cost
+    rho(i) = ...
+        probin(statdist, S, V0, P, beta, theta_tilde, tolEV);
+end
+
+% Set up a figure
+figure(1);
+
+% Plot entry probability against entry cost
+plot(delta,rho);
+
+% Set up reverse x axis and use Latex to print axis labels
+set(gca,'XDir', 'reverse', 'TickLabelInterpreter', 'latex');
+
+% Set background color and figure size
+set(gcf, 'color', 'w', ...  % Background color
+    'Units', 'Inches', 'Position', [0, 0, 6.5, 6.5*(9/16)], ...
+    'PaperUnits', 'Inches', 'PaperSize', [6.5, 6.5*(9/16)])  % Figure size
+
+% Set y axis limits
+ylim([min(rho) - .05, max(rho) + .05]);
+
+% Set x axis label
+xlabel('Counterfactual entry cost $\tilde{\delta}$', ...
+    'interpreter', 'latex', 'fontsize', 11);
+
+% Set y axis label
+ylabel('Fraction of periods active', 'interpreter', 'latex', ...
+    'fontsize', 11);
+
+% Set figures directory
+fdir = 'figures';
+
+% Check whether it exists
+if ~exist(strcat('./',fdir), 'dir')
+    % If not, make it
+    mkdir(fdir);
+end
+
+% Set name of figure to save it
+fname = 'entry_prob.pdf';
+
+% Save the figure
+saveas(1,strcat(fdir,'/',fname));
+
+% Close the figure
+close;
