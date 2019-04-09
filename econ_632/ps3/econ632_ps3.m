@@ -262,7 +262,7 @@ disp(['MLE time:', ' ', num2str(time), ' seconds'])
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Set number of bootstrap iterations
-B = 5000;
+B = 2;
 
 % Set up vector of bootstrap estimates
 T = zeros(B,length(theta0));
@@ -422,7 +422,7 @@ parfor i = 1:nplot
     
     % Calculate the entry probability for the current entry cost
     rho(i) = ...
-        probin(statdist, S, V0, P, beta, theta_tilde, tolEV);
+        probin(statdist, S, V0, P, theta_tilde, beta, tolEV);
 end
 
 % Set up a figure
