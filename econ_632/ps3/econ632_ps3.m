@@ -386,18 +386,6 @@ disp(['Particle swarm time: ', num2str(time), ' seconds'])
 %%% Part 6: Counterfactuals
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Get right eigenvectors of the transition matrix
-[vec,lambda] = eig(p.');
-
-% Get the index of the eigenvector associated with the unit eigenvalue
-statidx = (round(diag(lambda),5) == 1);
-
-% Get the associated eigenvector
-statdist = vec(:,statidx);
-
-% Normalize it
-statdist = statdist / sum(statdist,1);
-
 % Specify number of entry costs delta to plot
 nplot = 1000;
 
@@ -405,7 +393,7 @@ nplot = 1000;
 rho = zeros(nplot,1);
 
 % Set up minimum and maximum entry cost
-delta_min = -10;
+delta_min = -20;
 delta_max = 20;
 
 % Make a vector of entry costs
@@ -415,18 +403,21 @@ delta = linspace(delta_min, delta_max, nplot);
 % own vector, to save some overhead
 t_hat12 = theta_hat(1:2);
 
-% Go through all points to plos
-parfor i = 1:nplot
+init_i = 1;
+tolP = 10^(-6);
+
+% Go through all points to plot
+for i = 1:nplot
     % Get the counterfactual coefficient vector
     theta_tilde = [t_hat12;delta(i)];
     
     % Calculate the entry probability for the current entry cost
     rho(i) = ...
-        probin(statdist, S, V0, P, theta_tilde, beta, tolEV);
+        probin(S, V0, P, p, theta_tilde, beta, tolEV);
 end
 
 % Set up a figure
-figure(1);
+fig1 = figure;
 
 % Plot entry probability against entry cost
 plot(delta,rho);
@@ -443,7 +434,7 @@ set(gcf, 'color', 'w', ...  % Background color
 ylim([min(rho) - .05, max(rho) + .05]);
 
 % Set x axis label
-xlabel('Counterfactual entry cost $\tilde{\delta}$', ...
+xlabel('Counterfactual entry cost $\smash{-\tilde{\delta}}$', ...
     'interpreter', 'latex', 'fontsize', 11);
 
 % Set y axis label
@@ -462,8 +453,11 @@ end
 % Set name of figure to save it
 fname = 'entry_prob.pdf';
 
+% Set print options, to make sure Matlab does not cut off the figure
+%set(groot,'defaultFigurePaperPositionMode','manual')
+
 % Save the figure
-saveas(1,strcat(fdir,'/',fname));
+saveas(fig1,strcat(fdir,'/',fname));
 
 % Close the figure
 close;
