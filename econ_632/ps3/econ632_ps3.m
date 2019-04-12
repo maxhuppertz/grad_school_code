@@ -262,7 +262,7 @@ disp(['MLE time:', ' ', num2str(time), ' seconds'])
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Set number of bootstrap iterations
-B = 2;
+B = 5000;
 
 % Set up vector of bootstrap estimates
 T = zeros(B,length(theta0));
