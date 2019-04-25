@@ -1,3 +1,7 @@
+################################################################################
+### Part 1: Setup
+################################################################################
+
 # Import necessary packages
 import numpy as np
 import pandas as pd
@@ -5,6 +9,10 @@ from joblib import Parallel, delayed
 from multiprocessing import cpu_count
 from numpy.linalg import solve
 from scipy.stats import norm
+
+################################################################################
+### Part 2: Auxiliary functions
+################################################################################
 
 # This function takes an input and converts it to a 'long' array; that is, this
 # creates a two-dimensional output (vector or matrix), and the first dimension
@@ -29,6 +37,10 @@ def larry(x):
 
     # Return the array
     return X
+
+################################################################################
+### Part 3: Regression models
+################################################################################
 
 # This function just runs a standard linear regression of y on X
 def ols(y, X, get_cov=True, cov_est='hc1', get_t=True, get_p=True,
@@ -139,6 +151,14 @@ def ols(y, X, get_cov=True, cov_est='hc1', get_t=True, get_p=True,
         # Otherwise, just return coefficients
         return beta_hat
 
+################################################################################
+### Part 4: Bootstrap algorithms
+################################################################################
+
+################################################################################
+### 4.1: Single iterations
+################################################################################
+
 # Define one iteration of the Cameron, Gelbach, and Miller (2008) cluster robust
 # wild bootstrap with the null imposed
 def b_iter_cgm0(y, X, e_hat, beta_hat_R, CV, J, seed):
@@ -167,9 +187,13 @@ def b_iter_cgm0(y, X, e_hat, beta_hat_R, CV, J, seed):
     # Return the t-statistic for this bootstrap iteration
     return tstar
 
+################################################################################
+### 4.2: Running algorithms
+################################################################################
+
 # Define a function to bootstrap confidence intervals for OLS
 def boot_ols(y, X, alg='cgm0', B=4999, alpha=.05, clustvar=None, imp0=None,
-             b0=0, seed=0):
+             b0=0, seed=0, par=True):
     # Get number of available cores
     ncores = cpu_count()
 
@@ -208,11 +232,18 @@ def boot_ols(y, X, alg='cgm0', B=4999, alpha=.05, clustvar=None, imp0=None,
         # Get residuals
         e_hat = y - X @ beta_hat
 
-        # Get matrix of bootstrapped t-statistics (for now, this will be a list)
-        Tb = Parallel(n_jobs=ncores)(
-            delayed(b_iter_cgm0)(y=y, X=X, e_hat=e_hat, beta_hat_R=beta_hat_R,
-                                 CV=CV, J=J, seed=seed+b)
-            for b in range(B))
+        # Check whether to use parallel computing
+        if par:
+            # Get matrix of bootstrapped t-statistics (for now, this will be a
+            # list), using parallel computing
+            Tb = Parallel(n_jobs=ncores)(
+                delayed(b_iter_cgm0)(y=y, X=X, e_hat=e_hat,
+                                     beta_hat_R=beta_hat_R, CV=CV, J=J,
+                                     seed=seed+b) for b in range(B))
+        else:
+            # Otherwise, do it in sequence
+            Tb = [b_iter_cgm0(y=y, X=X, e_hat=e_hat, beta_hat_R=beta_hat_R,
+                              CV=CV, J=J, seed=seed+b) for b in range(B)]
 
         # Convert list to actual matrix (this is [k,B])
         Tb = np.concatenate(Tb, axis=1)
@@ -231,4 +262,3 @@ def boot_ols(y, X, alg='cgm0', B=4999, alpha=.05, clustvar=None, imp0=None,
 
         # Return the point estimate, t-statistic, and confidence intervals
         return beta_hat, t_hat, CI
-#
