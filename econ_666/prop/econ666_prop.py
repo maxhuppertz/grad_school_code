@@ -74,7 +74,7 @@ np.random.seed(666)
 ################################################################################
 
 # Define a function that calculate the MDE
-def MDE(J, n, alpha, kappa, p, rho, sigma2_i):
+def MDE(J, n, alpha, kappa, p, sigma2_i, sigma2_v):
     # Specify the equation defining the MDE
     def MDE_eq(E):
         # Distribution for the control group
@@ -89,11 +89,8 @@ def MDE(J, n, alpha, kappa, p, rho, sigma2_i):
         # Get the critical value for the treatment group
         crit_treatment = Ft.ppf(kappa)
 
-        # Calculate implied variance of cluster level adoption effect
-        tau2 = (rho / (1 - rho)) * sigma2_i
-
         # Get sigma_hat
-        sigma_hat = np.sqrt( (p * (1-p) * J)**(-1) * (tau2 + sigma2_i / n) )
+        sigma_hat = np.sqrt( (p * (1-p) * J)**(-1) * (sigma2_v + sigma2_i / n) )
 
         # Calculate discrepancy
         delta_MDE = E - (crit_control + crit_treatment) * sigma_hat
@@ -112,7 +109,7 @@ def MDE(J, n, alpha, kappa, p, rho, sigma2_i):
 # tests, a) treatment 1 vs. control, b) treatment 2 vs. control, and c)
 # treatment 2 vs. treatment 1, at level alpha (two sided) and with power kappa
 # against the targeted (true) vector of MDEs MDE_bar
-def N_mult(MDE_bar, n, alpha, kappa, rho, sigma2_i, C, W, tol):
+def N_mult(MDE_bar, n, alpha, kappa, sigma2_i, sigma2_v, C, W, tol):
     # Get number of treatment groups
     ngroup = len(C)
 
@@ -130,11 +127,11 @@ def N_mult(MDE_bar, n, alpha, kappa, rho, sigma2_i, C, W, tol):
         # Calculate implied treatment probabilities
         P = [J[1]/(J[0]+J[1]), J[2]/(J[0]+J[2]), J[2]/(J[1]+J[2])]
 
-        # Calculate MDEs
+        # Calculate MDEs (T1 vs. C, T2 vs. C, T2 vs. T1)
         MDEs = [
-            MDE(J[0]+J[1], n, alpha, kappa[0], P[0], rho, sigma2_i),  # T1 vs. C
-            MDE(J[0]+J[2], n, alpha, kappa[1], P[1], rho, sigma2_i),  # T2 vs. C
-            MDE(J[1]+J[2], n, alpha, kappa[2], P[2], rho, sigma2_i)  # T2 vs. T1
+            MDE(J[0]+J[1], n, alpha, kappa[0], P[0], sigma2_i, sigma2_v),
+            MDE(J[0]+J[2], n, alpha, kappa[1], P[1], sigma2_i, sigma2_v),
+            MDE(J[1]+J[2], n, alpha, kappa[2], P[2], sigma2_i, sigma2_v)
             ]
 
         # Return the MDEs
@@ -172,11 +169,23 @@ tau_1 = .05  # 'Low' treatment effect
 tau_2 = .1  # 'High' treatment effect
 MDE_bar = [tau_1, tau_2, tau_2 - tau_1]
 
-# Specify intracluster correlation (ICC)
-rho = .35
+# Specify a scaling factor for the individual and village level variances which
+# will be calculated in the following. The problem is that the variance of the
+# outcome depends on the distribution of parameters, and then on Bernoulli
+# draws based on those parameters. But figuring out what exactly the variance of
+# that combination is turns out to be hard. It's much easier to just bump up the
+# variance by an ad hoc factor and make the sample size results look more
+# sensible. (Otherwise, the code likes to choose e.g. J = 1 for all three
+# groups, which makes it impossible to estimate anything.)
+psi = 10
 
 # Specify variance of individual level adoption effect
-sigma2_i = .1**2
+p_i = .035
+sigma2_i = p_i**2 * psi
+
+# Specify variance of village level adoption effect
+p_v = .02
+sigma2_v = p_v**2 * psi
 
 # Specify number of households sampled per village
 n = 10
@@ -210,8 +219,8 @@ with warnings.catch_warnings():
 
     # Calculate sample sizes to get these effects as MDEs, if I want to do an
     # alpha level (two sided) test and have power kappa
-    Jstar = N_mult(MDE_bar=MDE_bar, n=n, alpha=alpha, kappa=kappa, rho=rho,
-                   sigma2_i=sigma2_i, C=C, W=W, tol=tol)
+    Jstar = N_mult(MDE_bar=MDE_bar, n=n, alpha=alpha, kappa=kappa,
+                   sigma2_i=sigma2_i, sigma2_v=sigma2_v, C=C, W=W, tol=tol)
 
 # Record the time this was done
 time_end = time.time()
@@ -235,14 +244,18 @@ print('Time elapsed:', duration, 'seconds')
 ### 3.1: Specify DGP
 ################################################################################
 
+# Specify minimum number of villages per group, in case the optimal size
+# calculation above gives a strange result (e.g. 1)
+Vmin = 30
+
 # Specify number of control villages
-V_c = Jstar[0]
+V_c = np.amax([Jstar[0], Vmin])
 
 # Specify number of villages in the 'low' treatment
-V_lo = Jstar[1]
+V_lo = np.amax([Jstar[1], Vmin])
 
 # Specify number of villages in the 'high' treatment
-V_hi = Jstar[2]
+V_hi = np.amax([Jstar[2], Vmin])
 
 # Calculate total number of villages
 J = V_c + V_lo + V_hi
@@ -281,7 +294,7 @@ mu_T = larry([0, tau_1, tau_2])
 mu_T = mu_T[I_T[:,0], :]
 
 # Set up distribution for mean village level adoption rates
-alpha_v = 5
+alpha_v = p_v * 100
 beta_v = 100 - alpha_v
 F_v = beta(alpha_v, beta_v)
 
@@ -289,7 +302,7 @@ F_v = beta(alpha_v, beta_v)
 E_v = F_v.stats(moments='m')
 
 # Set up distribution for individual level adoption rates
-alpha_i = 10
+alpha_i = p_i * 100
 beta_i = 100 - alpha_i
 F_i = beta(alpha_i, beta_i)
 
@@ -302,15 +315,16 @@ adr_ctr = E_i + E_v + np.amin(mu_T)
 # Display it
 print()  # Looks nicer with an empty line preceding it
 print('DGP statistics:')
-print('Expected individual level effect:', E_i)
-print('Expected village level effect:', E_v)
-print('Expected adoption rate in the control group:', adr_ctr)
+print('Expected individual level effect:', np.around(E_i, nround))
+print('Expected village level effect:', np.around(E_v, nround))
+print('Expected adoption rate in the control group:',
+      np.around(adr_ctr, nround))
 
 # Calculate implied ICC
 ICC = E_v * (1 - E_v) / (E_i * (1 - E_i) + E_v * (1 - E_v))
 
 # Display it
-print('Implied ICC:', np.around(ICC, nround))
+print('Expected ICC:', np.around(ICC, nround))
 
 ################################################################################
 ### 3.2: Run power simulation
@@ -334,7 +348,7 @@ X = np.concatenate((np.ones(shape=(N,1)), D), axis=1)
 B = 1999
 
 # Specify number of simulations to use for power calculation
-S = 100
+S = 1000
 
 # Specify whether to run simulations in parallel
 parsim = True
@@ -408,6 +422,6 @@ kappa_hat = larry(R.mean(axis=1))
 # Print resulting simulated power levels
 print()
 print('Simulated power:')
-print('Any treatment vs. control:', kappa_hat[1,0])
-print("'High' treatment vs. 'low' treatment:", kappa_hat[2,0])
+print('Any treatment vs. control:', np.around(kappa_hat[1,0], nround))
+print("'High' treatment vs. 'low' treatment:", np.around(kappa_hat[2,0], nround))
 print('Time elapsed:', duration, 'seconds')
