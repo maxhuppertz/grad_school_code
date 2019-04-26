@@ -172,10 +172,10 @@ tau_2 = .1  # 'High' treatment effect
 MDE_bar = [tau_1, tau_2, tau_2 - tau_1]
 
 # Specify mean of village level adoption effect
-p_v = .017
+p_v = .033
 
 # Specify mean of individual level adoption effect
-p_i = .033
+p_i = .017
 
 # Set up distribution for mean village level adoption rates, which will be used
 # later to simulate adoption decisions, but is needed now to estimate the
@@ -217,7 +217,7 @@ sigma2_v = np.var(samp_v, axis=0, ddof=1)
 sigma2_v = sigma2_v[0]
 
 # Specify number of households sampled per village
-n = 20
+n = 10
 
 # Specify level of tests to be performed
 alpha = .05
@@ -232,15 +232,23 @@ svycost = n * 5
 price_low = 200
 
 # Set price of quality certified pumps
-price_high = 500
+price_high = 900
+
+# Specify number and type of free pumps per village
+nfreep_lo = 1  # Cheap pumps in 'low' treatment
+nfreeq_lo = 1  # Quality pumps in 'low' treatment
+nfreep_hi = 0  # Cheap pumps in 'high' treatment
+nfreeq_hi = 2  # Quality pumps in 'high' treatment
 
 # Set default rate per pump
 defrate = .1
 
-# Specify vector of cost per unit sampled/treated
-C = [100,  # Control
-     100 + price_low * tau_1 * defrate,  # 'Low' treatment
-     100 + price_high * tau_2 * defrate]  # 'High' treatment
+# Specify vector of cost per village included in each group
+C = [svycost,  # Control group
+     svycost + nfreep_lo * price_low + nfreeq_lo * price_high
+     + price_low * tau_1 * defrate,  # 'Low' treatment
+     svycost + nfreep_hi * price_low + nfreeq_hi * price_high
+     + price_high * tau_2 * defrate]  # 'High' treatment
 
 # Specify a vector of importance weights for each test. Higher means more
 # important. They way these work is that I inflate each MDE by 1/W[i], so
@@ -287,8 +295,8 @@ print('Time elapsed:', duration, 'seconds')
 ################################################################################
 
 # Specify minimum number of villages per group, in case the optimal size
-# calculation above gives a strange result (e.g. 1)
-Vmin = 5
+# calculation above gives a strange result which you want to override
+Vmin = 2
 
 # Specify whether to use the optimal numbers of villages calculated above in the
 # more detailed power simulation below
@@ -306,13 +314,13 @@ if optimV:
     V_hi = np.amax([Jstar[2], Vmin])
 else:
     # Specify number of control villages
-    V_c = 30
+    V_c = 40
 
     # Specify number of villages in the 'low' treatment
-    V_lo = 45
+    V_lo = 52
 
-    # Specify number of villages in the 'high' treatmen
-    V_hi = 30
+    # Specify number of villages in the 'high' treatment
+    V_hi = 40
 
 # Calculate total number of villages
 J = V_c + V_lo + V_hi
