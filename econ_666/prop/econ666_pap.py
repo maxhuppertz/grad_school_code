@@ -6,13 +6,9 @@
 ### Part 1: Setup
 ################################################################################
 
-# Import matplotlib
-import matplotlib as mpl
-
-# Select backend that does not open figures interactively (has to be done before
-# pyplot is imported); without this, Python will get confused when it tries to
-# close figures, and it will send annoying warnings
-mpl.use('Agg')
+################################################################################
+### 1.1: Display options, seed
+################################################################################
 
 # Import other necessary packages and functions
 import matplotlib.pyplot as plt
@@ -41,23 +37,8 @@ chdir(mdir)
 from linreg import larry, boot_ols
 
 ################################################################################
-### 1.1: Directories, graph options, display options, seed
+### 1.2: Display options, seed
 ################################################################################
-
-# Set graph options
-mpl.rcParams["text.latex.preamble"].append(r'\usepackage{amsmath}')
-plt.rc('font', **{'family': 'serif', 'serif': ['lmodern']})
-plt.rc('text', usetex=True)
-
-# Set figures/tables directory (doesn't need to exist)
-fdir = '/figures'
-
-# Create the figures directory if it doesn't exist
-if not path.isdir(mdir+fdir):
-    mkdir(mdir+fdir)
-
-# Change to figures directory
-chdir(mdir+fdir)
 
 # Set number of digits to round to
 nround = 4
@@ -172,10 +153,10 @@ tau_2 = .1  # 'High' treatment effect
 MDE_bar = [tau_1, tau_2, tau_2 - tau_1]
 
 # Specify mean of village level adoption effect
-p_v = .033
+p_v = .017
 
 # Specify mean of individual level adoption effect
-p_i = .017
+p_i = .033
 
 # Set up distribution for mean village level adoption rates, which will be used
 # later to simulate adoption decisions, but is needed now to estimate the
@@ -314,13 +295,13 @@ if optimV:
     V_hi = np.amax([Jstar[2], Vmin])
 else:
     # Specify number of control villages
-    V_c = 40
+    V_c = 30
 
     # Specify number of villages in the 'low' treatment
-    V_lo = 52
+    V_lo = 39
 
     # Specify number of villages in the 'high' treatment
-    V_hi = 40
+    V_hi = 30
 
 # Calculate total number of villages
 J = V_c + V_lo + V_hi
