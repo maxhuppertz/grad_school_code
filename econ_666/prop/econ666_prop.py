@@ -145,8 +145,10 @@ def N_mult(MDE_bar, n, alpha, kappa, sigma2_i, sigma2_v, C, W, tol):
     # negative infinity and the target values.
     const = NonlinearConstraint(MDE_J, [-np.inf for mde in MDE_bar], MDE_target)
 
-    # Specify bounds to ensure positive sample sizes
-    bounds_J = ((0, np.inf), (0, np.inf), (0, np.inf))
+    # Specify bounds to ensure positive sample sizes (for clustered standard
+    # errors to make sense, I have to also force it to use at least 2 villages
+    # per cluster)
+    bounds_J = ((2, np.inf), (2, np.inf), (2, np.inf))
 
     # Calculate the optimal sample sizes by minimizing the total sample size
     # constrained by having to get each MDE at most as large as its target
@@ -169,36 +171,76 @@ tau_1 = .05  # 'Low' treatment effect
 tau_2 = .1  # 'High' treatment effect
 MDE_bar = [tau_1, tau_2, tau_2 - tau_1]
 
-# Specify a scaling factor for the individual and village level variances which
-# will be calculated in the following. The problem is that the variance of the
-# outcome depends on the distribution of parameters, and then on Bernoulli
-# draws based on those parameters. But figuring out what exactly the variance of
-# that combination is turns out to be hard. It's much easier to just bump up the
-# variance by an ad hoc factor and make the sample size results look more
-# sensible. (Otherwise, the code likes to choose e.g. J = 1 for all three
-# groups, which makes it impossible to estimate anything.)
-psi = 10
+# Specify mean of village level adoption effect
+p_v = .017
 
-# Specify variance of individual level adoption effect
-p_i = .035
-sigma2_i = p_i**2 * psi
+# Specify mean of individual level adoption effect
+p_i = .033
 
-# Specify variance of village level adoption effect
-p_v = .02
-sigma2_v = p_v**2 * psi
+# Set up distribution for mean village level adoption rates, which will be used
+# later to simulate adoption decisions, but is needed now to estimate the
+# variance of village level and individual level effects
+alpha_v = p_v * 100  # First parameter of the beta distribution
+beta_v = 100 - alpha_v  # Second parameter of the beta distribution
+F_v = beta(alpha_v, beta_v)  # Full beta distribution
+
+# Set up distribution for individual level adoption rates
+alpha_i = p_i * 100
+beta_i = 100 - alpha_i
+F_i = beta(alpha_i, beta_i)
+
+# Set number of observations to use for variance calculation
+nvar = 100000
+
+# Draw sample of individual level parameters
+samp_i = F_i.rvs(size=(nvar,1))
+
+# Convert to Bernoulli random variables
+samp_i = np.random.binomial(1, samp_i, size=(nvar,1))
+
+# Calculate the variance
+sigma2_i = np.var(samp_i, axis=0, ddof=1)
+
+# Since this has only one element, use only that
+sigma2_i = sigma2_i[0]
+
+# Draw sample of village level parameters
+samp_v = F_v.rvs(size=(nvar,1))
+
+# Convert to Bernoulli random variables
+samp_v = np.random.binomial(1, samp_v, size=(nvar,1))
+
+# Calculate the variance
+sigma2_v = np.var(samp_v, axis=0, ddof=1)
+
+# Since this has only one element, use only that
+sigma2_v = sigma2_v[0]
 
 # Specify number of households sampled per village
-n = 10
+n = 20
 
 # Specify level of tests to be performed
 alpha = .05
 
-# Specify vector of power levels for each test
+# Specify vector of targeted power levels for each test
 kappa = [.8, .8, .8]
 
-# Specify a vector of cost per unit sampled/treated. The format is
-# [control, 'low' treatment, 'high' treament]
-C = [100, 100 + 200 * tau_1, 100 + 500 * tau_2]
+# Set survey cost per village
+svycost = n * 5
+
+# Set price of cheaper pumps
+price_low = 200
+
+# Set price of quality certified pumps
+price_high = 500
+
+# Set default rate per pump
+defrate = .1
+
+# Specify vector of cost per unit sampled/treated
+C = [100,  # Control
+     100 + price_low * tau_1 * defrate,  # 'Low' treatment
+     100 + price_high * tau_2 * defrate]  # 'High' treatment
 
 # Specify a vector of importance weights for each test. Higher means more
 # important. They way these work is that I inflate each MDE by 1/W[i], so
@@ -246,16 +288,31 @@ print('Time elapsed:', duration, 'seconds')
 
 # Specify minimum number of villages per group, in case the optimal size
 # calculation above gives a strange result (e.g. 1)
-Vmin = 30
+Vmin = 5
 
-# Specify number of control villages
-V_c = np.amax([Jstar[0], Vmin])
+# Specify whether to use the optimal numbers of villages calculated above in the
+# more detailed power simulation below
+optimV = False
 
-# Specify number of villages in the 'low' treatment
-V_lo = np.amax([Jstar[1], Vmin])
+# Check whether to use optimal numbers of villages
+if optimV:
+    # Use optimal number of control villages
+    V_c = np.amax([Jstar[0], Vmin])
 
-# Specify number of villages in the 'high' treatment
-V_hi = np.amax([Jstar[2], Vmin])
+    # Use optimal number of villages in the 'low' treatment
+    V_lo = np.amax([Jstar[1], Vmin])
+
+    # Use optimal number of villages in the 'high' treatment
+    V_hi = np.amax([Jstar[2], Vmin])
+else:
+    # Specify number of control villages
+    V_c = 30
+
+    # Specify number of villages in the 'low' treatment
+    V_lo = 45
+
+    # Specify number of villages in the 'high' treatmen
+    V_hi = 30
 
 # Calculate total number of villages
 J = V_c + V_lo + V_hi
@@ -293,18 +350,8 @@ mu_T = larry([0, tau_1, tau_2])
 # Stack them to a vector for each individual
 mu_T = mu_T[I_T[:,0], :]
 
-# Set up distribution for mean village level adoption rates
-alpha_v = p_v * 100
-beta_v = 100 - alpha_v
-F_v = beta(alpha_v, beta_v)
-
 # Get the expected village level adoption rate
 E_v = F_v.stats(moments='m')
-
-# Set up distribution for individual level adoption rates
-alpha_i = p_i * 100
-beta_i = 100 - alpha_i
-F_i = beta(alpha_i, beta_i)
 
 # Get the expected individual adoption rate
 E_i = F_i.stats(moments='m')
@@ -312,19 +359,29 @@ E_i = F_i.stats(moments='m')
 # Calculate expected adoption rate in the control group
 adr_ctr = E_i + E_v + np.amin(mu_T)
 
-# Display it
+# Display it, plus some other DGP statistics
 print()  # Looks nicer with an empty line preceding it
 print('DGP statistics:')
-print('Expected individual level effect:', np.around(E_i, nround))
-print('Expected village level effect:', np.around(E_v, nround))
+print('Number of control villages:', V_c)
+print("Number of 'low' treatment villages:", V_lo)
+print("Number of 'high' treatment villages:", V_hi)
+print('Expected individual level adoption rate:', np.around(E_i, nround))
+print('Expected village level adoptoin rate:', np.around(E_v, nround))
 print('Expected adoption rate in the control group:',
       np.around(adr_ctr, nround))
+print("'Low' treatment effect:", tau_1)
+print("'High' treatment effect:", tau_2)
 
-# Calculate implied ICC
+# Calculate expected ICC
 ICC = E_v * (1 - E_v) / (E_i * (1 - E_i) + E_v * (1 - E_v))
 
 # Display it
 print('Expected ICC:', np.around(ICC, nround))
+
+# Also display realized variances
+print('Inidividual level variance:', np.around(sigma2_i, nround))
+print('Village level variance:', np.around(sigma2_v, nround))
+print('Actual ICC:', np.around(sigma2_v / (sigma2_v + sigma2_i), nround))
 
 ################################################################################
 ### 3.2: Run power simulation
