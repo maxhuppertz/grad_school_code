@@ -153,10 +153,10 @@ tau_2 = .1  # 'High' treatment effect
 MDE_bar = [tau_1, tau_2, tau_2 - tau_1]
 
 # Specify mean of village level adoption effect
-p_v = .017
+p_v = .033
 
 # Specify mean of individual level adoption effect
-p_i = .033
+p_i = .017
 
 # Set up distribution for mean village level adoption rates, which will be used
 # later to simulate adoption decisions, but is needed now to estimate the
@@ -198,7 +198,7 @@ sigma2_v = np.var(samp_v, axis=0, ddof=1)
 sigma2_v = sigma2_v[0]
 
 # Specify number of households sampled per village
-n = 10
+n = 20
 
 # Specify level of tests to be performed
 alpha = .05
@@ -355,7 +355,7 @@ print('Number of control villages:', V_c)
 print("Number of 'low' treatment villages:", V_lo)
 print("Number of 'high' treatment villages:", V_hi)
 print('Expected individual level adoption rate:', np.around(E_i, nround))
-print('Expected village level adoptoin rate:', np.around(E_v, nround))
+print('Expected village level adoption rate:', np.around(E_v, nround))
 print('Expected adoption rate in the control group:',
       np.around(adr_ctr, nround))
 print("'Low' treatment effect:", tau_1)
