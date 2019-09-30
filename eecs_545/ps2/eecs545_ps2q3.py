@@ -180,8 +180,8 @@ def logit_hessian(theta, y, X, l=10, firstparam_free=False):
 # Define a function to implement the Newton-Raphson algorithm
 def newton_raphson(theta, args, objfun=logit_pnll, jacobian=logit_jacobian,
                    hessian=logit_hessian, stepsi=1, tol_incr=10**(-16),
-                   tol_foc=10**(-14), itmax=120, itmaxdamp=100, alpha = .5,
-                   beta=.9):
+                   tol_foc=10**(-14), itmax=100, usedamp=False, itmaxdamp=100,
+                   alpha = .5, beta=.9):
     """ Implements the Newton-Raphson algorithm to minimize a function
 
     Inputs
@@ -202,6 +202,10 @@ def newton_raphson(theta, args, objfun=logit_pnll, jacobian=logit_jacobian,
              tol_foc in the infinity norm, the algorithm counts that as
              convergence.
     itmax: Scalar, maximum number of iterations
+    usedamp: Boolean, indicates whether to use step size dampening. If at any
+             iteration, the updated parameter vector would increase objfun
+             (rather than decrease it), dampening parameters alpha and beta are
+             used to modulate the step size (see below)
     itmaxdamp: Scalar, maximum number of step size dampenings in case of
                overshooting
     alpha: Scalar, step size dampening parameter. If at any iteration, the
@@ -257,8 +261,8 @@ def newton_raphson(theta, args, objfun=logit_pnll, jacobian=logit_jacobian,
         # iteration's parameter value). If it occurs, do this until overshooting
         # no longer occurs, or until the maximum number of dampening steps has
         # been reached
-        while (objfun(theta, *args) > objfun(theta_old, *args)
-               and dampit < itmaxdamp and not converged_incr):
+        while (usedamp and objfun(theta, *args) > objfun(theta_old, *args)
+               and dampit < itmaxdamp):
             # Recalculate theta using the reduced step size
             theta = theta_old - t * H_inv @ J
 
@@ -281,8 +285,9 @@ def newton_raphson(theta, args, objfun=logit_pnll, jacobian=logit_jacobian,
             # Otherwise, if the Jacobian is within tolerance, set that flag
             # to True
             converged_foc = True
-        elif np.max(np.abs(theta - theta_old)) <= tol_incr:
-            # Or, if the increment is within tolerance, set that flag to True
+        elif np.max(np.abs(theta - theta_old)) <= tol_incr and dampit == 0:
+            # Or, if the increment is within tolerance, and dampening steps were
+            # not used, set that flag to True
             converged_incr = True
 
         # Increase the iteration counter
