@@ -35,6 +35,7 @@ fn_dset = 'mnist_49_3000.mat'
 # Set figures directory (doesn't have to exist)
 fdir = 'figures'
 
+# Set file name for plot
 fn_plot = 'misclassified_digits.pdf'
 
 # Set graph options
