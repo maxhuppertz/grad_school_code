@@ -67,10 +67,6 @@ y = data['y'].T
 ### 3: Estimate optimal soft margin hyperplane
 ################################################################################
 
-################################################################################
-### 3.1: Subgradient descent
-################################################################################
-
 # Set step size parameter and step size scaling parameter (see docstrings for
 # graddesc and stochgraddesc)
 eta = 100
