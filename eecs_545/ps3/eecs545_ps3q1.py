@@ -184,9 +184,10 @@ for l in L:
         # Get the MSE for the current cross validation fold, and add it to the
         # list
         _, _, cv_mse_l[idx-1, 0] = (
-            regls(y_tr=y_tr[vldsamp, :], X_tr=X_tr[:, vldsamp], l=l,
-                  y_te=y_tr[~vldsamp, :], X_te=X_tr[:, ~vldsamp])
+            regls(y_tr=y_tr[~vldsamp, :], X_tr=X_tr[:, ~vldsamp], l=l,
+                  y_te=y_tr[vldsamp, :], X_te=X_tr[:, vldsamp])
             )
+
     # Calculate mean MSE across all cross validation samples
     mean_cv_mse = np.ones(shape=(1, k-1)) @ cv_mse_l / (k-1)
 
