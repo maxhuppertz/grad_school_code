@@ -4,7 +4,7 @@
 ################################################################################
 
 ################################################################################
-### 1: Load packages, set directories and files, set graph options
+### 1: Load packages, set seed, set directories and files, set graph options
 ################################################################################
 
 # Import necessary packages
@@ -41,8 +41,9 @@ fn_wplot = 'cd_weights.pdf'  # Weights across iterations
 fn_mseplot = 'cd_mse.pdf'  # MSE across iterations
 
 # Set graph options
-plt.rc('font', **{'family': 'serif', 'serif': ['lmodern']})
+plt.rc('font', **{'family': 'Latin Modern Roman', 'serif': ['lmodern']})
 plt.rc('text', usetex=True)
+plt.rc('text.latex', preamble=r'\usepackage{lmodern}')
 
 ################################################################################
 ### 2: Load data

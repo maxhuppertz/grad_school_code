@@ -81,7 +81,7 @@ def regls(y_tr, X_tr, l=10, y_te=None, X_te=None, demean=True, sdscale=True):
     # Scale the training features by the inverse of their standard deviation, if
     # desired
     if sdscale:
-        sigma_X_tr = np.diag(1 / np.std(X_tr, axis=1))
+        sigma_X_tr = np.diag(1 / np.std(X_tr, axis=1, ddof=1))
         X_tr = sigma_X_tr @ X_tr
 
     # Add intercept to the training features
@@ -185,7 +185,7 @@ def ols_mse(y, X, w, demean=False, sdscale=False, addicept=False):
     # Scale the training features by the inverse of their standard deviation, if
     # desired
     if sdscale:
-        sigma_X = np.diag(1 / np.std(X, axis=1))
+        sigma_X = np.diag(1 / np.std(X, axis=1, ddof=1))
         X = sigma_X @ X
 
     # Check whether an intercept needs to be added
@@ -199,22 +199,25 @@ def ols_mse(y, X, w, demean=False, sdscale=False, addicept=False):
     # Return the result
     return mse[0,0]
 
-
 # Define a function to implement gradient descent
-def graddesc(y_tr, X_tr, y_te=None, X_te=None, w0=None, gradient=ols_gradient,
-             eta=.05, avggrad=True, K=500, demean=True, sdscale=True,
-             objfun=ols_mse):
+def graddesc(y_tr, X_tr, args=[], y_te=None, X_te=None, w0=None,
+             gradient=ols_gradient, eta=.05, etasc=None, avggrad=True, K=500,
+             demean=True, sdscale=True, addicept=True, objfun=ols_mse,
+             backtrack=False, bstart=10):
     """ Implements gradient descent
 
     Inputs
     y_tr: n_tr by 1 vector, training responses
     X_tr: d by n_tr matrix, training features
-    y_te: n_te by 1 vector, test responses
-    X_te: d by n_te matrix, test features
+    args: list, additional arguments to be passed to gradient and objfun
+    y_te: n_te by 1 vector, test responses (optional)
+    X_te: d by n_te matrix, test features (optional)
     w0: d by 1 vector, initial weights. If None, uses vecrtor of zeros.
     gradient: Function, has to be such that gradient(y, X, w) returns the
               gradient
     eta: Scalar, step size
+    etasc: Scalar, scaling factor for eta. If not None, iteration j uses step
+           size eta / (etasc * j).
     avggrad: Boolean, if True, the update divides the step size eta by the
              number of instances in the training data
     K: Integer, number of gradient descent iterations
@@ -222,6 +225,7 @@ def graddesc(y_tr, X_tr, y_te=None, X_te=None, w0=None, gradient=ols_gradient,
             means)
     sdscale: Boolean, if True, features will be scaled by the inverse of their
              standard deviation (using the training standard deviation)
+    addicept: Boolean, if True, adds an intercept to the data
     objfun: Function, has to be such that objfun(y, X, w) returns the objective
             function
 
@@ -229,11 +233,9 @@ def graddesc(y_tr, X_tr, y_te=None, X_te=None, w0=None, gradient=ols_gradient,
     w_hat: d+1 by 1 vector, updated weights
     L_tr: List, i-th element is the objective function value at the i-th
           iteration, in the training data
-    y_hat: n_te by 1 vector, predicted responses
-    L_te: Scalar, objective function value at w_hat in the test data
-
-    Notes
-    Adds an intercept to the features
+    y_hat: n_te by 1 vector, predicted responses (if X_te was provided)
+    L_te: Scalar, objective function value at w_hat in the test data (if y_te
+          and X_te were both provided)
     """
     # Get the number of features d and number of instances n
     d, n_tr = X_tr.shape
@@ -241,7 +243,7 @@ def graddesc(y_tr, X_tr, y_te=None, X_te=None, w0=None, gradient=ols_gradient,
     # Check whether the initial weights are None
     if w0 is None:
         # If so, use a vector of zeros
-        w0 = np.zeros(shape=(d+1, 1))
+        w0 = np.zeros(shape=(d + addicept, 1))
 
     # Demean the training features, if desired
     if demean:
@@ -252,30 +254,45 @@ def graddesc(y_tr, X_tr, y_te=None, X_te=None, w0=None, gradient=ols_gradient,
     # Scale the training features by the inverse of their standard deviation, if
     # desired
     if sdscale:
-        sigma_X_tr = np.diag(1 / np.std(X_tr, axis=1))
+        sigma_X_tr = np.diag(1 / np.std(X_tr, axis=1, ddof=1))
         X_tr = sigma_X_tr @ X_tr
 
-    # Add intercept to the training features
-    X_tr = np.concatenate((np.ones(shape=(1, n_tr)), X_tr), axis=0)
+    # Check whether to add an intercept
+    if addicept:
+        # Add intercept to the training features
+        X_tr = np.concatenate((np.ones(shape=(1, n_tr)), X_tr), axis=0)
 
     # Set up list of objective functions, starting with the value at w0
-    L_tr = [objfun(y_tr, X_tr, w0)]
+    L_tr = [objfun(y_tr, X_tr, w0, *args)]
 
     # Go through all gradient descent iterations
     for i in range(K):
+        # Check whether the step size needs to be scaled
+        if etasc is not None:
+            # If so, get the scaled step size for the current iteration
+            etai = eta / (etasc * (i+1))
+        else:
+            # Otherwise, just use the step size as is
+            etai = eta
+
         # Calculate gradient
-        J = gradient(y_tr, X_tr, w0)
+        J = gradient(y_tr, X_tr, w0, *args)
 
         # Check whether to updated based on the average gradient
         if avggrad:
             # Do the GD update, dividing the step size by n_tr
-            w_hat = w0 - (eta / n_tr) * J
+            w_hat = w0 - (etai / n_tr) * J
         else:
             # Do the GD update, using the step size as is
-            w_hat = w0 - eta * J
+            w_hat = w0 - etai * J
+
+        D = objfun(y_tr, X_tr, w_hat, *args) - objfun(y_tr, X_tr, w0, *args)
+
+        if (i >= bstart-1) and backtrack and (D > 0):
+                w_hat = w0
 
         # Add objective function at this iteration to the list
-        L_tr.append(objfun(y_tr, X_tr, w_hat))
+        L_tr.append(objfun(y_tr, X_tr, w_hat, *args))
 
         # Set initial weights for the next iteration
         w0 = w_hat
@@ -295,8 +312,10 @@ def graddesc(y_tr, X_tr, y_te=None, X_te=None, w0=None, gradient=ols_gradient,
         if sdscale:
             X_te = sigma_X_tr @ X_te
 
-        # Add intercept to the test features
-        X_te = np.concatenate((np.ones(shape=(1, n_te)), X_te), axis=0)
+        # Check whether to add an intercept
+        if addicept:
+            # Add intercept to the test features
+            X_te = np.concatenate((np.ones(shape=(1, n_te)), X_te), axis=0)
 
         # Get predicted responses
         y_hat = (X_te.T @ w_hat)
@@ -304,7 +323,7 @@ def graddesc(y_tr, X_tr, y_te=None, X_te=None, w0=None, gradient=ols_gradient,
         # Check whether test data responses were provided
         if y_te is not None:
             # If so, calculate MSE
-            L_te = objfun(y_te, X_te, w_hat)
+            L_te = objfun(y_te, X_te, w_hat, *args)
 
             # Return the estimated coefficients, objective function values,
             # predictions, and MSE
@@ -318,26 +337,33 @@ def graddesc(y_tr, X_tr, y_te=None, X_te=None, w0=None, gradient=ols_gradient,
         return w_hat, L_tr
 
 
-# Define a function to implement gradient descent
-def stochgraddesc(y_tr, X_tr, y_te=None, X_te=None, w0=None,
-                  gradient=ols_gradient, eta=.0005, K=500, demean=True,
-                  sdscale=True, objfun=ols_mse):
+# Define a function to implement stochastic gradient descent
+def stochgraddesc(y_tr, X_tr, args=[], y_te=None, X_te=None, w0=None,
+                  gradient=ols_gradient, eta=.0005, etasc=None, avggrad=False,
+                  K=500, demean=True, sdscale=True, addicept=True,
+                  objfun=ols_mse, backtrack=False, bstart=10):
     """ Implements stochastic gradient descent
 
     Inputs
     y_tr: n_tr by 1 vector, training responses
     X_tr: d by n_tr matrix, training features
+    args: list, additional arguments to be passed to gradient and objfun
     y_te: n_te by 1 vector, test responses
     X_te: d by n_te matrix, test features
     w0: d by 1 vector, initial weights. If None, uses vecrtor of zeros.
     gradient: Function, has to be such that gradient(y, X, w) returns the
               gradient
     eta: Scalar, step size
+    etasc: Scalar, scaling factor for eta. If not None, epoch j uses step size
+           eta / (etasc * j).
+    avggrad: Boolean, if True, the update divides the step size eta by the
+             number of instances in the training data
     K: Integer, number of stochastic gradient descent epochs
     demean: Boolean, if True, features will be de-meaned (using the training
             means)
     sdscale: Boolean, if True, features will be scaled by the inverse of their
              standard deviation (using the training standard deviation)
+    addicept: Boolean, if True, adds an intercept to the data
     objfun: Function, has to be such that objfun(y, X, w) returns the objective
             function
 
@@ -347,9 +373,6 @@ def stochgraddesc(y_tr, X_tr, y_te=None, X_te=None, w0=None,
           iteration, in the training data
     y_hat: n_te by 1 vector, predicted responses
     L_te: Scalar, objective function value at w_hat in the test data
-
-    Notes
-    Adds an intercept to the features
     """
     # Get the number of features d and number of instances n
     d, n_tr = X_tr.shape
@@ -368,30 +391,50 @@ def stochgraddesc(y_tr, X_tr, y_te=None, X_te=None, w0=None,
     # Scale the training features by the inverse of their standard deviation, if
     # desired
     if sdscale:
-        sigma_X_tr = np.diag(1 / np.std(X_tr, axis=1))
+        sigma_X_tr = np.diag(1 / np.std(X_tr, axis=1, ddof=1))
         X_tr = sigma_X_tr @ X_tr
 
-    # Add intercept to the training features
-    X_tr = np.concatenate((np.ones(shape=(1, n_tr)), X_tr), axis=0)
+    # Check whether to add an intercept
+    if addicept:
+        # Add intercept to the training features
+        X_tr = np.concatenate((np.ones(shape=(1, n_tr)), X_tr), axis=0)
 
     # Set up list of objective functions, starting with the value at w0
-    L_tr = [objfun(y_tr, X_tr, w0)]
+    L_tr = [objfun(y_tr, X_tr, w0, *args)]
 
     # Go through all epochs
     for k in range(K):
+        # Check whether the step size needs to be scaled
+        if etasc is not None:
+            # If so, get the scaled step size for the current epoch
+            etak = eta / (etasc * (k+1))
+        else:
+            # Otherwise, just use the step size as is
+            etak = eta
+
         # Draw a vector of indices (this implements SGD without replacement)
         idx = np.random.permutation(n_tr)
 
         # Go through the randomly permuted indices
         for j in idx:
             # Calculate gradient for the drawn instance
-            J = gradient(y_tr[j:j+1, :], X_tr[:, j:j+1], w0)
+            J = gradient(y_tr[j:j+1, :], X_tr[:, j:j+1], w0, *args)
 
-            # Do the SGD update, using the step size as is
-            w_hat = w0 - eta * J
+            # Check whether to updated based on the average gradient
+            if avggrad:
+                # Do the GD update, dividing the step size by n_tr
+                w_hat = w0 - (etak / n_tr) * J
+            else:
+                # Do the GD update, using the step size as is
+                w_hat = w0 - etak * J
+
+            D = objfun(y_tr, X_tr, w_hat, *args) - objfun(y_tr, X_tr, w0, *args)
+
+            if (k >= bstart-1) and backtrack and (D > 0):
+                w_hat = w0
 
             # Add objective function at this iteration to the list
-            L_tr.append(objfun(y_tr, X_tr, w_hat))
+            L_tr.append(objfun(y_tr, X_tr, w_hat, *args))
 
             # Set initial weights for the next iteration
             w0 = w_hat
@@ -411,8 +454,10 @@ def stochgraddesc(y_tr, X_tr, y_te=None, X_te=None, w0=None,
         if sdscale:
             X_te = sigma_X_tr @ X_te
 
-        # Add intercept to the test features
-        X_te = np.concatenate((np.ones(shape=(1, n_te)), X_te), axis=0)
+        # Check whether to add an intercept
+        if addicept:
+            # Add intercept to the test features
+            X_te = np.concatenate((np.ones(shape=(1, n_te)), X_te), axis=0)
 
         # Get predicted responses
         y_hat = (X_te.T @ w_hat)
@@ -420,7 +465,7 @@ def stochgraddesc(y_tr, X_tr, y_te=None, X_te=None, w0=None,
         # Check whether test data responses were provided
         if y_te is not None:
             # If so, calculate MSE
-            L_te = objfun(y_te, X_te, w_hat)
+            L_te = objfun(y_te, X_te, w_hat, *args)
 
             # Return the estimated coefficients, objective function values,
             # predictions, and MSE
@@ -432,6 +477,133 @@ def stochgraddesc(y_tr, X_tr, y_te=None, X_te=None, w0=None,
     else:
         # Return the estimated coefficients and objective function values
         return w_hat, L_tr
+
+################################################################################
+### 2.3: Problem 3
+################################################################################
+
+
+# Define a function to calculate the penalized average hinge loss
+def pen_hingeloss(y, X, w, l=0, freeicept=True):
+    """ Calculates penalized hinge loss
+
+    Inputs
+    y: n by 1 vector, responses
+    X: d by n matrix, features
+    w: d by 1 vector, weights
+    l: scalar, penalty weight
+    freeicept: Boolean, if True, intercept will not be penalized
+
+    Outputs
+    L: scalar, penalized hinge loss
+    """
+    # Get the number of instances
+    d, n = X.shape
+
+    # Calculate the linear index part of the hinge loss
+    linindex = np.ones(shape=(n,1)) - y * (X.T @ w)
+
+    # Check which instances get a zero value for the hinge loss
+    subzero = linindex < 0
+
+    # Set the hinge loss to zero whenever the linear index is negative
+    linindex[subzero[:,0], :] = 0
+
+    # Set up an identity matrix
+    I = np.identity(d)
+
+    # Check whether the intercept is penalized
+    if freeicept:
+        # If not, set the element to zero
+        I[0,0] = 0
+
+    # Get the loss function, by summing up and averaging the hinge loss and
+    # adding the penalty term
+    L = (np.ones(shape=(1, n)) @ linindex) / n + (l/2) * (w.T @ I @ w)
+
+    # Return the result
+    return L[0,0]
+
+
+# Define a function to calculate the hinge loss subgradient
+def subgradient_hinge(y, X, w, l=0, freeicept=True):
+    """ Calculates penalized hinge loss subgradient
+
+    Inputs
+    y: n by 1 vector, responses
+    X: d by n matrix, features
+    w: d by 1 vector, weights
+    l: scalar, penalty weight
+    freeicept: Boolean, if True, intercept will not be penalized
+
+    Outputs
+    J: d by 1 vector, gradient
+    """
+    # Get the number of features d and number of instances n
+    d, n = X.shape
+
+    # Calculate the linear index part of the hinge loss
+    linindex = np.ones(shape=(n,1)) - y * (X.T @ w)
+
+    # Check which instances get a zero subgradient for the hinge loss
+    subzero = linindex < 0
+
+    # Check which instances have exactly a zero gradient
+    iszero = linindex == 0
+
+    # Count how many of those there are
+    nzero = iszero[:,0].sum()
+
+    # A subgradient of the hinge loss for instance i at zero is y * x, where y
+    # is instance i's label and x its features, multiplied by a factor in
+    # [-1,0]. Make a row vector of those factors.
+    subgradfac = np.random.uniform(low=-1, high=0, size=(1, nzero))
+
+    # Stack them d times
+    F = np.ones(shape=(d, 1)) @ subgradfac
+
+    # Stack the labels (as a row vector) d times, to match the shape of X
+    Y = np.ones(shape=(d, 1)) @ y.T
+
+    # Multiply each column of X by the negative of its label
+    J = -Y * X
+
+    # Set subgradients to zero where the linear index is negative
+    J[:, subzero[:,0]] = 0
+
+    # Multiply subgradients by their factor where the linear index is zero
+    J[:, iszero[:,0]] = J[:, iszero[:,0]] * F
+
+    # Set up an identity matrix
+    I = np.identity(d)
+
+    # Check whether the intercept is penalized
+    if freeicept:
+        # If not, set the first element to zero
+        I[0,0] = 0
+
+    # Calculate the average hinge loss by summing up J and dividing by n, and
+    # add the penalty term
+    J = (J / n) @ np.ones(shape=(n, 1)) + l * w * I
+
+    # Return the result
+    return J
+
+
+# Define a function to return the y coordinate of the classifier threshold line
+# for a given x coordinate
+def classline(x1, w):
+    """ Calculates two dimensional classifier line
+
+    Inputs
+    x1: scalar, first coordinate (horizontal axis) for the classifier line
+    w: 3 by 1 vector, weights
+
+    Outputs
+    x2: scalar, second coordinate (vertical axis) for the classifier line
+    """
+    x2 = -(w[0,0] + w[1,0] * x1) / w[2,0]
+    return x2
 
 ################################################################################
 ### 2.4: Problem 4
@@ -526,7 +698,7 @@ def coorddesc(y_tr, X_tr, w0=None, l=100, update_i=cdupdate_ridge, K=300,
     # Scale the training features by the inverse of their standard deviation, if
     # desired
     if sdscale:
-        sigma_X_tr = np.diag(1 / np.std(X_tr, axis=1))
+        sigma_X_tr = np.diag(1 / np.std(X_tr, axis=1, ddof=1))
         X_tr = sigma_X_tr @ X_tr
 
     # Add intercept to the training features

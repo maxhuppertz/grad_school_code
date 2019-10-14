@@ -40,8 +40,9 @@ fn_effdfplot = 'effective_df.pdf'  # Effective DF vs. MSE
 fn_cvplot = 'cv_mse.pdf'  # Penalty term vs. CV MSE
 
 # Set graph options
-plt.rc('font', **{'family': 'serif', 'serif': ['lmodern']})
+plt.rc('font', **{'family': 'Latin Modern Roman', 'serif': ['lmodern']})
 plt.rc('text', usetex=True)
+plt.rc('text.latex', preamble=r'\usepackage{lmodern}')
 
 ################################################################################
 ### 2: Load data, display means
@@ -81,7 +82,7 @@ y_te = y[n_tr:, :]
 
 # Calculate sample means and standard deviations
 mu_X_tr = X_tr @ np.ones(shape=(n_tr, 1)) / n_tr
-sigma_X_tr = np.array(np.std(X_tr, axis=1), ndmin=2).T
+sigma_X_tr = np.array(np.std(X_tr, axis=1, ddof=1), ndmin=2).T
 
 # Print a header for the results
 print('\n{:<10} {:>8} {:>8}'.format('Variable', 'Mean', 'SD'))
@@ -106,7 +107,7 @@ if not os.path.isdir(mdir+'/'+fdir):
 os.chdir(mdir+'/'+fdir)
 
 # Make a list of penalty terms to use
-L = np.arange(0, 21, .01)
+L = np.arange(0, 21, .1)
 
 # Calculate MSEs
 mse = [regls(y_tr, X_tr, l, y_te=y_tr, X_te=X_tr)[2] for l in L]

@@ -43,8 +43,9 @@ fn_gdplot = 'gd_mse.pdf'
 fn_sgdplot = 'sgd_mse.pdf'
 
 # Set graph options
-plt.rc('font', **{'family': 'serif', 'serif': ['lmodern']})
+plt.rc('font', **{'family': 'Latin Modern Roman', 'serif': ['lmodern']})
 plt.rc('text', usetex=True)
+plt.rc('text.latex', preamble=r'\usepackage{lmodern}')
 
 ################################################################################
 ### 2: Load data
