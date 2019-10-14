@@ -87,7 +87,7 @@ y_te = y[n_tr:, :]
 
 # Get coordinate descent weights w_hat, history of the weights w_tr, and
 # objective function at each iteration L_tr
-w_hat_cd, w_tr, L_tr = coorddesc(y_tr, X_tr)
+w_hat_cd, w_tr, L_tr = coorddesc(y_tr, X_tr, K=700)
 
 # Get the MSE in the test data for the estimated SGD weights
 mse_cd = ols_mse(y_te, X_te, w_hat_cd, demean=True, sdscale=True, addicept=True)
@@ -158,9 +158,6 @@ ax[1].set_ylim((-4, 4))
 # Label the axes
 ax[1].set_xlabel('Iteration', fontsize=11)
 ax[1].set_ylabel('Weight', fontsize=11)
-
-# Get rid of unnecessary whitespace
-#fig.tight_layout()
 
 # Save and close the figure (the bbox_inches='tight' helps remove even more
 # unwanted whitespace)

@@ -20,22 +20,50 @@ import numpy as np
 
 # Define a function to calculate the effective degrees of freedom associated
 # with a given ridge penalty weight lambda
-def effdf(X, l):
+def effdf(X, l, demean=True, sdscale=True, addicept=True, freeicept=True):
     """ Calculate effective degrees of freedom for ridge regression
 
     Inputs
     sigma: Standard deviations of input features, d by 1 vector
     l: Ridge regression penalty weight, scalar
+    demean: Boolean, if True, the features will be demeaned
+    sdscale: Boolean, if True, the features will be scaled by the inverse of
+             their standard deviation
+    addicept: Boolean, if True, adds an intercept to the features
+    freeicept: Boolean, if True, intercept will not be penalized
 
     Outputs
-    effdf: Effective degrees of freedom, scalar
+    effdf: Scalar, effective degrees of freedom
     """
-    d = X.shape[0]
+    # Get the number of featured d and number of instances n
+    d, n = X.shape
 
-    I = np.identity(d)
+    # Demean the features, if desired
+    if demean:
+        ones = np.ones(shape=(n, 1))
+        mu_X = (X @ ones) / n
+        X = X - mu_X @ ones.T
 
-    I[0,0] = 0
+    # Scale the training features by the inverse of their standard deviation, if
+    # desired
+    if sdscale:
+        sigma_X = np.diag(1 / np.std(X, axis=1, ddof=1))
+        X = sigma_X @ X
 
+    # Check whether to add an intercept
+    if addicept:
+        # Add intercept to the training features
+        X = np.concatenate((np.ones(shape=(1, n)), X), axis=0)
+
+    # Set up an identity matrix
+    I = np.identity(d+1)
+
+    # Check whether the intercept is not penalized
+    if freeicept:
+        # If so, set its first element to zero
+        I[0,0] = 0
+
+    # Calculate the effective degrees of freedom
     effdf = np.trace(X.T @ np.linalg.inv(X @ X.T + l * I) @ X)
 
     # Return the result
