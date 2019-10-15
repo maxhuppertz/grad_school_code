@@ -135,6 +135,9 @@ cmap = matplotlib.cm.get_cmap('jet')
 # Set up a figure for the weights across iterations plot
 fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(6.5, 7))
 
+# Add a horizontal line at zero
+ax[0].axhline(0, color='black', linewidth=.8, linestyle='--')
+
 # Go through all weight dimensions
 for i in range(w_tr.shape[0]):
     # Plot weights for dimension i across iterations
@@ -146,6 +149,9 @@ ax[0].set_ylabel('Weight', fontsize=11)
 # Add a legend
 fig.legend(loc='upper center', bbox_to_anchor=(.5, 1), fancybox=False,
            edgecolor='black', framealpha=1, ncol=5)
+
+# Add a horizontal line at zero
+ax[1].axhline(0, color='black', linewidth=.8, linestyle='--')
 
 # Go through all weight dimensions except the intercept
 for i in range(1, w_tr.shape[0]):

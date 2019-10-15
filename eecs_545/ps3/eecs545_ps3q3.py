@@ -208,7 +208,7 @@ ax.set_xlabel('Total energy', fontsize=11)
 ax.set_ylabel('Tail energy', fontsize=11)
 
 # Add a legend
-ax.legend(bbox_to_anchor=(.37, 1), loc='upper center', ncol=2, fancybox=False,
+ax.legend(bbox_to_anchor=(.24, 1), loc='upper center', ncol=2, fancybox=False,
           edgecolor='black', framealpha=1)
 
 # Get rid of unnecessary whitespace
@@ -264,7 +264,7 @@ ax.set_xlabel('Total energy', fontsize=11)
 ax.set_ylabel('Tail energy', fontsize=11)
 
 # Add a legend
-ax.legend(bbox_to_anchor=(.37, 1), loc='upper center', ncol=2, fancybox=False,
+ax.legend(bbox_to_anchor=(.24, 1), loc='upper center', ncol=2, fancybox=False,
           edgecolor='black', framealpha=1)
 
 # Get rid of unnecessary whitespace
