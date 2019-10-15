@@ -226,15 +226,22 @@ plt.close()
 # Set up a plot
 fig, ax = plt.subplots(figsize=(6.5, 3.5))
 
+# Set up a second x axis
+ax1 = ax.twiny()
+
 # Make a vector counting the SGD epochs
 epochs = np.arange(0, K_sgd, K_sgd / len(L_sgd))
 
-# Plot the average hinge loss
+# Plot the average hinge loss across epochs
 ax.plot(epochs, L_sgd, color='blue', alpha=.8)
+
+# Plot an invisble version across iterations
+ax1.plot([i for i in range(len(L_sgd))], L_sgd, color='blue', alpha=0)
 
 # Label the axes
 ax.set_xlabel('Epoch', fontsize=11)
 ax.set_ylabel('Average penalized hinge loss', fontsize=11)
+ax1.set_xlabel('Iteration', fontsize=11)
 
 # Get rid of unnecessary whitespace
 fig.tight_layout()
