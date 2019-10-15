@@ -163,7 +163,7 @@ os.chdir(mdir+'/'+fdir)
 ################################################################################
 
 # Set up a plot
-fig, ax = plt.subplots(figsize=(4.5, 3.5))
+fig, ax = plt.subplots(figsize=(6.5, 3.5))
 
 # Plot the average hinge loss
 ax.plot(L_gd, color='blue', alpha=.8)
@@ -192,7 +192,7 @@ plotx = np.linspace(start=xmin, stop=xmax, num=2)
 ploty = [classline(x1, w_hat_gd) for x1 in plotx]
 
 # Set up another figure
-fig, ax = plt.subplots(figsize=(4.5, 3.5))
+fig, ax = plt.subplots(figsize=(6.5, 3.5))
 
 # Plot both classes, using different colors
 ax.scatter(X[0, ~lab1], X[1, ~lab1], color='green', alpha=.8, marker='1',
@@ -224,10 +224,10 @@ plt.close()
 ################################################################################
 
 # Set up a plot
-fig, ax = plt.subplots(figsize=(4.5, 3.5))
+fig, ax = plt.subplots(figsize=(6.5, 3.5))
 
 # Make a vector counting the SGD epochs
-epochs = np.arange(1, K_sgd+1, K_sgd / len(L_sgd))
+epochs = np.arange(0, K_sgd, K_sgd / len(L_sgd))
 
 # Plot the average hinge loss
 ax.plot(epochs, L_sgd, color='blue', alpha=.8)
@@ -248,7 +248,7 @@ plt.close()
 ploty = [classline(x1, w_hat_sgd) for x1 in plotx]
 
 # Set up another figure
-fig, ax = plt.subplots(figsize=(4.5, 3.5))
+fig, ax = plt.subplots(figsize=(6.5, 3.5))
 
 # Plot both classes, using different colors
 ax.scatter(X[0, ~lab1], X[1, ~lab1], color='green', alpha=.8, marker='1',

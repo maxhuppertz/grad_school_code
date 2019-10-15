@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os  # Only needed to set main directory
 import pandas as pd
-from eecs545_ps3funcs import graddesc,stochgraddesc, regls, ols_mse
+from eecs545_ps3funcs import graddesc, stochgraddesc, regls, ols_mse
 from inspect import getsourcefile  # Only needed to set main directory
 
 # Set random number generator's seed

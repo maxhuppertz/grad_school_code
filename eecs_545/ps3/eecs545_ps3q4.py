@@ -148,12 +148,10 @@ ax[0].set_ylabel('Weight', fontsize=11)
 fig.legend(loc='upper center', bbox_to_anchor=(.5, 1), fancybox=False,
            edgecolor='black', framealpha=1, ncol=5)
 
-# Go through all weight dimensions
-for i in range(w_tr.shape[0]):
+# Go through all weight dimensions except the intercept
+for i in range(1, w_tr.shape[0]):
     # Plot weights for dimension i across iterations
     ax[1].plot(w_tr[i,:], label=Xvars[i], color=cmap(i/w_tr.shape[0]), alpha=.8)
-
-ax[1].set_ylim((-4, 4))
 
 # Label the axes
 ax[1].set_xlabel('Iteration', fontsize=11)

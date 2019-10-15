@@ -687,20 +687,28 @@ def cdupdate_ridge(i, y, X, w, l=100, freeicept=True):
 
 
 # Define a function to implement the coordinate descent algorithm
-def coorddesc(y_tr, X_tr, w0=None, l=100, update_i=cdupdate_ridge, K=300,
-              demean=True, sdscale=True, objfun=ols_mse):
+def coorddesc(y_tr, X_tr, w0=None, y_te=None, X_te=None, args_u=[], args_o=[],
+              update_i=cdupdate_ridge, K=300, demean=True, sdscale=True,
+              addicept=True, objfun=ols_mse):
     """ Implements coordinate descent
     y_tr: n_tr by 1 vector, training data labels
     X_tr: d by n_tr matrix, training data features
     w0: d by 1 vector, initial weights. If None, uses a zero vector to
         initialize.
-    l: Scalar, penalty term weight
+    y_te: Test data responses, n_te by 1 vector. If provided, the function will
+          calculate the mean squared error on the test data. (Requires that X_te
+          is also provided.)
+    X_te: Test data features, d by n_te matrix. If provided, the function will
+          calculate predicted values based on these features.
+    args_u: List, additional arguments to be passed to update_i
+    args_o: List, additional arguments to be passed to objfun
     update: Function, must be such that update(i, y, X, w) returns an updated
             vector of weights
     K: Scalar, number of SGD epochs
     demean: Boolean, if True, demeans the features
     sdscale: Boolean, if True, scales feature by the inverse of the standard
              deviation
+    addicept: Boolean, if True, an intercept will be added to the features
     objfun: Function, must be such that objfun(y, X, w) returns the value of the
             objective function
 
@@ -729,11 +737,13 @@ def coorddesc(y_tr, X_tr, w0=None, l=100, update_i=cdupdate_ridge, K=300,
         sigma_X_tr = np.diag(1 / np.std(X_tr, axis=1, ddof=1))
         X_tr = sigma_X_tr @ X_tr
 
-    # Add intercept to the training features
-    X_tr = np.concatenate((np.ones(shape=(1, n_tr)), X_tr), axis=0)
+    # Check whether to add an intercept
+    if addicept:
+        # Add intercept to the training features
+        X_tr = np.concatenate((np.ones(shape=(1, n_tr)), X_tr), axis=0)
 
     # Set up list of objective functions, starting with the value at w0
-    L_tr = [objfun(y_tr, X_tr, w0)]
+    L_tr = [objfun(y_tr, X_tr, w0, *args_o)]
 
     # Set up a matrix of weights across iterations
     w_tr = np.empty(shape=(d+1, K+1))
@@ -750,10 +760,10 @@ def coorddesc(y_tr, X_tr, w0=None, l=100, update_i=cdupdate_ridge, K=300,
         i = np.int(k - np.floor(k / (d+1)) * (d+1))
 
         # Get updated weights
-        w_hat = update_i(i=i, y=y_tr, X=X_tr, w=w0)
+        w_hat = update_i(i, y_tr, X_tr, w0, *args_u)
 
         # Add objective function at this iteration to the list
-        L_tr.append(objfun(y_tr, X_tr, w_hat))
+        L_tr.append(objfun(y_tr, X_tr, w_hat, *args_o))
 
         # Add weights to the array of weights
         w_tr[:,k+1] = w_hat[:,0]
@@ -761,5 +771,148 @@ def coorddesc(y_tr, X_tr, w0=None, l=100, update_i=cdupdate_ridge, K=300,
         # Set initial weights for the next iteration
         w0 = w_hat
 
-    # Return the estimated coefficients and objective function values
-    return w_hat, w_tr, L_tr
+    # Check whether test data features were provided
+    if X_te is not None:
+        # If so, get number of instances in the test data
+        n_te = X_te.shape[1]
+
+        # Demean test data if desired, using training data feature means
+        if demean:
+            ones_te = np.ones(shape=(n_te, 1))
+            X_te = X_te - mu_X_tr @ ones_te.T
+
+        # Scale test data if desired, using inverse training data standard
+        # deviations
+        if sdscale:
+            X_te = sigma_X_tr @ X_te
+
+        # Check whether to add an intercept
+        if addicept:
+            # Add intercept to the test features
+            X_te = np.concatenate((np.ones(shape=(1, n_te)), X_te), axis=0)
+
+        # Get predicted responses
+        y_hat = (X_te.T @ w_hat)
+
+        # Check whether test data responses were provided
+        if y_te is not None:
+            # If so, calculate MSE
+            L_te = objfun(y_te, X_te, w_hat, *args_o)
+
+            # Return the estimated coefficients, objective function values,
+            # predictions, and MSE
+            return w_hat, w_tr, L_tr, y_hat, L_te
+        else:
+            # Return the estimated coefficients, objective function values, and
+            # predictions
+            return w_hat, w_tr, L_tr, y_hat
+    else:
+        # Return the estimated coefficients and objective function values
+        return w_hat, w_tr, L_tr
+
+################################################################################
+### 2.5: Problem 5
+################################################################################
+
+
+# Define a function to calculate the OLS MSE (average squared residual)
+def lasso_mse(y, X, w, l=100, demean=False, sdscale=False, addicept=False):
+    """ Calculates the LASSO penalized mean squared error
+
+    Inputs
+    y: n by 1 vector, responses
+    X: d by n matrix, features
+    w: d by 1 vector, weights
+    demean: Boolean, if True, the features will be de-meaned
+    sdscale: Boolean, if True, the features will be scaled by their inverse
+             standard deviation
+    addicept: Boolean, if True, an intercept will be added to the features
+
+    Outputs
+    mse: Scalar, mean squared error
+    """
+    # Get the number of instances n
+    n = X.shape[1]
+
+    # Demean the training features, if desired
+    if demean:
+        ones = np.ones(shape=(n,1))
+        mu_X = (X @ ones) / n
+        X = X - mu_X @ ones.T
+
+    # Scale the training features by the inverse of their standard deviation, if
+    # desired
+    if sdscale:
+        sigma_X = np.diag(1 / np.std(X, axis=1, ddof=1))
+        X = sigma_X @ X
+
+    # Check whether an intercept needs to be added
+    if addicept:
+        # Add intercept to the training features
+        X = np.concatenate((np.ones(shape=(1,n)), X), axis=0)
+
+    # Get the number of features d
+    d = X.shape[0]
+
+    # Calculate MSE
+    mse = (y - X.T @ w).T @ (y - X.T @ w) / n
+
+    # Calculate penalty term
+    P = l * np.ones(shape=(1, d)) @ np.abs(w)
+
+    # Return the result
+    return mse[0,0] + P[0,0]
+
+
+# Define a function to do a coordinate descent update for ridge regression along
+# a given dimension i
+def cdupdate_lasso(i, y, X, w, l=100, freeicept=True):
+    """ Does a single coordinate descent update for the LASSO
+
+    Inputs
+    i: Scalar, dimension in which to update
+    y: n by 1 vector, responses
+    X: d by n matrix, features
+    w: d by 1 vector, weights
+    l: Scalar, penalty term weight
+    freeicept: Boolean, if True, intercept will not be penalized
+
+    Outputs
+    w: d by 1 vector, updated weights
+    """
+    # Get the i-th feature. Due to Numpy's indexing conventions, X[i:i+1, :]
+    # gets the i-th row of X only, but as a row vector (rather than as a one
+    # dimensional array). I just add the transpose because I prefer working with
+    # column vectors.
+    xi = X[i:i+1, :].T
+
+    # Calculate two times the sum of squares for this feature
+    ai = 2 * xi.T @ xi
+
+    # Set the i-th element of the weights vector to zero
+    w[i, 0] = 0
+
+    # Calculate predicted responses based on all other weights
+    yhat = X.T @ w
+
+    # Calculate pseudo covariance between the i-th feature and the predictions
+    # ignoring the i-th weight
+    ci = 2 * xi.T @ (y - yhat)
+
+    # Check whether the intercept should be penalized
+    if freeicept and i == 0:
+        # If not, and if this is the intercept, ignore the penalty weight in the
+        # update
+        w[i, 0] = ci / ai
+    else:
+        # Check whether the pseudo covariance is negative enough
+        if ci < -l:
+            # If so, change the weight from zero to the optimal weight
+            w[i, 0] = (ci + l) / ai
+        elif ci > l:
+            # Otherwise, if the pseudo covariance is positive enough, change the
+            # weight from zero to the optimal weight
+            w[i, 0] = (ci - l) / ai
+
+    # Return the new weights vector
+    return w

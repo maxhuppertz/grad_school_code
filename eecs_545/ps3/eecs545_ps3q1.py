@@ -176,19 +176,19 @@ for l in L:
     # Set up a vector for cross validated MSEs across samples
     cv_mse_l = np.empty(shape=(k-1, 1))
 
-    # Go through all cross validation folds
+    # Go through all validation samples in the training data
     for idx in np.arange(1, k):
-        # Make an indicator for the current sample
+        # Make an indicator for the current validation sample
         vldsamp = cvidx[:,0] == idx
 
-        # Get the MSE for the current cross validation fold, and add it to the
-        # list
+        # Estimate weights based on all training data except the current
+        # validation sample, and get the MSE in the validation sample
         _, _, cv_mse_l[idx-1, 0] = (
             regls(y_tr=y_tr[~vldsamp, :], X_tr=X_tr[:, ~vldsamp], l=l,
                   y_te=y_tr[vldsamp, :], X_te=X_tr[:, vldsamp])
             )
 
-    # Calculate mean MSE across all cross validation samples
+    # Calculate mean MSE across all validation samples
     mean_cv_mse = np.ones(shape=(1, k-1)) @ cv_mse_l / (k-1)
 
     # Add that mean MSE to the list
