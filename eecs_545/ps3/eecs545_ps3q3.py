@@ -58,7 +58,7 @@ plt.rc('text.latex', preamble=r'\usepackage{lmodern}')
 # Load the data set
 data = sio.loadmat(fn_dset)
 
-# Get features and labels (the transpose enforces the course convetion of y
+# Get features and labels (the transpose enforces the course convention of y
 # being n by 1)
 X = data['x']
 y = data['y'].T
@@ -135,16 +135,16 @@ for i, var in enumerate(Xvars):
     )
 
 # Print the minimum achieved loss
-print('\nSubGD min. average hinge loss: {:4.4f}'.format(np.round(Lmin_gd, 4)))
+print('\nSubGD min. av. pen. hinge loss: {:4.4f}'.format(np.round(Lmin_gd, 4)))
 print('Achieved at iteration', idx_gd)
-print('SubGD min. average hinge loss at final weights: {:4.4f}'.format(
+print('SubGD min. av. pen. hinge loss at final weights: {:4.4f}'.format(
     np.round(L_gd[-1], 4)))
 
 # Print the minimum achieved loss
-print('\nStSubGD min. average hinge loss: {:4.4f}'.format(
+print('\nStSubGD min. av. pen. hinge loss: {:4.4f}'.format(
     np.round(Lmin_sgd, 4)))
 print('Achieved at iteration', idx_sgd)
-print('StSubGD min. average hinge loss at final weights: {:4.4f}'.format(
+print('StSubGD min. av. pen. hinge loss at final weights: {:4.4f}'.format(
     np.round(L_sgd[-1], 4)))
 
 ################################################################################
@@ -170,7 +170,7 @@ ax.plot(L_gd, color='blue', alpha=.8)
 
 # Label the axes
 ax.set_xlabel('Iteration', fontsize=11)
-ax.set_ylabel('Average hinge loss', fontsize=11)
+ax.set_ylabel('Average penalized hinge loss', fontsize=11)
 
 # Get rid of unnecessary whitespace
 fig.tight_layout()
@@ -234,7 +234,7 @@ ax.plot(epochs, L_sgd, color='blue', alpha=.8)
 
 # Label the axes
 ax.set_xlabel('Epoch', fontsize=11)
-ax.set_ylabel('Average hinge loss', fontsize=11)
+ax.set_ylabel('Average penalized hinge loss', fontsize=11)
 
 # Get rid of unnecessary whitespace
 fig.tight_layout()
