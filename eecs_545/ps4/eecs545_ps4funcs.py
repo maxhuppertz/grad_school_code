@@ -192,19 +192,19 @@ def conditional_distribution(I, U, mu, Sigma):
 
 
 # Define a function to calculate a Gaussian kernel
-def gaussian_kernel(x1, x2, sigma2=1):
+def gaussian_kernel(x1, x2, sigma=1):
     """ Calculates a Gaussian kernel
 
     Inputs
     x1: d by 1 vector, first instance
     x2: d by 1 vector, second instance
-    sigma2: scalar, kernel parameter
+    sigma: scalar, kernel parameter
 
     Output
     k: scalar, kernel value
     """
     # Calculate the kernel as exp{-(||x1 - x2||^2) / (2 * sigma2)}
-    k = np.exp( -((x1 - x2).T @ (x1 - x2)) / (2 * sigma2) )
+    k = np.exp( -((x1 - x2).T @ (x1 - x2)) / (2 * (sigma**2)) )
 
     # Return the result
     return k

@@ -68,18 +68,18 @@ X = np.array(np.linspace(start=-5, stop=5, num=n), ndmin=2)
 mu = np.zeros(shape=(n,1))
 
 # Set up a list of different kernel parameters to use
-sigma2s = [.3, .5, 1]
+sigmas = [.3, .5, 1]
 
 # Specify how many samples to plot per parameter
 nseries = 3
 
 # Set up a figure
-fig, ax = plt.subplots(nrows=len(sigma2s), ncols=1, figsize=(6.5,6.5))
+fig, ax = plt.subplots(nrows=len(sigmas), ncols=1, figsize=(6.5,6.5))
 
 # Go through all kernel parameters
-for i, sigma2 in enumerate(sigma2s):
+for i, sigma in enumerate(sigmas):
     # Get the covariance matrix
-    Sigma = kernel_cov(X, args=[sigma2])
+    Sigma = kernel_cov(X, args=[sigma])
 
     # Go through all samples to plot
     for series in range(nseries):
@@ -90,14 +90,14 @@ for i, sigma2 in enumerate(sigma2s):
         ax[i].plot(X[0,:], y, alpha=.8)
 
     # Set title and vertical axis label
-    ax[i].set_title(r'$\sigma^2 = {:8.1f}$'.format(sigma2), fontsize=11)
+    ax[i].set_title(r'$\sigma = {:8.1f}$'.format(sigma), fontsize=11)
     ax[i].set_ylabel('$y$', fontsize=11)
 
     # Change vertical axis limits
-    ax[i].set_ylim(-4, 4)
+    ax[i].set_ylim(-4.5, 4.5)
 
     # Check whether this is the last plot
-    if i == len(sigma2s)-1:
+    if i == len(sigmas)-1:
         # If so, add a horizontal axis label
         ax[i].set_xlabel('$x$', fontsize=11)
 
@@ -134,12 +134,12 @@ I = range(X.shape[1])
 nseries = 5
 
 # Set up a figure
-fig, ax = plt.subplots(nrows=len(sigma2s), ncols=1, figsize=(6.5,6.5))
+fig, ax = plt.subplots(nrows=len(sigmas), ncols=1, figsize=(6.5,6.5))
 
 # Go through all kernel parameters
-for i, sigma2 in enumerate(sigma2s):
+for i, sigma in enumerate(sigmas):
     # Get the covariance matrix
-    Sigma_comb = kernel_cov(X_comb, args=[sigma2])
+    Sigma_comb = kernel_cov(X_comb, args=[sigma])
 
     # Get the conditional mean and covariance matrix
     mu_cond, Sigma_cond = (
@@ -163,14 +163,14 @@ for i, sigma2 in enumerate(sigma2s):
     ax[i].plot(X[0,:], mu_cond, linewidth=7, zorder=-1, color='grey', alpha=.5)
 
     # Set title and axis label
-    ax[i].set_title(r'$\sigma^2 = {:8.1f}$'.format(sigma2), fontsize=11)
+    ax[i].set_title(r'$\sigma = {:8.1f}$'.format(sigma), fontsize=11)
     ax[i].set_ylabel('$y$', fontsize=11)
 
     # Change axis limits
-    ax[i].set_ylim(-4, 4)
+    ax[i].set_ylim(-4.5, 4.5)
 
     # If this is the last figure...
-    if i == len(sigma2s)-1:
+    if i == len(sigmas)-1:
         # ... add a horizontal axis label
         ax[i].set_xlabel('$x$', fontsize=11)
 
