@@ -286,6 +286,12 @@ def discriminant_bound(X0, X1, pi=.5, common_cov=True, nbound=100):
     bound_X2: nbound by nbound matrix, second coordinates of a set of points
     Y: nbound by nbound matrix, classifier value at those points
     """
+    # Get the number of instances per class, and instances in the entire
+    # combined data set
+    n1 = X1.shape[1]
+    n0 = X0.shape[1]
+    n = n0 + n1
+
     # Get the means for each class
     mu0 = np.array(np.mean(X0, axis=1), ndmin=2).T
     mu1 = np.array(np.mean(X1, axis=1), ndmin=2).T
@@ -303,8 +309,11 @@ def discriminant_bound(X0, X1, pi=.5, common_cov=True, nbound=100):
 
     # Check whether to use LDA
     if common_cov:
-        # If so, get the inverse covariance for the combined data
-        SigmaI = np.linalg.inv(np.cov(X))
+        # Get the covariance matrix for the combined data
+        Sigma = (n0 / n) * np.cov(X0) + (n1 / n) * np.cov(X1)
+
+        # Get the inverse covariance for the combined data
+        SigmaI = np.linalg.inv(Sigma)
 
         # Calculate the feature weight
         w1 = SigmaI @ (mu1 - mu0)
