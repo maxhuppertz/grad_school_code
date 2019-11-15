@@ -13,6 +13,7 @@ import numpy as np
 import os  # Only needed to set main directory
 import scipy.io as sio
 import time
+from eecs545_ps5funcs import pca
 from inspect import getsourcefile  # Only needed to set main directory
 
 # Specify name for main directory. (This just uses the file's directory.) I used
@@ -42,55 +43,6 @@ plt.rc('text', usetex=True)
 plt.rc('text.latex', preamble=r'\usepackage{lmodern}')
 
 ################################################################################
-### X: Define functions
-################################################################################
-
-
-# Define a function to do PCA
-def pca(X, K=[1], pred=[]):
-    # Get the number of features d and instances n
-    d, n = X.shape
-
-    # Make a length n vector of ones
-    ones = np.ones(shape=(n,1))
-
-    # Demand the features
-    mu = X @ ones / n
-    Xc = X - mu @ ones.T
-
-    # Get the gram matrix of the features
-    G = Xc @ Xc.T
-
-    # Get eigenvalues l and eigenvectors U (it's more efficient to use
-    # np.linalg.eigh() instead of np.linalg.eig(), since the former takes
-    # advantage of the fact that Xc Xc' is symmetric, and returns ordered
-    # eigenvalues)
-    L, U = np.linalg.eigh(G)
-
-    # Unfortunately, the eigenvalues and -vectors are sorted in ascending order
-    # (of the eigenvalues), which is kind of annoying, so flip that
-    L = np.flip(L)
-    U = np.flip(U, axis=1)
-
-    # Calculate total variance of the demeaned features
-    V = np.diag(G).sum()
-
-    # Set up an array of the ratios of explained variance to total variance for
-    # different numbers of principal components (akin to an R-squared in OLS,
-    # hence the name)
-    R2 = np.zeros(len(K))
-
-    # Get the explained variance for each number of principal components
-    Ve = [sum(L[0:k]) for k in K]
-
-    # Get the fraction of total variance explained (kind of like an R squared in
-    # OLS, hence the name)
-    R2 = Ve / V
-
-    # Return the results
-    return R2, L, U  # Why return P if it's empty?
-
-################################################################################
 ### 2: Run PCA
 ################################################################################
 
@@ -118,7 +70,7 @@ Kmax = 500
 K = np.arange(start=1, stop=Kmax, step=1)
 
 # Get the fraction of variance explained by each component R, and eigenvectors U
-R, L, U = pca(X, K, pred=[19])
+R, L, U = pca(X, K)
 
 # Check for which k the fraction of the total variance explained by PCA is above
 # 95 percent and above 99 percent, respectively
