@@ -1,5 +1,5 @@
 ################################################################################
-### EECS 545, problem set 4 question 3
+### EECS 545, problem set 5 question 1
 ### Bayesian Naïve Bayes classifier
 ################################################################################
 
@@ -10,7 +10,7 @@
 # Import necessary packages
 import numpy as np
 import os  # Only needed to set main directory
-from eecs545_ps4funcs import bnb
+from eecs545_ps5funcs import bnb
 from inspect import getsourcefile  # Only needed to set main directory
 
 # Specify name for main directory. (This just uses the file's directory.) I used
