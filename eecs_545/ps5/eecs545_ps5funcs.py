@@ -109,11 +109,11 @@ def pca(X, K=[1]):
     # Make a length n vector of ones
     ones = np.ones(shape=(n,1))
 
-    # Demand the features
+    # Demean the features
     mu = X @ ones / n
     Xc = X - mu @ ones.T
 
-    # Get the gram matrix of the features
+    # Get the gram matrix of the demeaned features
     G = Xc @ Xc.T
 
     # Get eigenvalues l and eigenvectors U (it's more efficient to use
@@ -131,8 +131,7 @@ def pca(X, K=[1]):
     V = np.diag(G).sum()
 
     # Set up an array of the ratios of explained variance to total variance for
-    # different numbers of principal components (akin to an R-squared in OLS,
-    # hence the name)
+    # different numbers of principal components
     R2 = np.zeros(len(K))
 
     # Get the explained variance for each number of principal components
