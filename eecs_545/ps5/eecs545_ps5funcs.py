@@ -53,10 +53,9 @@ def bnb(X_tr, y_tr, X_te, y_te, alpha=1, beta=1):
     c1 = ~c0
 
     # Get the number of times a given word appears in the training documents,
-    # for each word in the vocabulary, and divide by the number of documents in
-    # that class to get frequencies
-    Nx0 = X_tr[:,c0].sum(axis=1) / n1
-    Nx1 = X_tr[:,c1].sum(axis=1) / n0
+    # for each word in the vocabulary
+    Nx0 = X_tr[:,c0].sum(axis=1)
+    Nx1 = X_tr[:,c1].sum(axis=1)
 
     # Calculate weights theta, based on prior and frequencies
     theta0 = (Nx0 + alpha) / (n0 + alpha + beta)

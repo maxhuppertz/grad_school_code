@@ -45,4 +45,4 @@ _, err = bnb(X_tr=train_features, y_tr=train_labels,
 
 # Display the result
 print()
-print('Error rate: {:1.4f}'.format(err))
+print('Error rate: {:1.5f}'.format(err))
