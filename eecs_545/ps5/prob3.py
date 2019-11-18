@@ -73,9 +73,10 @@ K = np.arange(start=1, stop=Kmax, step=1)
 R, L, U = pca(X, K)
 
 # Check for which k the fraction of the total variance explained by PCA is above
-# 95 percent and above 99 percent, respectively
-g95 = np.amin(np.argwhere(R > .95))
-g99 = np.amin(np.argwhere(R > .99))
+# 95 percent and above 99 percent, respectively (I have to add one to deal with
+# Python's zero indexing)
+g95 = np.amin(np.argwhere(R > .95)) + 1
+g99 = np.amin(np.argwhere(R > .99)) + 1
 
 # Calculate the percentage reduction in dimensionality for each case
 r95 = np.round((1 - (g95 / d)) * 100, 2)
@@ -122,6 +123,9 @@ plt.close()
 # Specify how many eigenfaces to plot
 nplot = 19
 
+# Set a color map for the plot
+colmp = 'gray'
+
 # Reshape the first nplot eigenfaces into images
 efc = U[:, 0:nplot].reshape((imgx, imgy, nplot))
 
@@ -143,7 +147,7 @@ for i, ax in enumerate(fig.axes):
     img = efc[:,:,i]
 
     # Plot the image
-    ax.imshow(img, cmap=plt.get_cmap('gray'))
+    ax.imshow(img, cmap=colmp)
 
     # Remove x and y ticks
     ax.set_xticks([])

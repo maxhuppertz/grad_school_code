@@ -60,7 +60,7 @@ def bnb(X_tr, y_tr, X_te, y_te, alpha=1, beta=1):
 
     # Calculate weights theta, based on prior and frequencies
     theta0 = (Nx0 + alpha) / (n0 + alpha + beta)
-    theta1 = (Nx1 + alpha) / (n0 + alpha + beta)
+    theta1 = (Nx1 + alpha) / (n1 + alpha + beta)
 
     # Calculate intercept of the classifier line (the np.ones() simply sums up)
     w0 = (
